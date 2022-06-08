@@ -13,3 +13,11 @@ erDiagram
     
 # Network Archtecture
 
+```mermaid
+graph BT
+    A(Alice Endpoint) <--> LR(Local Relay) 
+    B(Bob Endpoint) --> LR
+    LR --> CR(Cloud Relay)
+    C(Charlie Endpoint) --> CR
+```
+
