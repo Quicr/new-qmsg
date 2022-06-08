@@ -1,5 +1,6 @@
 # Architecture 
 
+
 ## Endpoint Architecture 
 
 ```mermaid
