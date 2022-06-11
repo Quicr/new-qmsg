@@ -78,11 +78,22 @@ log(leve,msg), metric(metric,value)
 pub( name, data), sub( name )
 log(level,msg), metrics(metric,value)
 
-## STORE API
+### STORE API
 
 wrtie( blockNum, dataBlock ), read(blockNum)
 
 
-## Compress API
+### Compress API
 
 CompressText, DecompressText
+
+
+## Tools
+
+### Dump Tool
+
+Takes subpath and dumps all messages under that path to individual files
+
+### Load Tool
+
+Takes set of files from dump tools and publishes all the files
