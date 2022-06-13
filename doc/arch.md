@@ -1,4 +1,4 @@
-# Architecture 
+# Architecture
 
 Thy system consists of endpoints that users can use to send and receive
 messages and a tree of relays that help distribute and cache the messages.
@@ -36,15 +36,15 @@ has a bunch of Users from one or more Organizations. Each team has
 multiple Channels and each Channel has a set of Threads and each Thread
 has a set of Messages.
 
-## Endpoint Architecture 
+## Endpoint Architecture
 
-```mermaid 
+```mermaid
 flowchart LR
     UI(UI Proc) <-- plain ---> SEC
-    SEC(Secure Proc) <-- encrypted ---> NET 
+    SEC(Secure Proc) <-- encrypted ---> NET
     NET(Network Proc)
-    COMP(TrashCompactor) <--> SEC 
-    STOR[(Storage)] <--> SEC 
+    COMP(TrashCompactor) <--> SEC
+    STOR[(Storage)] <--> SEC
     CACHE[(Cache Storage)] <--> NET
 ```
 
@@ -61,9 +61,39 @@ The Network Process only hands encrypted messages and is not developed
 security. It takes care of distribution of the messages over the network
 and local caching of messages.
 
+## APIIs
+
+All the API can be serialized across a bi directional serial link.
+
+### UI API
+
+lock, unlock(pin),
+sendMsg(), getMsg(msgName),
+notifyFilter( name), async notify->newMsg(msgName)
+setConig(key,value), getConfig( key )
+log(leve,msg), metric(metric,value)
+
+### NeT API
+
+pub( name, data), sub( name )
+log(level,msg), metrics(metric,value)
+
+### STORE API
+
+wrtie( blockNum, dataBlock ), read(blockNum)
 
 
+### Compress API
+
+CompressText, DecompressText
 
 
+## Tools
 
+### Dump Tool
 
+Takes subpath and dumps all messages under that path to individual files
+
+### Load Tool
+
+Takes set of files from dump tools and publishes all the files
