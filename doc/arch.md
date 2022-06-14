@@ -95,7 +95,7 @@ CompressText, DecompressText
 Takes subpath and dumps all messages and MLS message (commit, welcome,
 and key-package)  under that path to individual files
 
-### Load Tool
+### UnDump Tool
 
 Takes set of files from dump tools and publishes all the files
 
