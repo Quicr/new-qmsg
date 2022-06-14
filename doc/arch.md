@@ -70,17 +70,17 @@ All the API can be serialized across a bi directional serial link.
 lock, unlock(pin),
 sendMsg(), getMsg(msgName),
 notifyFilter( name), async notify->newMsg(msgName)
-setConig(key,value), getConfig( key )
+setConfig(key,value), getConfig( key )
 log(leve,msg), metric(metric,value)
 
-### NeT API
+### NET API
 
 pub( name, data), sub( name )
 log(level,msg), metrics(metric,value)
 
 ### STORE API
 
-wrtie( blockNum, dataBlock ), read(blockNum)
+write( blockNum, dataBlock ), read(blockNum)
 
 
 ### Compress API
@@ -92,8 +92,37 @@ CompressText, DecompressText
 
 ### Dump Tool
 
-Takes subpath and dumps all messages under that path to individual files
+Takes subpath and dumps all messages and MLS message (commit, welcome,
+and key-package)  under that path to individual files
 
 ### Load Tool
 
 Takes set of files from dump tools and publishes all the files
+
+### Member Tool
+
+CLI tool that run on osx that allows creation of orgs, teams, users,
+devices
+
+* provisioned with orgID and has pub/priv keys for admin user
+
+* Keep track of current number of teams and epoch number 
+
+* Can create a new team and add Admin user to team
+
+* can get hKP as input and add that user to a team
+
+* can dump all deviceID for all devices in a team
+
+* can create and publish vcard for device in team 
+
+
+
+## Random Projects
+
+Relay to Relay sync of data using rsync
+
+Relay to Relay sync of data using IPFS.
+
+
+
