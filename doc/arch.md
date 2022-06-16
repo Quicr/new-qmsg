@@ -14,15 +14,15 @@ flowchart BT
     C(Charlie Endpoint) <---> CR
 ```
 
-Endpoints can talk to an local relay or cloud relay.
+Endpoints can talk to a local relay or cloud relay.
 
 The endpoints ask for given set of messages and receive those messages
 from the relay and any future messages that match the request.
 
 The relays form a tree rooted at a single logical Origin
 Relay. internally the Origin Relay could be a distributed across many
-servers.  Cloud relays are discovered by configuration and DNS
-names. Local Relays are discovered by MDNS.
+servers.  Cloud relays are discovered by configuration. DNS
+names, and/or anycast. Local Relays are discovered by MDNS.
 
 ## Terminology, Names, and Concepts
 
@@ -43,61 +43,54 @@ flowchart LR
     UI(UI Proc) <-- plain ---> SEC
     SEC(Secure Proc) <-- encrypted ---> NET
     NET(Network Proc)
-    COMP(TrashCompactor) <--> SEC
-    STOR[(Storage)] <--> SEC
     CACHE[(Cache Storage)] <--> NET
 ```
 
 The UI Process takes care of all the UI. Mostly display of message and
 creating new messages. It passes unencrypted messages to the Secure
 Processor and receives unencrypted messages. The code is security
-reviewed.
+reviewed. It is in C++. 
 
 The Secure process takes care of management of all keys as well as
 encrypting and decrypting all messages. The code is developed securely
-and is in Rust.
+and is in Rust. It also keep track of all the teams and  a
+device is a member of.
+
+TODO - who keeps track of channels. 
 
 The Network Process only hands encrypted messages and is not developed
 security. It takes care of distribution of the messages over the network
-and local caching of messages.
-
-## APIIs
-
-All the API can be serialized across a bi directional serial link.
-
-### UI API
-
-lock, unlock(pin),
-sendMsg(), getMsg(msgName),
-notifyFilter( name), async notify->newMsg(msgName)
-setConfig(key,value), getConfig( key )
-log(leve,msg), metric(metric,value)
-
-### NET API
-
-pub( name, data), sub( name )
-log(level,msg), metrics(metric,value)
-
-### STORE API
-
-write( blockNum, dataBlock ), read(blockNum)
+and local caching of messages. It is in C++.  It implements the protocol
+found in the the [TODO link protocol.md doc]. The low level portion of
+the network process simply needs to be able to connect to a relay, and
+send publish and subscribes to it.  This process also needs to be able
+to find the time - for the initial implementation just the OS time can be
+used but later implementations could subscribe to get the time. 
 
 
-### Compress API
+## Relays
 
-CompressText, DecompressText
+Relays cache and distribute names chunks of data. Each chunk has a 128
+bit name, an expiry time, and 1K or less of data. Clients that connect
+to a relay can subscribe to a set of names they wish to receive data
+for.  Clients can publish a chunk to a relay and the network of relays
+will ensure that any relay that has a client subscribe to that name will
+eventually receive that chunk.
 
+The current implementation arranges all the relays into a tree and when any
+relay receives new data data, it distributes it to all sub trees as well
+as the node above it. It does not send it to the node it came from. Each
+relay is configured with the node above it in the tree and the root node
+can be found via DNS at the origin for the message name. 
 
 ## Tools
 
-### Dump Tool
+
+### Dump & Undump Tool
 
 Takes subpath and dumps all messages and MLS message (commit, welcome,
-and key-package)  under that path to individual files
-
-### UnDump Tool
-
-Takes set of files from dump tools and publishes all the files
+and key-package)  under that path to individual files. The undump takes
+that set of files from and publishes all the files
 
 ### Member Tool
 
@@ -113,16 +106,6 @@ devices
 * can get hKP as input and add that user to a team
 
 * can dump all deviceID for all devices in a team
-
-* can create and publish vcard for device in team 
-
-
-
-## Random Projects
-
-Relay to Relay sync of data using rsync
-
-Relay to Relay sync of data using IPFS.
 
 
 

@@ -4,7 +4,7 @@ Each message gets a unique name and is published at that name. Clients
 subscribe to a wild carded subset of the name to receive the desired
 messages.
 
-Users can have multipel devices each with their own MLS KeyPackage.
+Users can have multiple devices each with their own MLS KeyPackage.
 
 Devices are added to a team and can access any channel in that team.
 
@@ -15,7 +15,7 @@ Devices get a welcome message for any team they can join.
 Names follow the form:
 
 ```
-qmsg://<orgin-domain>/<version>/msg/<org>/<team>/<channel>/<device>/<msgNum>
+qmsg://<origin-domain>/<version>/msg/<org>/<team>/<channel>/<device>/<msgNum>
 ```
 
 * origin domain: DNS domain name of origin server
@@ -85,9 +85,9 @@ multiple messages.
 
 ## MLS
 
-The basic flow to add a new user involves geting the key package (KP) to
+The basic flow to add a new user involves getting the key package (KP) to
 an admin of the group, having the admin get a welcome package (WP) to the
-joner that gives them the MLS info they need then the Admin sending a
+joiner that gives them the MLS info they need then the Admin sending a
 COMMIT to all the existing members of the team so they know that the
 joiner is added.
 
@@ -106,7 +106,7 @@ the number of the team they will be added too.
 The hKP is fairly long to provide out of band. A future version will
 instead exchange a short password (pw) and device identifier out of band
 then use this password in a PAKE to exchange the hKP. The device
-i9dentier can be a short version of the hKP.
+identifier can be a short version of the hKP.
 
 ```mermaid
 sequenceDiagram
@@ -130,7 +130,7 @@ Welcome, and commit messages.
 
 ### KP Names
 ```
-qmsg://<orgin-domain>/<version>/key-package/<org>/<hKP-high48>/<hKP-low16>
+qmsg://<origin-domain>/<version>/key-package/<org>/<hKP-high48>/<hKP-low16>
 ```
 
 short KP Name is:
@@ -142,28 +142,24 @@ short KP Name is:
 
 ### Welcome Names
 ```
-qmsg://<orgin-domain>/<version>/welcome/<org>/<team>/<hKP-high48>/<hKP-low16>
+qmsg://<origin-domain>/<version>/welcome/<org>/<team>/<hKP-high48>/<hKP-low16>
 ```
-
 
 short KP Name is:
 * 48 bit hash origin,
 * low 2 bits of version, 3 bits=3, 11 bit org, 16 bit team,
 * high 32 bits of hKP,  low 16 bits of hKP
  
-
-
 ### Commit Names
 
 ```
-qmsg://<orgin-domain>/<version>/commit/<org>/<team>/0/<epoch>
+qmsg://<origin-domain>/<version>/commit/<org>/<team>/0/<epoch>
 ```
-
 
 short KP Name is:
 * 48 bit hash origin,
 * low 2 bits of version, 3 bits=4, 11 bit org, 16 bit team,
-* 32 bits of zero,   low 16 bits of epoch 
+* 32 bits of zero,  low 16 bits of epoch 
  
 
 
