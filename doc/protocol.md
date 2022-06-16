@@ -15,7 +15,7 @@ Devices get a welcome message for any team they can join.
 Names follow the form:
 
 ```
-qmsg://<origin-domain>/<version>/msg/<org>/<team>/<channel>/<device>/<msgNum>
+qmsg://<origin-domain>/v<version>/msg/org-<org>/team-<team>/ch-<channel>/dev-<device>/<msgNum>
 ```
 
 * origin domain: DNS domain name of origin server
@@ -130,7 +130,7 @@ Welcome, and commit messages.
 
 ### KP Names
 ```
-qmsg://<origin-domain>/<version>/key-package/<org>/<hKP-high48>/<hKP-low16>
+qmsg://<origin-domain>/v<version>/mls-key-package/org-<org>/kp-<hKP>
 ```
 
 short KP Name is:
@@ -139,10 +139,9 @@ short KP Name is:
 * high 48 bits of hKP,  low 16 bits of hKP
  
 
-
 ### Welcome Names
 ```
-qmsg://<origin-domain>/<version>/welcome/<org>/<team>/<hKP-high48>/<hKP-low16>
+qmsg://<origin-domain>/v<version>/mls-welcome/org-<org>/team-<team>/kp-<hKP>
 ```
 
 short KP Name is:
@@ -153,7 +152,7 @@ short KP Name is:
 ### Commit Names
 
 ```
-qmsg://<origin-domain>/<version>/commit/<org>/<team>/0/<epoch>
+qmsg://<origin-domain>/v<version>/mls-commit/org-<org>/team-<team>/epock-<epoch>
 ```
 
 short KP Name is:

@@ -1,7 +1,38 @@
 # Architecture
 
 Thy system consists of endpoints that users can use to send and receive
-messages and a tree of relays that help distribute and cache the messages.
+messages and a tree of relays that help distribute and cache the
+messages.
+
+Messages users sends are logically formed into a name hierarchy of:
+
+* team/channel/sending-device-identifier/message-number
+
+The user interface orders the messages chronologically when displaying
+them. This allows all messages to never change once written and
+eliminates the need for a database to synchronize any of the data while
+still being able to guarantee conflict free merges after a network
+partition. This allows a local set devices to keep communicating even if
+they do not have connectivity to the cloud.
+
+Messages are named data objects from named data networking point of
+view. This makes it much easier to cheaply add scale and
+reliability. Thought this is not strictly needed for a text messaging
+application, what we learn here will help see how this can work for voice
+and video messages where cost of scaling is much more of an issue.  The
+names of the messages are compressed to 128 bit integer to greatly
+accelerate search and matching in the pub/sub network described next.
+
+This work is also an experiment to try out a pub/sub mechanism for
+building applications. There is a set of relays that cache the named
+data objects and are arranged in a tree with clients as leaf nodes in the
+tree. Each client can publish named objects, which are stored by the
+relays. The clients can also range of the names and received any
+existing or new objects that have a name in that range. (It's more of a
+netmask than a range but this was easier to explain). 
+
+The messaging application is partitioned into multiple parts to help
+minimize the amount of code that needs to be developed securely.
 
 ## Network Architecture
 
@@ -53,10 +84,8 @@ reviewed. It is in C++.
 
 The Secure process takes care of management of all keys as well as
 encrypting and decrypting all messages. The code is developed securely
-and is in Rust. It also keep track of all the teams and  a
+and is in Rust. It also keeps track of all the teams a
 device is a member of.
-
-TODO - who keeps track of channels. 
 
 The Network Process only hands encrypted messages and is not developed
 security. It takes care of distribution of the messages over the network
@@ -86,16 +115,19 @@ can be found via DNS at the origin for the message name.
 ## Tools
 
 
-### Dump & Undump Tool
+### Dump Tool
 
 Takes subpath and dumps all messages and MLS message (commit, welcome,
 and key-package)  under that path to individual files. The undump takes
-that set of files from and publishes all the files
+that set of files from and publishes all the files.
+
 
 ### Member Tool
 
 CLI tool that run on osx that allows creation of orgs, teams, users,
-devices
+devices. Will be device 0 in any team. Write name of team to and names
+of channels as messages to team or channel when creating a new team or
+channel.
 
 * provisioned with orgID and has pub/priv keys for admin user
 

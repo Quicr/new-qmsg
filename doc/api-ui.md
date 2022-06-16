@@ -40,7 +40,7 @@ Data:
 
 ## GetChannels  (UI->Sec)
 
-Ask for all info on call channels in a team
+Ask for all info on all channels in a team
 
 Data:
 * int32: team 
