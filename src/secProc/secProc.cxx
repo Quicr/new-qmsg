@@ -13,19 +13,19 @@ int main( int argc, char* argv[]){
 
   fprintf(stderr, "Starting secProc\n");
      
-  int sec2netFD = open( "pipe-s2n" , O_WRONLY, O_NONBLOCK );
+  int sec2netFD = open( "/tmp/pipe-s2n" , O_WRONLY, O_NONBLOCK );
   assert( sec2netFD >= 0 );
   fprintf(stderr, "Got pipe to netProc\n");
 
-  int net2secFD = open( "pipe-n2s" , O_RDONLY, O_NONBLOCK );
+  int net2secFD = open( "/tmp/pipe-n2s" , O_RDONLY, O_NONBLOCK );
   assert( net2secFD >= 0 );
   fprintf(stderr, "Got pipe from netProc\n");
   
-  int sec2uiFD = open( "pipe-s2u" , O_WRONLY, O_NONBLOCK );
+  int sec2uiFD = open( "/tmp/pipe-s2u" , O_WRONLY, O_NONBLOCK );
   assert( sec2uiFD >= 0 );
   fprintf(stderr, "Got pipe from uiProc\n");
 
-  int ui2secFD = open( "pipe-u2s" , O_RDONLY, O_NONBLOCK );
+  int ui2secFD = open( "/tmp/pipe-u2s" , O_RDONLY, O_NONBLOCK );
   assert( ui2secFD >= 0 );
   fprintf(stderr, "Got pipe to uiProc\n");
   

@@ -13,11 +13,11 @@ int main( int argc, char* argv[]){
 
   fprintf(stderr, "Starting netProc\n");
      
-  int sec2netFD = open( "pipe-s2n", O_RDONLY, O_NONBLOCK );
+  int sec2netFD = open( "/tmp/pipe-s2n", O_RDONLY, O_NONBLOCK );
   assert( sec2netFD >= 0 );
   fprintf(stderr, "Got pipe from secProc\n");
 
-  int net2secFD = open( "pipe-n2s", O_WRONLY, O_NONBLOCK );
+  int net2secFD = open( "/tmp/pipe-n2s", O_WRONLY, O_NONBLOCK );
   assert( net2secFD >= 0 );
   fprintf(stderr, "Got pipe to netProc\n");
   

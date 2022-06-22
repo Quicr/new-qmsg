@@ -15,11 +15,11 @@ int main( int argc, char* argv[]){
      
   int keyboardFD = 0;
 
-  int sec2uiFD = open( "pipe-s2u" , O_RDONLY, O_NONBLOCK );
+  int sec2uiFD = open( "/tmp/pipe-s2u" , O_RDONLY, O_NONBLOCK );
   assert( sec2uiFD >= 0 );
   fprintf(stderr, "Got pipe from secProc\n");
 
-  int ui2secFD = open( "pipe-u2s" , O_WRONLY, O_NONBLOCK );
+  int ui2secFD = open( "/tmp/pipe-u2s" , O_WRONLY, O_NONBLOCK );
   assert( ui2secFD >= 0 );
   fprintf(stderr, "Got pipe to secProc\n");
   
