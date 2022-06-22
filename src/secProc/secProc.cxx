@@ -11,30 +11,30 @@
 
 int main( int argc, char* argv[]){
 
-  fprintf(stderr, "Starting secProc\n");
+  fprintf(stderr, "SEC: Starting secProc\n");
      
   int sec2netFD = open( "/tmp/pipe-s2n" , O_WRONLY, O_NONBLOCK );
   assert( sec2netFD >= 0 );
-  fprintf(stderr, "Got pipe to netProc\n");
+  fprintf(stderr, "SEC: Got pipe to netProc\n");
 
   int net2secFD = open( "/tmp/pipe-n2s" , O_RDONLY, O_NONBLOCK );
   assert( net2secFD >= 0 );
-  fprintf(stderr, "Got pipe from netProc\n");
+  fprintf(stderr, "SEC: Got pipe from netProc\n");
   
   int sec2uiFD = open( "/tmp/pipe-s2u" , O_WRONLY, O_NONBLOCK );
   assert( sec2uiFD >= 0 );
-  fprintf(stderr, "Got pipe from uiProc\n");
+  fprintf(stderr, "SEC: Got pipe from uiProc\n");
 
   int ui2secFD = open( "/tmp/pipe-u2s" , O_RDONLY, O_NONBLOCK );
   assert( ui2secFD >= 0 );
-  fprintf(stderr, "Got pipe to uiProc\n");
+  fprintf(stderr, "SEC: Got pipe to uiProc\n");
   
   const int bufSize=128;
   char netBuf[bufSize];
   char uiBuf[bufSize];
  
   while( true ) {
-    //fprintf(stderr, "Loop\n");
+    //fprintf(stderr, "SEC: Loop\n");
     
     //waitForInput
     struct timeval timeout;
@@ -47,14 +47,14 @@ int main( int argc, char* argv[]){
     FD_SET(ui2secFD, &fdSet); maxFD = (ui2secFD>maxFD) ? ui2secFD : maxFD;
     int numSelectFD = select( maxFD+1 , &fdSet , NULL, NULL, &timeout );
     assert( numSelectFD >= 0 );
-    //fprintf(stderr, "Running\n");
+    //fprintf(stderr, "SEC: Running\n");
     
     // processs uiProc
     if ( (numSelectFD > 0) && ( FD_ISSET(ui2secFD, &fdSet) ) ) {
-      //fprintf(stderr, "Reding Sec Proc\n");
+      //fprintf(stderr, "SEC: Reding Sec Proc\n");
       ssize_t num = read( ui2secFD, uiBuf, bufSize );
       if ( num > 0 ) {
-        fprintf( stderr, "Read %d bytes from UIProc: ", (int)num );
+        fprintf( stderr, "SEC: Read %d bytes from UIProc: ", (int)num );
         fwrite( uiBuf, 1 , num , stderr );
         fprintf( stderr, "\n");
         
@@ -67,10 +67,10 @@ int main( int argc, char* argv[]){
     
     // processs netProc
     if ( (numSelectFD > 0) && ( FD_ISSET(net2secFD, &fdSet) ) ) {
-      //fprintf(stderr, "Reding Sec Proc\n");
+      //fprintf(stderr, "SEC: Reding Sec Proc\n");
       ssize_t num = read( net2secFD, netBuf, bufSize );
       if ( num > 0 ) {
-        fprintf( stderr, "Read %d bytes from NetProc: ", (int)num );
+        fprintf( stderr, "SEC: Read %d bytes from NetProc: ", (int)num );
         fwrite( netBuf, 1 , num , stderr );
         fprintf( stderr, "\n");
         

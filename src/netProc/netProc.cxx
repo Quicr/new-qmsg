@@ -11,21 +11,21 @@
 
 int main( int argc, char* argv[]){
 
-  fprintf(stderr, "Starting netProc\n");
+  fprintf(stderr, "NET: Starting netProc\n");
      
   int sec2netFD = open( "/tmp/pipe-s2n", O_RDONLY, O_NONBLOCK );
   assert( sec2netFD >= 0 );
-  fprintf(stderr, "Got pipe from secProc\n");
+  fprintf(stderr, "NET: Got pipe from secProc\n");
 
   int net2secFD = open( "/tmp/pipe-n2s", O_WRONLY, O_NONBLOCK );
   assert( net2secFD >= 0 );
-  fprintf(stderr, "Got pipe to netProc\n");
+  fprintf(stderr, "NET: Got pipe to netProc\n");
   
   const int bufSize=128;
   char secBuf[bufSize];
  
   while( true ) {
-    //fprintf(stderr, "Loop\n");
+    //fprintf(stderr, "NET: Loop\n");
     
     //waitForInput
     struct timeval timeout;
@@ -37,14 +37,14 @@ int main( int argc, char* argv[]){
     FD_SET(sec2netFD, &fdSet); maxFD = (sec2netFD>maxFD) ? sec2netFD : maxFD;
     int numSelectFD = select( maxFD+1 , &fdSet , NULL, NULL, &timeout );
     assert( numSelectFD >= 0 );
-    //fprintf(stderr, "Running\n");
+    //fprintf(stderr, "NET: Running\n");
     
     // processs secProc
     if ( (sec2netFD > 0) && ( FD_ISSET(sec2netFD, &fdSet) ) ) {
-      //fprintf(stderr, "Reding Sec Proc\n");
+      //fprintf(stderr, "NET: Reding Sec Proc\n");
       ssize_t num = read( sec2netFD, secBuf, bufSize );
       if ( num > 0 ) {
-        fprintf( stderr, "Read %d bytes from SecProc: ", (int)num );
+        fprintf( stderr, "NET: Read %d bytes from SecProc: ", (int)num );
         fwrite( secBuf, 1 , num , stderr );
         fprintf( stderr, "\n");
         
