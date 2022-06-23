@@ -55,6 +55,7 @@ subscribing to a channelID.
 
 Each message has a:
 * expiry time 
+* short name
 * MLS encrypted payload 
 
 ## Payload
