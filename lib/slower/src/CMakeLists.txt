@@ -4,4 +4,3 @@ file(GLOB MEDIA_HEADER *.h)
 
 add_library( slower  ${MEDIA_SOURCES} ${MEDIA_HEADERS} )
 
-
