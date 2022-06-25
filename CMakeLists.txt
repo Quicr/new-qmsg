@@ -9,3 +9,4 @@ add_subdirectory( src/secProc )
 add_subdirectory( src/netProc ) 
 
 add_subdirectory( src/slowTest ) 
+add_subdirectory( src/slowRelay ) 
