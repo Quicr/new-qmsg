@@ -38,6 +38,9 @@ int main(int argc, char* argv[]) {
                 << " from " << inet_ntoa( remote.addr.sin_addr)
                 << ":" << remote.addr.sin_port
                 << std::endl;
+
+      err = slowerSend( slower, buf, bufLen, remote );
+      assert( err == 0 );
     }
   }
   

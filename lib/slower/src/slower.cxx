@@ -31,6 +31,9 @@ float slowerVersion() {
 }
 
 int slowerSetup( SlowerConnection& slower, uint16_t port) {
+  slower.fd=0;
+  bzero( &slower.relay, sizeof( slower.relay ) );
+  
   int err;
   
   slower.fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -178,3 +181,61 @@ int slowerRecv( SlowerConnection& slower, char buf[], int bufSize, int* bufLen, 
 }
 
 
+int slowerAddRelay( SlowerConnection& slower, SlowerRemote& remote ){
+  slower.relay = remote;
+  return 0;
+}
+
+  
+int slowerPub( SlowerConnection& slower, ShortName& name, char buf[], int bufLen ){
+  assert( bufLen < slowerMTU-20 ); 
+  assert( slower.fd > 0 );
+  assert( bufLen > 0 );
+  
+  char msg[slowerMTU];
+  int msgLen=0;
+
+  int8_t type = SlowerMsgPub;
+  memcpy( msg+msgLen, &type, sizeof(type) ) ; msgLen += sizeof(type);
+
+  memcpy( msg+msgLen, &name.part[0], sizeof(name.part[0]) ) ; msgLen += sizeof(name.part[0]);
+  memcpy( msg+msgLen, &name.part[1], sizeof(name.part[1]) ) ; msgLen += sizeof(name.part[1]);
+
+  int16_t dataLen =  bufLen;
+  memcpy( msg+msgLen, &dataLen, sizeof(dataLen) ) ; msgLen += sizeof(dataLen);
+
+  assert( msgLen + bufLen < sizeof(msg) );
+  memcpy( msg+msgLen, buf, bufLen ) ; msgLen += bufLen;
+  assert( msgLen < sizeof( msg ) );
+  
+  int err = slowerSend( slower, msg, msgLen, slower.relay );
+  
+  return err;
+}
+
+
+int slowerRecvMulti( SlowerConnection& slower, ShortName* name, SlowerMsgType type, int mask, char buf[], int bufSize, int* bufLen ){
+   return 0;
+}
+
+int slowerRecvPub( SlowerConnection& slower, ShortName* name, char buf[], int bufSize, int* bufLen ){
+  return 0;
+}
+
+
+int slowerSub( SlowerConnection& slower, ShortName& name, int mask ){
+  return 0;
+}
+
+
+
+int slowerUnSub( SlowerConnection& slower, ShortName& name, int mask ) {
+  return 0;
+}
+
+int slowerClose( SlowerConnection& slower ){
+  close( slower.fd ); slower.fd=0;
+  bzero( & slower.relay, sizeof( slower.relay ) );
+  
+  return 0;
+}
