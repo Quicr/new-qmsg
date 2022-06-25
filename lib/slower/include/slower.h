@@ -47,7 +47,7 @@ typedef enum {
   SlowerMsgUnSub=3
 } SlowerMsgType;
 
-int slowerRecvMulti( SlowerConnection& slower, ShortName* name, SlowerMsgType type, int mask, char buf[], int bufSize, int* bufLen );
+int slowerRecvMulti( SlowerConnection& slower, ShortName* name, SlowerMsgType* type,  SlowerRemote* remote, int* mask, char buf[], int bufSize, int* bufLen );
 
 
 #endif  // SLOWER_H

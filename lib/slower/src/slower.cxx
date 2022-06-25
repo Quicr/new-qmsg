@@ -209,16 +209,78 @@ int slowerPub( SlowerConnection& slower, ShortName& name, char buf[], int bufLen
   assert( msgLen < sizeof( msg ) );
   
   int err = slowerSend( slower, msg, msgLen, slower.relay );
-  
   return err;
 }
 
 
-int slowerRecvMulti( SlowerConnection& slower, ShortName* name, SlowerMsgType type, int mask, char buf[], int bufSize, int* bufLen ){
-   return 0;
+int slowerRecvMulti( SlowerConnection& slower, ShortName* name, SlowerMsgType* msgType,  SlowerRemote* remote, int* mask, char buf[], int bufSize, int* bufLen ){
+  assert( name );
+  assert( msgType );
+  assert( remote );
+  assert( mask );
+  assert( buf );
+  assert( bufLen );
+  assert( bufSize > 0 );
+
+  char msg[slowerMTU];
+  int msgLen=0; // total length of data received 
+  int msgLoc=0; // position of current decode of messages
+  
+  int err = slowerRecv( slower, msg, sizeof(msg), &msgLen, remote );
+  if ( err != 0 ) {
+    return err;
+  }
+  if ( msgLen == 0 ) {
+    bzero( name, sizeof( *name ) );
+    *bufLen = 0;
+    return 0;
+  }
+  
+  int8_t type;
+  assert( msgLen > msgLoc + sizeof( type ) ); memcpy( &type, msg+msgLoc, sizeof(type) ); msgLoc += sizeof(type);
+  *msgType = (SlowerMsgType)type;
+  assert( *msgType != SlowerMsgInvalid );
+
+  assert( msgLen > msgLoc + sizeof( name->part[0] ) ); memcpy( &(name->part[0]), msg+msgLoc, sizeof(name->part[0]) ); msgLoc += sizeof(name->part[0]);
+  assert( msgLen > msgLoc + sizeof( name->part[1] ) ); memcpy( &(name->part[1]), msg+msgLoc, sizeof(name->part[1]) ); msgLoc += sizeof(name->part[1]);
+
+  switch (*msgType) {
+  case SlowerMsgPub:
+    int16_t dataLen;
+    assert( msgLen > msgLoc + sizeof( dataLen ) ); memcpy( &dataLen, msg+msgLoc, sizeof(dataLen) ); msgLoc += sizeof(dataLen);
+
+    assert( dataLen < bufSize );
+    assert( msgLen >= msgLoc + dataLen ); memcpy( buf, msg+msgLoc, dataLen ); msgLoc += dataLen;
+    *bufLen = dataLen;
+
+    assert( msgLoc == msgLen );
+    break;
+  default:
+    return -1;
+  }
+
+  return 0;
 }
 
 int slowerRecvPub( SlowerConnection& slower, ShortName* name, char buf[], int bufSize, int* bufLen ){
+  assert( name );
+  assert( bufLen );
+  assert( bufSize > 0 );
+  
+  SlowerMsgType type;
+  SlowerRemote remote;
+  int mask;
+  
+  int err = slowerRecvMulti( slower,name, &type, &remote, &mask, buf, bufSize, bufLen );
+  if ( err != 0 ) {
+    return err;
+  }
+  if ( type != SlowerMsgPub ) {
+    bzero( name, sizeof( *name ) );
+    *bufLen = 0;
+    return 0;
+  }
+  
   return 0;
 }
 

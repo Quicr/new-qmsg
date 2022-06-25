@@ -41,7 +41,6 @@ int main(int argc, char* argv[]) {
   char msg[] = "Hello";
   ShortName name;
   name.part[0] = 1; name.part[1] = 2;
-  //err = slowerSend( slower, msg , strlen(msg) , relay );
   err = slowerPub( slower,  name,  msg , strlen(msg)  );
   assert( err == 0 );
 
@@ -51,18 +50,14 @@ int main(int argc, char* argv[]) {
     assert( err == 0 );
     //std::cerr << "done" << std::endl;
   
-    char buf[1200];
+    char buf[slowerMTU];
     int bufLen=0;
-    SlowerRemote remote;
+    ShortName name;
     
-    err=slowerRecv( slower, buf, sizeof(buf), &bufLen, &remote );
+    err = slowerRecvPub( slower, &name, buf, sizeof(buf), &bufLen );
     assert( err == 0 );
-    
     if ( bufLen > 0 ) {
-      std::clog << "Got packet of len " << bufLen
-                << " from " << inet_ntoa( remote.addr.sin_addr)
-                << ":" << remote.addr.sin_port
-                << std::endl;
+      std::clog << "Got packet of len " << bufLen << std::endl;
     }
   }
 
