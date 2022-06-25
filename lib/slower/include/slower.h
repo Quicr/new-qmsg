@@ -27,26 +27,27 @@ typedef struct {
 } SlowerConnection;
 
 
+typedef enum {
+  SlowerMsgInvalid =0,
+  SlowerMsgPub=1,
+  SlowerMsgSub=2,
+  SlowerMsgUnSub=3,
+  SlowerMsgAck=4
+} SlowerMsgType;
+
+
 int slowerSetup( SlowerConnection& slower, uint16_t port=0);
 int slowerRemote( SlowerRemote& remote, char server[], uint16_t port=slowerDefaultPort );
 int slowerAddRelay( SlowerConnection& slower, SlowerRemote& remote );
 int slowerClose( SlowerConnection& slower );
 
-int slowerSend( SlowerConnection& slower, char buf[], int bufLen, SlowerRemote& remote );
 int slowerWait( SlowerConnection& slower );
-int slowerRecv( SlowerConnection& slower, char buf[], int bufSize, int* bufLen, SlowerRemote* remote );
 
-int slowerPub( SlowerConnection& slower, ShortName& name, char buf[], int bufLen );
+int slowerPub( SlowerConnection& slower, ShortName& name, char buf[], int bufLen, SlowerRemote* remote=NULL );
+int slowerSub( SlowerConnection& slower, ShortName& name, int mask, SlowerRemote* remote=NULL );
+int slowerUnSub( SlowerConnection& slower, ShortName& name, int mask, SlowerRemote* remote=NULL );
+
 int slowerRecvPub( SlowerConnection& slower, ShortName* name, char buf[], int bufSize, int* bufLen );
-int slowerSub( SlowerConnection& slower, ShortName& name, int mask );
-int slowerUnSub( SlowerConnection& slower, ShortName& name, int mask );
-typedef enum {
-  SlowerMsgInvalid =0,
-  SlowerMsgPub=1,
-  SlowerMsgSub=2,
-  SlowerMsgUnSub=3
-} SlowerMsgType;
-
 int slowerRecvMulti( SlowerConnection& slower, ShortName* name, SlowerMsgType* type,  SlowerRemote* remote, int* mask, char buf[], int bufSize, int* bufLen );
 
 

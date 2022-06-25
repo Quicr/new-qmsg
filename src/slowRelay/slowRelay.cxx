@@ -26,23 +26,41 @@ int main(int argc, char* argv[]) {
     assert( err == 0 );
     //std::cerr << "done" << std::endl;
   
-    char buf[1200];
+    char buf[slowerMTU];
     int bufLen=0;
     SlowerRemote remote;
+    ShortName name;
+    SlowerMsgType type;
+    int mask;
     
-    err=slowerRecv( slower, buf, sizeof(buf), &bufLen, &remote );
+    err=slowerRecvMulti(  slower, &name, &type, &remote, &mask,  buf, sizeof(buf), &bufLen );
     assert( err == 0 );
     
-    if ( bufLen > 0 ) {
-      std::clog << "Got packet of len " << bufLen
+    if ( ( type == SlowerMsgPub ) && ( bufLen > 0 ) ) {
+      std::clog << "Got PUB of len " << bufLen
                 << " from " << inet_ntoa( remote.addr.sin_addr)
                 << ":" << remote.addr.sin_port
                 << std::endl;
 
-      err = slowerSend( slower, buf, bufLen, remote );
+      err = slowerPub( slower, name, buf, bufLen, &remote );
       assert( err == 0 );
     }
+
+    if ( type == SlowerMsgSub  ) {
+      std::clog << "Got SUB from " << inet_ntoa( remote.addr.sin_addr)
+                << ":" << remote.addr.sin_port
+                << std::endl;
+    }
+       
+    if ( type == SlowerMsgUnSub  ) {
+      std::clog << "Got UnSUB from " << inet_ntoa( remote.addr.sin_addr)
+                << ":" << remote.addr.sin_port
+                << std::endl;
+    }
+    
+     
   }
-  
+
+  slowerClose( slower );
   return 0;
 }

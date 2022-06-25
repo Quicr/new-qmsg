@@ -38,9 +38,13 @@ int main(int argc, char* argv[]) {
   err = slowerAddRelay( slower, relay );
   assert( err == 0 );
   
-  char msg[] = "Hello";
   ShortName name;
   name.part[0] = 1; name.part[1] = 2;
+
+  err = slowerSub( slower,  name, 16 /*mask*/  );
+  assert( err == 0 );
+
+  char msg[] = "Hello Fluffy";
   err = slowerPub( slower,  name,  msg , strlen(msg)  );
   assert( err == 0 );
 
@@ -57,10 +61,21 @@ int main(int argc, char* argv[]) {
     err = slowerRecvPub( slower, &name, buf, sizeof(buf), &bufLen );
     assert( err == 0 );
     if ( bufLen > 0 ) {
-      std::clog << "Got packet of len " << bufLen << std::endl;
+      std::clog << "Got packet of len " << bufLen << " : " ;
+      for ( int i=0; i< bufLen; i++ ) {
+        char c = buf[i];
+        if (( c >= 32 ) && ( c <= 0x7e ) ) {
+          std::clog << c;
+        }
+      }
+      std::clog << std::endl;
+      break;
     }
   }
 
+  err = slowerSub( slower,  name, 16 /*mask*/  );
+  assert( err == 0 );
+  
   slowerClose( slower );
                        
   return 0;
