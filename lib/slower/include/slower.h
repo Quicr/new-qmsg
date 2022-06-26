@@ -27,6 +27,10 @@ typedef struct {
 } SlowerConnection;
 
 
+bool operator==( const ShortName& a, const ShortName& b );
+bool operator!=( const ShortName& a, const ShortName& b );
+bool operator!=( const SlowerRemote& a, const SlowerRemote& b );
+
 typedef enum {
   SlowerMsgInvalid =0,
   SlowerMsgPub=1,
@@ -44,10 +48,12 @@ int slowerClose( SlowerConnection& slower );
 int slowerWait( SlowerConnection& slower );
 
 int slowerPub( SlowerConnection& slower, ShortName& name, char buf[], int bufLen, SlowerRemote* remote=NULL );
+int slowerAck( SlowerConnection& slower, ShortName& name, SlowerRemote* remote=NULL );
 int slowerSub( SlowerConnection& slower, ShortName& name, int mask, SlowerRemote* remote=NULL );
 int slowerUnSub( SlowerConnection& slower, ShortName& name, int mask, SlowerRemote* remote=NULL );
 
 int slowerRecvPub( SlowerConnection& slower, ShortName* name, char buf[], int bufSize, int* bufLen );
+int slowerRecvAck( SlowerConnection& slower, ShortName* name  );
 int slowerRecvMulti( SlowerConnection& slower, ShortName* name, SlowerMsgType* type,  SlowerRemote* remote, int* mask, char buf[], int bufSize, int* bufLen );
 
 

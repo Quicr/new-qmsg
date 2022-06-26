@@ -29,9 +29,25 @@
 static int slowerRecv( SlowerConnection& slower, char buf[], int bufSize, int* bufLen, SlowerRemote* remote );
 static int slowerSend( SlowerConnection& slower, char buf[], int bufLen, SlowerRemote& remote );
 
+bool operator!=( const SlowerRemote& a, const SlowerRemote& b ){
+  if ( a.addr.sin_port != b.addr.sin_port ) return true;
+  if ( a.addrLen != b.addrLen ) return true;
+  if ( memcmp( &(a.addr.sin_addr), &(b.addr.sin_addr),4 ) != 0)  return true; // TODO broken for v6
+  return false;
+}
+
+
 
 float slowerVersion() {
   return 0.1;
+}
+
+bool operator==( const ShortName& a, const ShortName& b ){
+  return ( (a.part[0] == b.part[0]) && (a.part[1] == b.part[1] ) );
+}
+
+bool operator!=( const ShortName& a, const ShortName& b ){
+  return ( (a.part[0] != b.part[0]) || (a.part[1] != b.part[1] ) );
 }
 
 int slowerSetup( SlowerConnection& slower, uint16_t port) {
@@ -104,8 +120,9 @@ int slowerRemote(  SlowerRemote& remote, char* server, uint16_t port ){
 
     remote.addrLen = results->ai_addrlen;
     memcpy(&remote.addr, results->ai_addr, result->ai_addrlen);
-
+#if 0
     std::clog << "Got remote IP of " << inet_ntoa( remote.addr.sin_addr) << std::endl;
+#endif
     break; // found a good result 
   }
   if ( result == NULL ) {
@@ -118,7 +135,7 @@ int slowerRemote(  SlowerRemote& remote, char* server, uint16_t port ){
   return 0;
 }
 
-int slowerSend( SlowerConnection& slower, char buf[], int bufLen, SlowerRemote* remote ) {
+static int slowerSend( SlowerConnection& slower, char buf[], int bufLen, SlowerRemote* remote ) {
   assert( bufLen <= 1200 );
   assert( slower.fd > 0 );
 
@@ -128,6 +145,15 @@ int slowerSend( SlowerConnection& slower, char buf[], int bufLen, SlowerRemote* 
   } else {
     dest = *remote;
   }
+
+#if 0
+  std::clog << "in slowerSend with"
+            << " bufLen=" << bufLen
+            << " IP=" << inet_ntoa( dest.addr.sin_addr)
+            << " port=" << ntohs( dest.addr.sin_port )
+            << " remote=" << ( (remote)?1:0 ) 
+            << std::endl;
+#endif
     
   int n = sendto( slower.fd, buf, bufLen, 0 /*flags*/,
                   (struct sockaddr*)&dest.addr, dest.addrLen);
@@ -163,7 +189,7 @@ int slowerWait( SlowerConnection& slower ){
   return 0;
 }
 
-int slowerRecv( SlowerConnection& slower, char buf[], int bufSize, int* bufLen, SlowerRemote* remote ) {
+static int slowerRecv( SlowerConnection& slower, char buf[], int bufSize, int* bufLen, SlowerRemote* remote ) {
   assert( slower.fd > 0 );
 
   bzero( buf, bufSize );
@@ -188,6 +214,10 @@ int slowerRecv( SlowerConnection& slower, char buf[], int bufSize, int* bufLen, 
    }
    *bufLen = r ;
 
+#if 0
+   std::clog << "in slowerRecv with bufLen=" << *bufLen << std::endl;
+#endif
+   
    return 0;
 }
 
@@ -251,12 +281,12 @@ int slowerRecvMulti( SlowerConnection& slower, ShortName* name, SlowerMsgType* m
   }
   
   int8_t type;
-  assert( msgLen > msgLoc + sizeof( type ) ); memcpy( &type, msg+msgLoc, sizeof(type) ); msgLoc += sizeof(type);
+  assert( msgLen >= msgLoc + sizeof( type ) ); memcpy( &type, msg+msgLoc, sizeof(type) ); msgLoc += sizeof(type);
   *msgType = (SlowerMsgType)type;
   assert( *msgType != SlowerMsgInvalid );
 
-  assert( msgLen > msgLoc + sizeof( name->part[0] ) ); memcpy( &(name->part[0]), msg+msgLoc, sizeof(name->part[0]) ); msgLoc += sizeof(name->part[0]);
-  assert( msgLen > msgLoc + sizeof( name->part[1] ) ); memcpy( &(name->part[1]), msg+msgLoc, sizeof(name->part[1]) ); msgLoc += sizeof(name->part[1]);
+  assert( msgLen >= msgLoc + sizeof( name->part[0] ) ); memcpy( &(name->part[0]), msg+msgLoc, sizeof(name->part[0]) ); msgLoc += sizeof(name->part[0]);
+  assert( msgLen >= msgLoc + sizeof( name->part[1] ) ); memcpy( &(name->part[1]), msg+msgLoc, sizeof(name->part[1]) ); msgLoc += sizeof(name->part[1]);
 
   switch (*msgType) {
   case SlowerMsgPub:
@@ -288,6 +318,30 @@ int slowerRecvMulti( SlowerConnection& slower, ShortName* name, SlowerMsgType* m
   return 0;
 }
 
+int slowerRecvAck( SlowerConnection& slower, ShortName* name ){
+  assert( name );
+  
+  SlowerMsgType type;
+  SlowerRemote remote;
+  int mask;
+
+  char buf[slowerMTU];
+  int bufSize=sizeof(buf);
+  int bufLen=0;
+    
+  int err = slowerRecvMulti( slower,name, &type, &remote, &mask, buf, bufSize, &bufLen );
+  if ( err != 0 ) {
+    return err;
+  }
+  if ( type != SlowerMsgAck ) {
+    bzero( name, sizeof( *name ) );
+    return 0;
+  }
+  
+  return 0;
+}
+
+
 int slowerRecvPub( SlowerConnection& slower, ShortName* name, char buf[], int bufSize, int* bufLen ){
   assert( name );
   assert( bufLen );
@@ -309,6 +363,26 @@ int slowerRecvPub( SlowerConnection& slower, ShortName* name, char buf[], int bu
   
   return 0;
 }
+
+
+int slowerAck( SlowerConnection& slower, ShortName& name,  SlowerRemote* remote ){
+  assert( slower.fd > 0 );
+  
+  char msg[slowerMTU];
+  int msgLen=0;
+
+  int8_t type = SlowerMsgAck;
+  memcpy( msg+msgLen, &type, sizeof(type) ) ; msgLen += sizeof(type);
+
+  memcpy( msg+msgLen, &name.part[0], sizeof(name.part[0]) ) ; msgLen += sizeof(name.part[0]);
+  memcpy( msg+msgLen, &name.part[1], sizeof(name.part[1]) ) ; msgLen += sizeof(name.part[1]);
+
+  assert( msgLen < sizeof( msg ) );
+          
+  int err = slowerSend( slower, msg, msgLen, remote );
+  return err;
+}
+
 
 
 int slowerSub( SlowerConnection& slower, ShortName& name, int mask , SlowerRemote* remote ){
@@ -359,22 +433,6 @@ int slowerUnSub( SlowerConnection& slower, ShortName& name, int mask , SlowerRem
 }
 
 
-int slowerAck( SlowerConnection& slower, ShortName& name  , SlowerRemote* remote  ) {
-  assert( slower.fd > 0 );
-  char msg[slowerMTU];
-  int msgLen=0;
-
-  int8_t type = SlowerMsgAck;
-  memcpy( msg+msgLen, &type, sizeof(type) ) ; msgLen += sizeof(type);
-
-  memcpy( msg+msgLen, &name.part[0], sizeof(name.part[0]) ) ; msgLen += sizeof(name.part[0]);
-  memcpy( msg+msgLen, &name.part[1], sizeof(name.part[1]) ) ; msgLen += sizeof(name.part[1]);
-
-  assert( msgLen < sizeof( msg ) );
-          
-  int err = slowerSend( slower, msg, msgLen, remote );
-  return err;
-}
 
 int slowerClose( SlowerConnection& slower ){
   close( slower.fd ); slower.fd=0;
