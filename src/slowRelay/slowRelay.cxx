@@ -20,8 +20,7 @@
   
 
 int main(int argc, char* argv[]) {
-  float slowVer = slowerVersion();
-
+  std::clog << "Starting slowerReal (slower version" << slowerVersion() << ")" << std::endl;
   SlowerConnection slower;
   int err = slowerSetup( slower, slowerDefaultPort  );
   assert( err == 0 );
