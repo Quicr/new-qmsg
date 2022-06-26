@@ -5,7 +5,7 @@
 
 #include <slower.h>
 
-#include "Subscriptions.h"
+#include "subscription.h"
 
 
 
@@ -18,7 +18,7 @@ void Subscriptions::add(  const ShortName& name, const int mask, const SlowerRem
   ShortName group = name;
   group.part[0] &= 0xFFFFffffFFFF0000l;
 
-  std::cerr << std::hex << group.part[1] << "-" <<  group.part[0] << std::dec << std::endl;
+  //std::cerr << std::hex << group.part[1] << "-" <<  group.part[0] << std::dec << std::endl;
   
   auto mapPtr =  subscriptions[mask].find( group );
   if ( mapPtr == subscriptions[mask].end() ) {

@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
   SlowerRemote relay;
   err = slowerRemote( relay , relayName );
   if ( err ) {
-    std::cerr << "Could not lookup relay IP addres of: " << relayName << std::endl;
+    std::cerr << "Could not lookup IP address for relay: " << relayName << std::endl;
   }
   assert( err == 0 );
   std::clog << "Using relay at " << inet_ntoa( relay.addr.sin_addr)  << ":" <<  ntohs(relay.addr.sin_port) << std::endl;
@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
   }
   //std::cerr << "low=" << low <<  std::endl;
   //std::cerr << "high=" << high <<  std::endl;
-  std::cerr << "Name=" << std::hex << shortName.part[1] << "-" <<  shortName.part[0] << std::dec << std::endl;
+  //std::cerr << "Name=" << std::hex << shortName.part[1] << "-" <<  shortName.part[0] << std::dec << std::endl;
 
   
   if ( data ) {
@@ -103,7 +103,9 @@ int main(int argc, char* argv[]) {
       err = slowerRecvPub( slower, &recvName, buf, sizeof(buf), &bufLen );
       assert( err == 0 );
       if ( bufLen > 0 ) {
-        std::clog << "Got packet of len " << bufLen << " : " ;
+        std::clog << "Got data for name="
+                  << std::hex << recvName.part[1] << "-" <<  recvName.part[0] << std::dec 
+                  << " data=" ;
         for ( int i=0; i< bufLen; i++ ) {
           char c = buf[i];
           if (( c >= 32 ) && ( c <= 0x7e ) ) {
