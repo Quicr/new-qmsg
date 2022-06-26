@@ -37,8 +37,17 @@ On Mac M1:
 docker run --rm -it qmsg-arm64:latest /bin/bash 
 ```
 
-Then in the shell run:
+Then to play with messaging app, in the shell run:
 ```
 ( netProc & ) ; ( secProc & ) ; uiProc 
+```
+
+## Run relay with Docker
+
+Build docker images then (replace amd with arm for M1)
+
+```
+docker run --rm -p '2022:2022/udp` -it qmsg-amd64:latest
+
 ```
 
