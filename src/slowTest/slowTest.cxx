@@ -10,7 +10,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-
+#include<algorithm>
 
 #include <slower.h>
 
@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
   }
   
   char* relayName =  argv[1];
-  char* name =  argv[2];
+  std::string name( argv[2] );
   int mask=16;
   char* data = NULL;
   if ( argc == 4 ) {
@@ -36,6 +36,7 @@ int main(int argc, char* argv[]) {
   int err = slowerSetup( slower  );
   assert( err == 0 );
 
+  
   SlowerRemote relay;
   err = slowerRemote( relay , relayName );
   if ( err ) {
@@ -43,13 +44,30 @@ int main(int argc, char* argv[]) {
   }
   assert( err == 0 );
   std::clog << "Using relay at " << inet_ntoa( relay.addr.sin_addr)  << ":" <<  ntohs(relay.addr.sin_port) << std::endl;
-   
+
+  
   err = slowerAddRelay( slower, relay );
   assert( err == 0 );
-  
-  ShortName shortName;
-  shortName.part[0] = 1; shortName.part[1] = 2;
 
+  
+  std::string low;
+  std::string high;
+  ShortName shortName;  
+  if ( name.length() <= 16 ) {
+    low = name;
+    shortName.part[0] = std::stoul(low,nullptr,16);
+    shortName.part[1] = 0;
+  } else {
+    low =  name.substr( name.length()-16 , std::string::npos );
+    high =  name.substr( 0 , name.length()-16 );
+    shortName.part[0] = std::stoul(low,nullptr,16);
+    shortName.part[1] = std::stoul(high,nullptr,16);
+  }
+  //std::cerr << "low=" << low <<  std::endl;
+  //std::cerr << "high=" << high <<  std::endl;
+  std::cerr << "Name=" << std::hex << shortName.part[1] << "-" <<  shortName.part[0] << std::dec << std::endl;
+
+  
   if ( data ) {
     // do publish 
     err = slowerPub( slower,  shortName,  data , strlen(data)  );

@@ -29,7 +29,13 @@ typedef struct {
 
 bool operator==( const ShortName& a, const ShortName& b );
 bool operator!=( const ShortName& a, const ShortName& b );
+bool operator<( const ShortName& a, const ShortName& b );
+
 bool operator!=( const SlowerRemote& a, const SlowerRemote& b );
+bool operator<( const SlowerRemote& a, const SlowerRemote& b );
+
+
+
 
 typedef enum {
   SlowerMsgInvalid =0,

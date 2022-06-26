@@ -29,6 +29,13 @@
 static int slowerRecv( SlowerConnection& slower, char buf[], int bufSize, int* bufLen, SlowerRemote* remote );
 static int slowerSend( SlowerConnection& slower, char buf[], int bufLen, SlowerRemote& remote );
 
+bool operator<( const ShortName& a, const ShortName& b )
+{
+  if (a.part[1] > b.part[1] ) return false;
+  return (a.part[0] < b.part[0] );
+}
+
+
 bool operator!=( const SlowerRemote& a, const SlowerRemote& b ){
   if ( a.addr.sin_port != b.addr.sin_port ) return true;
   if ( a.addrLen != b.addrLen ) return true;
@@ -36,6 +43,13 @@ bool operator!=( const SlowerRemote& a, const SlowerRemote& b ){
   return false;
 }
 
+
+bool operator<( const SlowerRemote& a, const SlowerRemote& b ){
+  if ( a.addr.sin_port > b.addr.sin_port ) return true;
+  if ( a.addrLen > b.addrLen ) return true;
+  if ( memcmp( &(a.addr.sin_addr), &(b.addr.sin_addr),4 ) > 0)  return true; // TODO broken for v6
+  return false;
+}
 
 
 float slowerVersion() {

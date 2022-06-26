@@ -11,9 +11,21 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <list>
-
 #include <slower.h>
+
+#include "Subscriptions.h"
+
+
+class Cache {
+public:
+  void put( const ShortName& name,  std::vector<uint8_t>& data );
+  std::vector<uint8_t> get( const ShortName& name );
+  bool exists(  const ShortName& name );
+  std::list<ShortName> find(  const ShortName& name, const int mask );
+private:
+  std::map< ShortName, std::vector<uint8_t> > dataCache;
+};
+  
 
 int main(int argc, char* argv[]) {
   float slowVer = slowerVersion();
@@ -22,7 +34,7 @@ int main(int argc, char* argv[]) {
   int err = slowerSetup( slower, slowerDefaultPort  );
   assert( err == 0 );
 
-  std::list<SlowerRemote> subscribeList;
+  Subscriptions subscribeList;
 
   while (true ) {
     //std::cerr << "Waiting ... ";
@@ -49,9 +61,11 @@ int main(int argc, char* argv[]) {
       err = slowerAck( slower, name, &remote );
       assert( err == 0 );
 
-      for ( SlowerRemote dest:subscribeList ) {
+ 
+      std::list<SlowerRemote> list =  subscribeList.find( name );
+      for ( SlowerRemote dest: list ) {
         if ( dest != remote ) {
-           std::clog << "  Sent to " << inet_ntoa( dest.addr.sin_addr) << ":" << ntohs( dest.addr.sin_port ) << std::endl;
+           std::clog << "  Sent to sub " << inet_ntoa( dest.addr.sin_addr) << ":" << ntohs( dest.addr.sin_port ) << std::endl;
            err = slowerPub( slower, name, buf, bufLen, &dest );
         }
       }
@@ -62,13 +76,14 @@ int main(int argc, char* argv[]) {
                 << ":" <<  ntohs( remote.addr.sin_port )
                 << " mask=" << mask 
                 << std::endl;
-      subscribeList.push_back( remote );
+      subscribeList.add( name, mask, remote );
     }
        
     if ( type == SlowerMsgUnSub  ) {
       std::clog << "Got UnSUB from " << inet_ntoa( remote.addr.sin_addr)
                 << ":" <<  ntohs( remote.addr.sin_port )
                 << std::endl;
+       subscribeList.remove( name, mask, remote );
     }
     
      
