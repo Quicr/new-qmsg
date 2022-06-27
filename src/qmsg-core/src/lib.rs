@@ -115,8 +115,16 @@ where
 }
 
 impl<'a> MessageReader<'a, File> {
-    pub fn ready(&mut self, wait: Duration) -> bool {
-        nonblocking::ready(self.reader, wait)
+    pub fn ready<'b>(&'b mut self, wait: Duration) -> Option<Message<'b>> {
+        if nonblocking::ready(self.reader, wait) {
+            return None;
+        }
+
+        if self.advance().is_err() {
+            return None;
+        }
+
+        self.next()
     }
 }
 
