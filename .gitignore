@@ -33,3 +33,7 @@
 
 # Build stuff
 build
+
+# Rust build artifacts
+**/Cargo.lock
+**/target
