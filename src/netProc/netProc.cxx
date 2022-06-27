@@ -48,6 +48,7 @@ int main( int argc, char* argv[])
     PubSubApp delegate;
     QuicRClient qr {delegate, "127.0.0.1", 7777};
     qr.register_names(std::vector<std::string>{message_channel}, true);
+    // this loops back messages too
     qr.subscribe(std::vector<std::string>{message_channel}, true, true);
     fprintf(stderr, "NET: Publishing on the name: %s", message_channel.data());
     while (!qr.is_transport_ready()) {
@@ -87,9 +88,10 @@ int main( int argc, char* argv[])
           //fprintf(stderr, "NET: Reding Sec Proc\n");
           ssize_t num = read( sec2netFD, secBuf, bufSize );
           if ( num > 0 ) {
-            fprintf( stderr, "NET: Read %d bytes from SecProc: ", (int)num );
-            fprintf( stderr, "NET: Publishing on %s: ", message_channel.data());
-            qr.publish_named_data(message_channel, bytes(secBuf, secBuf+bufSize), 0, 0);
+            fprintf( stderr, "NET: Read %d bytes from SecProc\n", (int)num );
+            auto payload = std::string{secBuf, secBuf + num};
+            fprintf( stderr, "NET: Publishing %s on %s\n", payload.c_str(), message_channel.data());
+            qr.publish_named_data(message_channel, bytes(payload.begin(), payload.end()), 0, 0);
           }
         }
       }
