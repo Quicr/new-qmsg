@@ -2,9 +2,6 @@ use qmsg_core::*;
 use std::fs::File;
 use std::time::Duration;
 
-pub const PING: MessageType = 1;
-pub const PONG: MessageType = 2;
-
 struct SecurityProcessor<'a> {
     to_network: MessageWriter<'a, File>,
     from_network: MessageReader<'a, File>,
