@@ -1,4 +1,8 @@
+use std::fs::File;
 use std::io::{Read, Result, Write};
+use std::time::Duration;
+
+pub mod nonblocking;
 
 pub trait FromBeSlice {
     fn from_be_slice(buf: &[u8]) -> Self;
@@ -107,6 +111,12 @@ where
         self.buf_len += n;
 
         Ok(())
+    }
+}
+
+impl<'a> MessageReader<'a, File> {
+    pub fn ready(&mut self, wait: Duration) -> bool {
+        nonblocking::ready(self.reader, wait)
     }
 }
 
