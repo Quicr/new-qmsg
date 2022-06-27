@@ -1,6 +1,9 @@
-use proc_shell::*;
+use qmsg_core::*;
 use std::fs::OpenOptions;
 use std::io::{Read, Result, Write};
+
+const PING: MessageType = 1;
+const PONG: MessageType = 2;
 
 struct Pong<'a, T, U>
 where

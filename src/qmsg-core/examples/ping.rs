@@ -1,4 +1,4 @@
-use proc_shell::*;
+use qmsg_core::*;
 use std::fs::OpenOptions;
 use std::io::{Read, Result, Write};
 
