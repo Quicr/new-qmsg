@@ -66,7 +66,7 @@ class DataBuffer
         virtual ~DataBuffer();
 
         // Functions to assign and compare DataBuffer objects
-        DataBuffer& operator=(const DataBuffer &other);
+        DataBuffer &operator=(const DataBuffer &other);
         bool operator==(const DataBuffer &other) const;
         bool operator!=(const DataBuffer &other) const;
 

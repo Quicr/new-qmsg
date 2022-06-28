@@ -29,7 +29,7 @@
 #else
 #include <arpa/inet.h>
 #endif
-#include "qmsg/data_buffer.h"
+#include "data_buffer.h"
 
 namespace qmsg
 {

@@ -1,6 +1,7 @@
 add_library(qmsgEncoder
             data_buffer.cpp
             encoder.cpp
+            serializer.cpp
             octet_string.cpp)
 
 target_compile_options(qmsgEncoder PRIVATE

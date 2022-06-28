@@ -12,8 +12,8 @@
  *      None.
  */
 
-#include "qmsg/octet_string.h"
-#include "qmsg/data_buffer.h"
+#include "octet_string.h"
+#include "data_buffer.h"
 
 /*
  *  operator<< for OctetString

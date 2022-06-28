@@ -24,10 +24,10 @@ namespace qmsg
 // OctetString to store a vector of octets
 typedef std::vector<std::uint8_t> OctetString;
 
-} // namespace qmsg
-
 // Produce a hex dump for OctetStrings using DataBuffer for assistance
 std::ostream &operator<<(std::ostream &o,
-                         const qmsg::OctetString &octet_string);
+                         const OctetString &octet_string);
+
+} // namespamce qmsg
 
 #endif // OCTET_STRING_H
