@@ -136,7 +136,7 @@ void CALL QMsgEncoderDeinit(QMsgEncoderContext *context)
  *      None.
  */
 QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
-                                           QMsgUIMessage *message,
+                                           const QMsgUIMessage *message,
                                            char *buffer,
                                            size_t buffer_length,
                                            size_t *encoded_length)
@@ -174,47 +174,61 @@ QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
                 break;
 
             case QMsgUIIsLocked:
-                return QMsgEncoderInvalidMessage;
+                *encoded_length = serializer.Serialize(data_buffer,
+                                                       message->u.is_locked);
                 break;
 
             case QMsgUIDeviceInfo:
-                return QMsgEncoderInvalidMessage;
+                *encoded_length = serializer.Serialize(data_buffer,
+                                                       message->u.device_info);
                 break;
 
             case QMsgUIGetTeams:
-                return QMsgEncoderInvalidMessage;
+                *encoded_length = serializer.Serialize(data_buffer,
+                                                       message->u.get_teams);
                 break;
 
             case QMsgUITeamInfo:
-                return QMsgEncoderInvalidMessage;
+                *encoded_length = serializer.Serialize(data_buffer,
+                                                       message->u.teams_info);
                 break;
 
             case QMsgUIGetChannels:
-                return QMsgEncoderInvalidMessage;
+                *encoded_length = serializer.Serialize(data_buffer,
+                                                       message->u.get_channels);
                 break;
 
             case QMsgUIChannelInfo:
-                return QMsgEncoderInvalidMessage;
+                *encoded_length = serializer.Serialize(data_buffer,
+                                                       message->u.channel_info);
                 break;
 
             case QMsgUISendASCIIMsg:
-                return QMsgEncoderInvalidMessage;
+                *encoded_length = serializer.Serialize(
+                    data_buffer,
+                    message->u.send_ascii_message);
                 break;
 
             case QMsgUIReceiveASCIIMessage:
-                return QMsgEncoderInvalidMessage;
+                *encoded_length = serializer.Serialize(
+                    data_buffer,
+                    message->u.receive_ascii_message);
                 break;
 
             case QMsgUIWatch:
-                return QMsgEncoderInvalidMessage;
+                *encoded_length = serializer.Serialize(data_buffer,
+                                                       message->u.watch);
                 break;
 
             case QMsgUIUnwatch:
-                return QMsgEncoderInvalidMessage;
+                *encoded_length = serializer.Serialize(data_buffer,
+                                                       message->u.unwatch);
                 break;
 
             case QMsgUIRequestMessages:
-                return QMsgEncoderInvalidMessage;
+                *encoded_length = serializer.Serialize(
+                    data_buffer,
+                    message->u.request_messages);
                 break;
 
             default:

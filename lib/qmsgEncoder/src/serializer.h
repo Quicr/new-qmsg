@@ -55,7 +55,7 @@ class QMsgSerializer
         std::size_t Serialize(DataBuffer &data_buffer, std::uint16_t value);
         std::size_t Serialize(DataBuffer &data_buffer, std::uint32_t value);
         std::size_t Serialize(DataBuffer &data_buffer, std::uint64_t value);
-        std::size_t Serialize(DataBuffer &data_buffer, char *value);
+        std::size_t Serialize(DataBuffer &data_buffer, const char *value);
 
         DataBuffer null_buffer;
 };

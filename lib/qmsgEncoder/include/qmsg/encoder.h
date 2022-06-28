@@ -70,7 +70,7 @@ EXPORT QMsgUIMessageType CALL QMsgUIGetMessageType(const char buffer[],
                                                    size_t buffer_length);
 
 EXPORT QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
-                                                  QMsgUIMessage *message,
+                                                  const QMsgUIMessage *message,
                                                   char *buffer,
                                                   size_t buffer_length,
                                                   size_t *encoded_length);

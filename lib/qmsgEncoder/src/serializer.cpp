@@ -13,6 +13,7 @@
  *      None.
  */
 
+#include <iostream>
 #include <string.h>
 #include "serializer.h"
 
@@ -642,7 +643,8 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
  *      If there is an error writing into the data buffer, the DataBuffer
  *      object will throw an exception.
  */
-std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer, char *value)
+std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
+                                      const char *value)
 {
     std::size_t length = strlen(value) + 1;
 
