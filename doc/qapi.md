@@ -16,6 +16,7 @@ multiple messages.
 
 ### UI -> Sec
 EventType: Ascii_Message
+
 Data:
 * uint32:  team
 * uint32:  channel
@@ -27,6 +28,7 @@ Data:
 
 ### Sec->UI
 EventType: Ascii_Message
+
 Data:
 * uint32: team
 * uint32: channel
@@ -41,12 +43,14 @@ These messages are used to listen to and stop listening for messages from a give
 
 ### UI -> Sec
 EventType: Watch_Channel
+
 Data:
 * uint32: team
 * uint32: channel
 
 ### Sec -> Net
 EventType: Watch_Devices
+
 Data:
 * uint32: team
 * uint32: channel
@@ -58,12 +62,14 @@ Cancels any watches for a given channel
 
 ### UnWatch (UI -> Sec)
 EventType: Unwatch_Channel
+
 Data:
 * int32: team
 * int32: channel
 
 ## UnWatch (Sec->Net)
 EventType: Unwatch_Devices
+
 Data:
 * int32: team
 * int32: channel
@@ -79,6 +85,7 @@ This event reports a Keypackage for the user/device to the network process on bo
 in order to be transmitted to the MLS leader for joining the group
 
 EventType: Keypackage
+
 Data:
 * uint32: team
 * opaque vector<0..2^32-1>: key-package bytes
@@ -88,6 +95,7 @@ This event indicates to the MLS leader that a user/device wants to
 join the MLS group for a given team and has corresponding KeyPackage
 
 EventType: Keypackage
+
 Data:
 * uint32: team
 * opaque vector<0..2^32-1>: key-package bytes
@@ -99,6 +107,7 @@ MLS group by the leader for a given team. MLS Welcome
 message is deilvered to the user attempting to join.
 
 EventType: MLSWelcome
+
 Data:
 * uint32: team
 * opaque vector<0..2^32-1>: mls-welcome bytes
@@ -109,6 +118,7 @@ by the leader for a given team. MLS Commit
 messages are deilvered to the group
 
 EventType: MLSCommit
+
 Data:
 * uint32: team
 * opaque vector<0..2^32-1>: mls-commit bytes
