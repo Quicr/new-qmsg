@@ -98,6 +98,17 @@ Data:
 # MLS Group Management Messages
 This section covers message related to setting up MLS crypto state
 
+## SignatureHash (UI -> Sec / Sec -> Net)
+Identfier for a given user's device
+
+EventType: SignatureHash
+
+Data:
+* uint32: team
+* opaque vector<0..2^16-1>: key-package hash bytes or equivalent to it
+
+
+
 ## KeyPackage (Sec -> Net)
 This event reports a Keypackage for the user/device to the network process on bootup
 in order to be transmitted to the MLS leader for joining the group
