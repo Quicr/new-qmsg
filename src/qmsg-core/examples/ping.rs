@@ -2,9 +2,6 @@ use qmsg_core::*;
 use std::fs::OpenOptions;
 use std::io::Result;
 
-pub const PING: MessageType = 1;
-pub const PONG: MessageType = 2;
-
 struct Ping<T, U>
 where
     T: MessageWrite,
@@ -30,17 +27,12 @@ where
             count += 1;
 
             println!("send ping: {}", count);
-            self.to_pong
-                .write(&Message {
-                    t: PING,
-                    v: count.to_be_bytes().to_vec(),
-                })
-                .unwrap();
+            let ping = Message::from(count.to_be_bytes().to_vec());
+            self.to_pong.write(&ping).unwrap();
 
             // Read a pong
             let pong = self.from_pong.next().unwrap();
-            assert!(pong.t == PONG);
-            let count = u32::from_be_slice(&pong.v);
+            assert_eq!(pong, ping);
             println!("recv pong: {}x", count);
         }
     }
