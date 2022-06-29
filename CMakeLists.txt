@@ -31,7 +31,6 @@ add_subdirectory(contrib)
 add_subdirectory(lib/slower)
 add_subdirectory(lib/qmsgEncoder)
 
-
 add_subdirectory(src/uiProc)
 #add_subdirectory(src/secProc)
 if(qmsg_ENABLE_QUICR)
@@ -40,6 +39,10 @@ endif()
 
 add_subdirectory(src/slowTest)
 add_subdirectory(src/slowRelay)
+
+add_subdirectory(src/slowUI ) 
+add_subdirectory(src/slowSec )  
+add_subdirectory(src/slowNet )  
 
 include(CTest)
 
