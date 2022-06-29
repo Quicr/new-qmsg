@@ -19,17 +19,17 @@ impl FromBeSlice for u32 {
 pub type MessageType = u32;
 pub type MessageLength = u32;
 
-pub struct Message<'a> {
+pub struct Message {
     pub t: MessageType,
-    pub v: &'a [u8],
+    pub v: Vec<u8>,
 }
 
-impl<'a> Message<'a> {
+impl Message {
     const TYPE_SIZE: usize = (MessageType::BITS as usize) >> 3;
     const LENGTH_SIZE: usize = (MessageLength::BITS as usize) >> 3;
     const HEADER_SIZE: usize = Self::TYPE_SIZE + Self::LENGTH_SIZE;
 
-    fn read(buf: &'a [u8]) -> Option<Self> {
+    fn parse(buf: &[u8]) -> Option<(Self, usize)> {
         if buf.len() < Self::HEADER_SIZE {
             return None;
         }
@@ -45,14 +45,12 @@ impl<'a> Message<'a> {
         let payload_start = Self::HEADER_SIZE;
         let payload_end = payload_start + msg_len;
 
-        Some(Self {
+        let msg = Self {
             t: msg_type,
-            v: &buf[payload_start..payload_end],
-        })
-    }
+            v: buf[payload_start..payload_end].to_vec(),
+        };
 
-    fn len(&self) -> usize {
-        Self::HEADER_SIZE + self.v.len()
+        Some((msg, payload_end))
     }
 
     fn header(&self) -> [u8; Message::HEADER_SIZE] {
@@ -66,85 +64,53 @@ impl<'a> Message<'a> {
     }
 }
 
-const READ_BUFFER_SIZE: usize = 8192;
+pub trait MessageRead {
+    fn next(&mut self) -> Result<Message>;
+}
 
-pub struct MessageReader<'a, T>
+impl<T> MessageRead for T
 where
     T: Read,
 {
-    reader: &'a mut T,
-    buf: [u8; READ_BUFFER_SIZE],
-    buf_len: usize,
-}
+    // Reads the next whole message, blocking until a whole message has been received or a read
+    // returns an error.
+    fn next(&mut self) -> Result<Message> {
+        let mut msg_buf = Vec::new();
+        let mut read_buf = [0u8; 1024];
+        loop {
+            // Read into the buffer
+            let n = self.read(&mut read_buf)?;
+            msg_buf.extend_from_slice(&read_buf[..n]);
 
-impl<'a, T> MessageReader<'a, T>
-where
-    T: Read,
-{
-    pub fn new(reader: &'a mut T) -> Self {
-        Self {
-            reader: reader,
-            buf: [0; READ_BUFFER_SIZE],
-            buf_len: 0,
+            // Attempt to parse a message
+            if let Some((msg, msg_len)) = Message::parse(&read_buf) {
+                msg_buf.drain(..msg_len);
+                return Ok(msg);
+            };
         }
-    }
-
-    pub fn next<'b>(&'b self) -> Option<Message<'b>> {
-        Message::read(&self.buf[..self.buf_len])
-    }
-
-    pub fn advance(&mut self) -> Result<()> {
-        // If there is a message in the buffer, shift the contents forward
-        if let Some(msg) = self.next() {
-            let msg_len = msg.len();
-            let remaining_len = self.buf_len - msg_len;
-
-            let mut temp_buf = [0u8; READ_BUFFER_SIZE];
-            temp_buf[..remaining_len].copy_from_slice(&self.buf[msg_len..self.buf_len]);
-            self.buf.fill(0);
-            self.buf[..remaining_len].copy_from_slice(&temp_buf[..remaining_len]);
-            self.buf_len = remaining_len;
-        }
-
-        // Make a single read call to fill more data
-        let n = self.reader.read(&mut self.buf[self.buf_len..])?;
-        self.buf_len += n;
-
-        Ok(())
     }
 }
 
-impl<'a> MessageReader<'a, File> {
-    pub fn ready<'b>(&'b mut self, wait: Duration) -> Option<Message<'b>> {
-        if nonblocking::ready(self.reader, wait) {
-            return None;
-        }
+pub trait MessageReadReady {
+    fn ready(&mut self, wait: Duration) -> bool;
+}
 
-        if self.advance().is_err() {
-            return None;
-        }
-
-        self.next()
+impl MessageReadReady for File {
+    fn ready(&mut self, wait: Duration) -> bool {
+        nonblocking::ready(self, wait)
     }
 }
 
-pub struct MessageWriter<'a, T>
+pub trait MessageWrite {
+    fn write(&mut self, msg: &Message) -> Result<()>;
+}
+
+impl<T> MessageWrite for T
 where
     T: Write,
 {
-    writer: &'a mut T,
-}
-
-impl<'a, T> MessageWriter<'a, T>
-where
-    T: Write,
-{
-    pub fn new(writer: &'a mut T) -> Self {
-        Self { writer: writer }
-    }
-
-    pub fn write(&mut self, msg: &Message) -> Result<()> {
-        self.writer.write_all(&msg.header())?;
-        self.writer.write_all(msg.v)
+    fn write(&mut self, msg: &Message) -> Result<()> {
+        self.write_all(&msg.header())?;
+        self.write_all(&msg.v)
     }
 }
