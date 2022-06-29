@@ -12,6 +12,7 @@
  *      None.
  */
 
+#include <cstring>
 #include "gtest/gtest.h"
 #include "qmsg/encoder.h"
 
@@ -46,7 +47,7 @@ namespace {
             char data_buffer[1500];
     };
 
-    TEST_F(QMsgEncoderTest, InitandDeinit)
+    TEST_F(QMsgEncoderTest, InitAndDeinit)
     {
         QMsgEncoderContext *context = nullptr;
 
@@ -55,16 +56,7 @@ namespace {
         QMsgEncoderDeinit(context);
     };
 
-/*
-typedef struct QMsgUISendASCIIMsg_t
-{
-    uint32_t team_id;
-    uint32_t channel_id;
-    char *message;
-} QMsgUISendASCIIMsg_t;
-*/
-
-    TEST_F(QMsgEncoderTest, UISendASCIIMessage)
+    TEST_F(QMsgEncoderTest, Serialize_UISendASCIIMessage)
     {
         char expected[] =
         {
@@ -72,14 +64,20 @@ typedef struct QMsgUISendASCIIMsg_t
             0x00, 0x00, 0x00, 0x08,
 
             // Message length
-            0x00, 0x00, 0x00, 0x16,
+            0x00, 0x00, 0x00, 0x17,
 
-            // Team ID + Channel ID
-            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+            // Team ID
+            0x01, 0x02, 0x03, 0x04,
 
-            // Hello, World\0
+            // Channel ID
+            0x05, 0x06, 0x07, 0x08,
+
+            // String length
+            0x00, 0x0d,
+
+            // Hello, World!
             0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x57,
-            0x6f, 0x72, 0x6c, 0x64, 0x21, 0x00
+            0x6f, 0x72, 0x6c, 0x64, 0x21
         };
 
         QMsgUIMessage message{};
@@ -101,6 +99,50 @@ typedef struct QMsgUISendASCIIMsg_t
         ASSERT_EQ(sizeof(expected), encoded_length);
 
         ASSERT_TRUE(VerifyDataBuffer(expected, sizeof(expected)));
+    };
+
+    TEST_F(QMsgEncoderTest, Deserialize_UISendASCIIMessage)
+    {
+        char buffer[] =
+        {
+            // Message type
+            0x00, 0x00, 0x00, 0x08,
+
+            // Message length
+            0x00, 0x00, 0x00, 0x17,
+
+            // Team ID
+            0x01, 0x02, 0x03, 0x04,
+
+            // Channel ID
+            0x05, 0x06, 0x07, 0x08,
+
+            // String length
+            0x00, 0x0d,
+
+            // Hello, World!
+            0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x57,
+            0x6f, 0x72, 0x6c, 0x64, 0x21
+        };
+
+        QMsgUIMessage message{};
+        char text[] = "Hello, World!";
+        std::size_t bytes_consumed{};
+
+        ASSERT_EQ(QMsgUIDecodeMessage(context,
+                                      buffer,
+                                      sizeof(buffer),
+                                      &message,
+                                      &bytes_consumed),
+                  QMsgEncoderSuccess);
+
+        ASSERT_EQ(bytes_consumed, sizeof(buffer));
+        ASSERT_EQ(message.type, QMsgUISendASCIIMsg);
+        ASSERT_EQ(std::uint32_t(0x01020304),
+                  message.u.send_ascii_message.team_id);
+        ASSERT_EQ(std::uint32_t(0x05060708),
+                  message.u.send_ascii_message.channel_id);
+        ASSERT_EQ(std::strcmp(message.u.send_ascii_message.message, text), 0);
     };
 
 } // namespace

@@ -1,8 +1,9 @@
 add_library(qmsgEncoder
             data_buffer.cpp
+            octet_string.cpp
             encoder.cpp
             serializer.cpp
-            octet_string.cpp)
+            deserializer.cpp)
 
 target_compile_options(qmsgEncoder PRIVATE
      $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>: -Wpedantic -Wextra -Werror -Wall>

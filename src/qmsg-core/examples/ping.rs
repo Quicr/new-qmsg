@@ -1,23 +1,23 @@
 use qmsg_core::*;
 use std::fs::OpenOptions;
-use std::io::{Read, Result, Write};
+use std::io::Result;
 
 pub const PING: MessageType = 1;
 pub const PONG: MessageType = 2;
 
-struct Ping<'a, T, U>
+struct Ping<T, U>
 where
-    T: Write,
-    U: Read,
+    T: MessageWrite,
+    U: MessageRead,
 {
-    to_pong: MessageWriter<'a, T>,
-    from_pong: MessageReader<'a, U>,
+    to_pong: T,
+    from_pong: U,
 }
 
-impl<'a, T, U> Ping<'a, T, U>
+impl<T, U> Ping<T, U>
 where
-    T: Write,
-    U: Read,
+    T: MessageWrite,
+    U: MessageRead,
 {
     fn run(mut self) {
         let mut count = 0u32;
@@ -28,33 +28,31 @@ where
 
             // Send a ping
             count += 1;
-            let msg_data = count.to_be_bytes();
 
             println!("send ping: {}", count);
             self.to_pong
                 .write(&Message {
                     t: PING,
-                    v: &msg_data,
+                    v: count.to_be_bytes().to_vec(),
                 })
                 .unwrap();
 
             // Read a pong
-            self.from_pong.advance().unwrap();
             let pong = self.from_pong.next().unwrap();
             assert!(pong.t == PONG);
-            let count = u32::from_be_slice(pong.v);
+            let count = u32::from_be_slice(&pong.v);
             println!("recv pong: {}x", count);
         }
     }
 }
 
 fn main() -> Result<()> {
-    let mut ping_to_pong = OpenOptions::new().write(true).open("ping_to_pong")?;
-    let mut pong_to_ping = OpenOptions::new().read(true).open("pong_to_ping")?;
+    let ping_to_pong = OpenOptions::new().write(true).open("ping_to_pong")?;
+    let pong_to_ping = OpenOptions::new().read(true).open("pong_to_ping")?;
 
     let ping = Ping {
-        to_pong: MessageWriter::new(&mut ping_to_pong),
-        from_pong: MessageReader::new(&mut pong_to_ping),
+        to_pong: ping_to_pong,
+        from_pong: pong_to_ping,
     };
 
     ping.run();
