@@ -21,8 +21,8 @@ process. Each process can be individual run it's own terminal.
 ## Build with Docker
 
 ```
-docker build --platform linux/amd64 --tag qmsg-amd64:latest .
-docker build --platform linux/arm64/v8 --tag qmsg-arm64:latest . 
+docker build --no-cache --platform linux/amd64 --tag qmsg-amd64:latest .
+docker build --no-cache --platform linux/arm64/v8 --tag qmsg-arm64:latest . 
 ```
 
 ## Run with Docker
