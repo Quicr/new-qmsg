@@ -13,7 +13,6 @@
  *      None.
  */
 
-#include <iostream>
 #include <string.h>
 #include "serializer.h"
 
@@ -552,7 +551,7 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
         data_buffer.AppendValue(value);
     }
 
-    return sizeof(std::uint16_t);
+    return sizeof(value);
 }
 
 /*
@@ -585,7 +584,7 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
         data_buffer.AppendValue(value);
     }
 
-    return sizeof(std::uint32_t);
+    return sizeof(value);
 }
 
 /*
@@ -618,7 +617,7 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
         data_buffer.AppendValue(value);
     }
 
-    return sizeof(std::uint64_t);
+    return sizeof(value);
 }
 
 /*
@@ -646,14 +645,15 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
 std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
                                       const char *value)
 {
-    std::size_t length = strlen(value) + 1;
+    std::size_t length = strlen(value);
 
     if (data_buffer.GetBufferSize())
     {
+        data_buffer.AppendValue(static_cast<std::uint16_t>(length));
         data_buffer.AppendValue(value, length);
     }
 
-    return length;
+    return sizeof(std::uint16_t) + length;
 }
 
 } // namespace qmsg

@@ -13,6 +13,7 @@
  *      None.
  */
 
+#include <cstring>
 #include "qmsg/encoder.h"
 #include "encoder_internal.h"
 
@@ -130,7 +131,8 @@ void CALL QMsgEncoderDeinit(QMsgEncoderContext *context)
  *
  *  Returns:
  *      This function will return one of several values of type
- *      QMsgEncoderResult.
+ *      QMsgEncoderResult.  The output arguments are valid only if
+ *      QMsgEncoderSuccess is returned.
  *
  *  Comments:
  *      None.
@@ -159,11 +161,11 @@ QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
 
         // Assign the buffer to a DataBuffer object
         qmsg::DataBuffer data_buffer(reinterpret_cast<unsigned char *>(buffer),
-                                    buffer_length,
-                                    0);
+                                     buffer_length,
+                                     0);
 
         // Get a reference to the serializer
-        auto serializer = internal_context->GetSerializer();
+        auto &serializer = internal_context->GetSerializer();
 
         // Serialize the message
         switch (message->type)
@@ -245,6 +247,200 @@ QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
     }
 
     if (*encoded_length == 0) return QMsgEncoderUnknownError;
+
+    return QMsgEncoderSuccess;
+}
+
+/*
+ *  QMsgUIDecodeMessage
+ *
+ *  Description:
+ *      Decode a single message from the given buffer, if a whole message
+ *      can be found.  If a message is deserialized, there may be additional
+ *      octets in the buffer that are not consumed, as they are part of
+ *      a next message.  If the deserialization is successful, the number
+ *      of octets consumed will be returned in octets_consumed.
+ *
+ *  Parameters:
+ *      context [in]
+ *          The encoder context to utilize.
+ *
+ *      buffer [in]
+ *          The buffer from which a message will be deserialized.
+ *
+ *      buffer_length [in]
+ *          The length of the buffer.  This should be the length of the
+ *          message contents in the buffer, not the storage allocated for
+ *          the buffer.
+ *
+ *      message [out]
+ *          The message deserialized from the buffer.
+ *
+ *      octets_consumed [out]
+ *          The number of octets consumed in the buffer.
+ *
+ *  Returns:
+ *      This function will return one of several values of type
+ *      QMsgEncoderResult.  If the buffer contains data, but not a complete
+ *      message, that will appear as a QMsgEncoderShortBuffer error.  The
+ *      output arguments are valid only if QMsgEncoderSuccess is returned.
+ *
+ *      If the return type is QMsgEncoderInvalidMessage, this may indicate
+ *      either a corrupt buffer or simply an unknown message type.  In this
+ *      case, octets_consumed will contain how many octets to advance the
+ *      buffer in order to skip this invalid message.  Further,
+ *      message.type will be set to QMsgUIInvalid.
+ *
+ *  Comments:
+ *      None.
+ */
+EXPORT QMsgEncoderResult CALL QMsgUIDecodeMessage(QMsgEncoderContext *context,
+                                                  char *buffer,
+                                                  size_t buffer_length,
+                                                  QMsgUIMessage *message,
+                                                  size_t *octets_consumed)
+{
+    std::uint32_t message_length;               // Expected message length
+    std::size_t deserialized;                   // Octets actually deserialized
+
+    // Ensure the context is not null
+    if (!context || !context->opaque) return QMsgEncoderInvalidContext;
+
+    // Ensure there is a message structure
+    if (!message) return QMsgEncoderInvalidMessage;
+
+    // Ensure there is a buffer
+    if (!buffer || !buffer_length) return QMsgEncoderShortBuffer;
+
+    try
+    {
+        // Get the encoder context
+        qmsg::QMsgEncoderContextInternal *internal_context =
+            reinterpret_cast<qmsg::QMsgEncoderContextInternal *>(
+                context->opaque);
+
+        // Assign the buffer to a DataBuffer object
+        qmsg::DataBuffer data_buffer(reinterpret_cast<unsigned char *>(buffer),
+                                     buffer_length,
+                                     buffer_length);
+
+        // Get a reference to the deserializer
+        auto &deserializer = internal_context->GetDeserializer();
+
+        // Zero the message structure
+        std::memset(message, 0, sizeof(QMsgUIMessage));
+
+        // Extract the message type and length
+        *octets_consumed = deserializer.DeserializeUIMessageType(data_buffer,
+                                                                 message->type);
+
+        // Determine the length of the message
+        *octets_consumed +=
+                    deserializer.DeserializeMessageLength(data_buffer,
+                                                          message_length);
+
+        // Is the buffer sufficiently long?
+        if (buffer_length < message_length + *octets_consumed)
+        {
+            return QMsgEncoderShortBuffer;
+        }
+
+        // We will assume that all of the message will be consumed
+        *octets_consumed += message_length;
+
+        // For unknown message types, return how many octets would have been
+        // consumed had the message been processed
+        if (message->type == QMsgUIInvalid) return QMsgEncoderInvalidMessage;
+
+        // Deserialize the message
+        switch (message->type)
+        {
+            case QMsgUIUnlock:
+                deserialized = deserializer.Deserialize(data_buffer,
+                                                        message->u.unlock);
+                break;
+
+            case QMsgUIIsLocked:
+                deserialized = deserializer.Deserialize(data_buffer,
+                                                        message->u.is_locked);
+                break;
+
+            case QMsgUIDeviceInfo:
+                deserialized = deserializer.Deserialize(data_buffer,
+                                                        message->u.device_info);
+                break;
+
+            case QMsgUIGetTeams:
+                deserialized = deserializer.Deserialize(data_buffer,
+                                                        message->u.get_teams);
+                break;
+
+            case QMsgUITeamInfo:
+                deserialized = deserializer.Deserialize(data_buffer,
+                                                        message->u.teams_info);
+                break;
+
+            case QMsgUIGetChannels:
+                deserialized = deserializer.Deserialize(
+                    data_buffer,
+                    message->u.get_channels);
+                break;
+
+            case QMsgUIChannelInfo:
+                deserialized = deserializer.Deserialize(
+                    data_buffer,
+                    message->u.channel_info);
+                break;
+
+            case QMsgUISendASCIIMsg:
+                deserialized = deserializer.Deserialize(
+                    data_buffer,
+                    message->u.send_ascii_message);
+                break;
+
+            case QMsgUIReceiveASCIIMessage:
+                deserialized = deserializer.Deserialize(
+                    data_buffer,
+                    message->u.receive_ascii_message);
+                break;
+
+            case QMsgUIWatch:
+                deserialized = deserializer.Deserialize(data_buffer,
+                                                        message->u.watch);
+                break;
+
+            case QMsgUIUnwatch:
+                deserialized = deserializer.Deserialize(data_buffer,
+                                                        message->u.unwatch);
+                break;
+
+            case QMsgUIRequestMessages:
+                deserialized = deserializer.Deserialize(
+                    data_buffer,
+                    message->u.request_messages);
+                break;
+
+            default:
+                return QMsgEncoderInvalidMessage;
+        }
+
+        // If the number of octets deserialized is greater than the advertised
+        // message length, it suggests the message is bad or the buffer is
+        // corrupt; shorter deserialization is allowed for extensibility (i.e.,
+        // newer fields might have been added to the known message structure)
+        if (deserialized > message_length) return QMsgEncoderCorruptMessage;
+    }
+    catch (const qmsg::DataBufferException &)
+    {
+        // If an exception occurs when deserializing, the issue must be a
+        // corrupt or bad message format, since the data buffer length was
+        // checked above for sufficient length
+        return QMsgEncoderCorruptMessage;
+    }
+    catch (...)
+    {
+        return QMsgEncoderUnknownError;
+    }
 
     return QMsgEncoderSuccess;
 }

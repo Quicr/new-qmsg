@@ -51,7 +51,8 @@ typedef enum QMsgEncoderResult
     QMsgEncoderUnknownError,
     QMsgEncoderShortBuffer,
     QMsgEncoderInvalidContext,
-    QMsgEncoderInvalidMessage
+    QMsgEncoderInvalidMessage,
+    QMsgEncoderCorruptMessage
 } QMsgEncoderResult;
 
 
@@ -66,9 +67,6 @@ EXPORT int CALL QMsgEncoderInit(QMsgEncoderContext **context);
 EXPORT void CALL QMsgEncoderDeinit(QMsgEncoderContext *context);
 
 // Function prototypes for UI<=>Sec message encoding and decoding
-EXPORT QMsgUIMessageType CALL QMsgUIGetMessageType(const char buffer[],
-                                                   size_t buffer_length);
-
 EXPORT QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
                                                   const QMsgUIMessage *message,
                                                   char *buffer,
@@ -76,7 +74,7 @@ EXPORT QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
                                                   size_t *encoded_length);
 
 EXPORT QMsgEncoderResult CALL QMsgUIDecodeMessage(QMsgEncoderContext *context,
-                                                  const char *buffer,
+                                                  char *buffer,
                                                   size_t buffer_length,
                                                   QMsgUIMessage *message,
                                                   size_t *bytes_consumed);
