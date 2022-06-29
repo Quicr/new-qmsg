@@ -20,8 +20,16 @@ EventType: Ascii_Message
 Data:
 * uint32:  team
 * uint32:  channel
-* uint16:  device_id // maps to mls index
-* opaque value<0..2^32-1> // [4B length + uint8_t bytes]
+* opaque value<0..2^32-1>: plaintext // [4B length + uint8_t bytes]
+
+
+### Sec -> Net
+EventType: Ascii_Message
+
+Data:
+* uint32:  team
+* uint32:  channel
+* opaque value<0..2^32-1>: ciphertext // [4B length + uint8_t bytes]
 
 
 ## Receive Ascii Message 
@@ -102,6 +110,7 @@ Data:
 
 
 ## MLS Welcome (Sec -> Net / Net -> Sec)
+
 This event indicates a new user was successfully added to the 
 MLS group by the leader for a given team. MLS Welcome 
 message is deilvered to the user attempting to join.
@@ -124,6 +133,17 @@ Data:
 * opaque vector<0..2^32-1>: mls-commit bytes
 
 
+## DeviceInfo (Sec -> Net)
+
+This message is sent to indicate MLS device details 
+to the network process after the user 
+joins a MLS group successfully.
+
+EventType: DeviceInfo
+
+Data:
+* uint32: team
+* uint16: device_id
 
 # Miscellenous Messages
 
