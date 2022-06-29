@@ -1,22 +1,22 @@
 use tls_codec::*;
 use tls_codec_derive::*;
 
-#[derive(TlsSerialize, TlsDeserialize)]
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
 pub struct JoinRequest {
     pub key_package: TlsByteVecU32,
 }
 
-#[derive(TlsSerialize, TlsDeserialize)]
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
 pub struct Welcome {
     pub welcome: TlsByteVecU32,
 }
 
-#[derive(TlsSerialize, TlsDeserialize)]
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
 pub struct MlsMessage {
     pub mls_message: TlsByteVecU32,
 }
 
-#[derive(TlsSerialize, TlsDeserialize)]
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
 pub struct AsciiMessage {
     pub ascii: TlsByteVecU32,
 }
@@ -35,7 +35,7 @@ pub enum NetworkToSecurityEvent {
     Welcome(Welcome),
 
     #[tls_codec(discriminant = 3)]
-    MLSMessage(MlsMessage),
+    MlsMessage(MlsMessage),
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
@@ -48,19 +48,19 @@ pub enum SecurityToNetworkEvent {
     Welcome(Welcome),
 
     #[tls_codec(discriminant = 3)]
-    MLSMessage(MlsMessage),
+    MlsMessage(MlsMessage),
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
 #[repr(u32)]
 pub enum UiToSecurityEvent {
     #[tls_codec(discriminant = 4)]
-    ASCIIMessage(AsciiMessage),
+    AsciiMessage(AsciiMessage),
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
 #[repr(u32)]
 pub enum SecurityToUiEvent {
     #[tls_codec(discriminant = 4)]
-    ASCIIMessage(AsciiMessage),
+    AsciiMessage(AsciiMessage),
 }
