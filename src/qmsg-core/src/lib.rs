@@ -19,17 +19,17 @@ impl FromBeSlice for u32 {
 pub type MessageType = u32;
 pub type MessageLength = u32;
 
-pub struct Message<'a> {
+pub struct Message {
     pub t: MessageType,
-    pub v: &'a [u8],
+    pub v: Vec<u8>,
 }
 
-impl<'a> Message<'a> {
+impl Message {
     const TYPE_SIZE: usize = (MessageType::BITS as usize) >> 3;
     const LENGTH_SIZE: usize = (MessageLength::BITS as usize) >> 3;
     const HEADER_SIZE: usize = Self::TYPE_SIZE + Self::LENGTH_SIZE;
 
-    fn read(buf: &'a [u8]) -> Option<Self> {
+    fn read(buf: &[u8]) -> Option<Self> {
         if buf.len() < Self::HEADER_SIZE {
             return None;
         }
@@ -47,7 +47,7 @@ impl<'a> Message<'a> {
 
         Some(Self {
             t: msg_type,
-            v: &buf[payload_start..payload_end],
+            v: buf[payload_start..payload_end].to_vec(),
         })
     }
 
@@ -89,7 +89,7 @@ where
         }
     }
 
-    pub fn next<'b>(&'b self) -> Option<Message<'b>> {
+    pub fn next(&self) -> Option<Message> {
         Message::read(&self.buf[..self.buf_len])
     }
 
@@ -115,7 +115,7 @@ where
 }
 
 impl<'a> MessageReader<'a, File> {
-    pub fn ready<'b>(&'b mut self, wait: Duration) -> Option<Message<'b>> {
+    pub fn ready(&mut self, wait: Duration) -> Option<Message> {
         if nonblocking::ready(self.reader, wait) {
             return None;
         }
@@ -145,6 +145,6 @@ where
 
     pub fn write(&mut self, msg: &Message) -> Result<()> {
         self.writer.write_all(&msg.header())?;
-        self.writer.write_all(msg.v)
+        self.writer.write_all(&msg.v)
     }
 }

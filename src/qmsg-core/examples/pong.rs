@@ -26,7 +26,7 @@ where
                 None => continue,
                 Some(ping) => {
                     assert!(ping.t == PING);
-                    u32::from_be_slice(ping.v)
+                    u32::from_be_slice(&ping.v)
                 }
             };
             println!("recv ping: {}", count);
@@ -34,7 +34,7 @@ where
             self.to_ping
                 .write(&Message {
                     t: PONG,
-                    v: &count.to_be_bytes(),
+                    v: count.to_be_bytes().to_vec(),
                 })
                 .unwrap();
             println!("send pong: {}x", count);

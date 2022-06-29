@@ -28,13 +28,12 @@ where
 
             // Send a ping
             count += 1;
-            let msg_data = count.to_be_bytes();
 
             println!("send ping: {}", count);
             self.to_pong
                 .write(&Message {
                     t: PING,
-                    v: &msg_data,
+                    v: count.to_be_bytes().to_vec(),
                 })
                 .unwrap();
 
@@ -42,7 +41,7 @@ where
             self.from_pong.advance().unwrap();
             let pong = self.from_pong.next().unwrap();
             assert!(pong.t == PONG);
-            let count = u32::from_be_slice(pong.v);
+            let count = u32::from_be_slice(&pong.v);
             println!("recv pong: {}x", count);
         }
     }
