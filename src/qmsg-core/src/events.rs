@@ -1,22 +1,66 @@
-use super::Message;
 use tls_codec::*;
+use tls_codec_derive::*;
 
-pub enum Event {
-    JoinRequest(JoinRequest),
-    Welcome(Welcome),
-    MLSMessage(MLSMessage),
-    ASCIIMessage(ASCIIMessage),
-}
-
-#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq)]
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
 pub struct JoinRequest {
-    pub marker: u8,
-    pub device_id: u32,
-    pub bytes: TlsByteVecU32,
+    pub key_package: TlsByteVecU32,
 }
 
-pub struct Welcome;
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
+pub struct Welcome {
+    pub welcome: TlsByteVecU32,
+}
 
-pub struct MLSMessage;
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
+pub struct MlsMessage {
+    pub mls_message: TlsByteVecU32,
+}
 
-pub struct ASCIIMessage;
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
+pub struct AsciiMessage {
+    pub ascii: TlsByteVecU32,
+}
+
+// Unions of sub-event types for the various interfaces
+//
+// The "discriminant" value represents the "type" value in the documentation.  These need to be
+// kept consistent with the values in the C++ code.
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
+#[repr(u32)]
+pub enum NetworkToSecurityEvent {
+    #[tls_codec(discriminant = 1)]
+    JoinRequest(JoinRequest),
+
+    #[tls_codec(discriminant = 2)]
+    Welcome(Welcome),
+
+    #[tls_codec(discriminant = 3)]
+    MlsMessage(MlsMessage),
+}
+
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
+#[repr(u32)]
+pub enum SecurityToNetworkEvent {
+    #[tls_codec(discriminant = 1)]
+    JoinRequest(JoinRequest),
+
+    #[tls_codec(discriminant = 2)]
+    Welcome(Welcome),
+
+    #[tls_codec(discriminant = 3)]
+    MlsMessage(MlsMessage),
+}
+
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
+#[repr(u32)]
+pub enum UiToSecurityEvent {
+    #[tls_codec(discriminant = 4)]
+    AsciiMessage(AsciiMessage),
+}
+
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
+#[repr(u32)]
+pub enum SecurityToUiEvent {
+    #[tls_codec(discriminant = 4)]
+    AsciiMessage(AsciiMessage),
+}

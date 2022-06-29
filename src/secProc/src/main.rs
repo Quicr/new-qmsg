@@ -1,3 +1,4 @@
+use qmsg_core::events::*;
 use qmsg_core::*;
 use std::time::Duration;
 
@@ -22,13 +23,19 @@ where
 
         loop {
             if self.from_network.ready(poll_wait) {
-                let _msg = self.from_network.next().unwrap();
-                // TODO actions based on network messages
+                let msg = self.from_network.next().unwrap();
+                match msg.to_tls::<NetworkToSecurityEvent>().unwrap() {
+                    NetworkToSecurityEvent::JoinRequest(_jr) => { /* todo */ }
+                    NetworkToSecurityEvent::Welcome(_w) => { /* todo */ }
+                    NetworkToSecurityEvent::MlsMessage(_mm) => { /* todo */ }
+                }
             }
 
             if self.from_ui.ready(poll_wait) {
-                let _msg = self.from_network.next().unwrap();
-                // TODO actions based on UI messages
+                let msg = self.from_network.next().unwrap();
+                match msg.to_tls::<UiToSecurityEvent>().unwrap() {
+                    UiToSecurityEvent::AsciiMessage(_am) => { /* todo */ }
+                }
             }
         }
     }
