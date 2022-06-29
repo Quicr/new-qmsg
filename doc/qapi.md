@@ -34,6 +34,16 @@ Data:
 
 ## Receive Ascii Message 
 
+### Net -> Sec
+EventType: Ascii_Message
+
+Data:
+* uint32:  team
+* uint32:  channel
+* uint16:  device_id
+* opaque value<0..2^32-1>: ciphertext // [4B length + uint8_t bytes]
+
+
 ### Sec->UI
 EventType: Ascii_Message
 
