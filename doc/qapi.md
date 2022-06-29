@@ -90,7 +90,6 @@ join the MLS group for a given team and has corresponding KeyPackage
 EventType: Keypackage
 Data:
 * uint32: team
-* 
 * opaque vector<0..2^32-1>: key-package bytes
 
 
