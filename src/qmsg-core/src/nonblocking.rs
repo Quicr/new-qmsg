@@ -57,8 +57,8 @@ pub fn select(files: &[&mut File], wait: Duration) -> Result<Vec<bool>> {
 
     // Convert the duration to a timeval
     let mut timeout = libc::timeval {
-        tv_sec: wait.as_secs() as i64,
-        tv_usec: wait.subsec_micros() as i64,
+        tv_sec: wait.as_secs().try_into().unwrap(),
+        tv_usec: wait.subsec_micros().try_into().unwrap(),
     };
 
     // Run select()
