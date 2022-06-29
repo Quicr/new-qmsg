@@ -551,7 +551,7 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
         data_buffer.AppendValue(value);
     }
 
-    return sizeof(value);
+    return sizeof(std::uint16_t);
 }
 
 /*
@@ -584,7 +584,7 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
         data_buffer.AppendValue(value);
     }
 
-    return sizeof(value);
+    return sizeof(std::uint32_t);
 }
 
 /*
@@ -617,7 +617,7 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
         data_buffer.AppendValue(value);
     }
 
-    return sizeof(value);
+    return sizeof(std::uint64_t);
 }
 
 /*

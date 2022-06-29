@@ -67,7 +67,7 @@ std::size_t QMsgDeserializer::DeserializeUIMessageType(DataBuffer &data_buffer,
         type = static_cast<QMsgUIMessageType>(word);
     }
 
-    return sizeof(word);
+    return sizeof(std::uint32_t);
 }
 
 /*
@@ -530,7 +530,7 @@ std::size_t QMsgDeserializer::Deserialize(DataBuffer &data_buffer,
 {
     data_buffer.ReadValue(value);
 
-    return sizeof(value);
+    return sizeof(std::uint16_t);
 }
 
 /*
@@ -561,7 +561,7 @@ std::size_t QMsgDeserializer::Deserialize(DataBuffer &data_buffer,
 {
     data_buffer.ReadValue(value);
 
-    return sizeof(value);
+    return sizeof(std::uint32_t);
 }
 
 /*
@@ -592,7 +592,7 @@ std::size_t QMsgDeserializer::Deserialize(DataBuffer &data_buffer,
 {
     data_buffer.ReadValue(value);
 
-    return sizeof(value);
+    return sizeof(std::uint64_t);
 }
 
 /*
@@ -630,8 +630,11 @@ std::size_t QMsgDeserializer::Deserialize(DataBuffer &data_buffer, char *&value)
     data_buffer.ReadValue(string_length);
 
     // Allocate memory for the NULL-terminated string; record pointer
-    value = new char[string_length + 1];
-    allocations.push_back(reinterpret_cast<std::uint8_t *>(value));
+    std::uint8_t *buffer = new std::uint8_t[string_length + 1];
+    allocations.push_back(buffer);
+
+    // Assign that pointer to the return value
+    value = reinterpret_cast<char *>(buffer);
 
     // Copy the data
     data_buffer.ReadValue(value, string_length);
