@@ -1,22 +1,122 @@
+use std::io::{Read, Write};
 use tls_codec::*;
 use tls_codec_derive::*;
 
-#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
+// TlsSerialized automatically wraps TLS-serializable things in a TLS byte vector, including their
+// serialization / deserialization in that of an overall object.
+type TlsSerializedVector = TlsByteVecU32;
+
+#[derive(Debug)]
+pub struct TlsSerialized<T>
+where
+    T: Serialize + Deserialize + Size,
+{
+    inner: T,
+}
+
+impl<T> TlsSerialized<T>
+where
+    T: Serialize + Deserialize + Size,
+{
+    pub fn new(inner: T) -> Self {
+        Self { inner: inner }
+    }
+
+    pub fn unwrap(self) -> T {
+        self.inner
+    }
+}
+
+impl<T> Size for TlsSerialized<T>
+where
+    T: Serialize + Deserialize + Size,
+{
+    fn tls_serialized_len(&self) -> usize {
+        TlsSerializedVector::len_len() + self.inner.tls_serialized_len()
+    }
+}
+
+impl<T> Serialize for TlsSerialized<T>
+where
+    T: Serialize + Deserialize + Size,
+{
+    fn tls_serialize<W: Write>(&self, writer: &mut W) -> Result<usize, Error> {
+        let inner = self.inner.tls_serialize_detached()?;
+        let vec = TlsSerializedVector::new(inner);
+        vec.tls_serialize(writer)
+    }
+}
+
+impl<T> Deserialize for TlsSerialized<T>
+where
+    T: Serialize + Deserialize + Size,
+{
+    fn tls_deserialize<R: Read>(bytes: &mut R) -> Result<Self, Error> {
+        let vec = TlsSerializedVector::tls_deserialize(bytes)?;
+        let inner = T::tls_deserialize(&mut vec.as_slice())?;
+        Ok(Self::new(inner))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_tls_serialized() {
+        #[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
+        struct Tuple(u16, u32, u8);
+
+        let original = TlsSerialized::new(Tuple(1, 2, 3));
+
+        let serialized = original.tls_serialize_detached().unwrap();
+        assert_eq!(serialized, [0, 0, 0, 7, 0, 1, 0, 0, 0, 2, 3]);
+
+        let deserialized: TlsSerialized<Tuple> =
+            TlsSerialized::tls_deserialize(&mut serialized.as_slice()).unwrap();
+        assert_eq!(deserialized, original);
+    }
+}
+
+use openmls::prelude::{KeyPackage, MlsMessageIn, MlsMessageOut, Welcome};
+
+// Specific event types
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
 pub struct JoinRequest {
     pub team: u32,
-    pub key_package: TlsByteVecU32,
+    pub key_package: TlsSerialized<KeyPackage>,
 }
 
-#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
 pub struct MlsWelcome {
     pub team: u32,
-    pub welcome: TlsByteVecU32,
+    pub welcome: TlsSerialized<Welcome>,
 }
 
-#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
-pub struct MlsCommit {
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
+pub struct MlsCommitIn {
     pub team: u32,
-    pub commit: TlsByteVecU32,
+    pub commit: TlsSerialized<MlsMessageIn>,
+}
+
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
+pub struct MlsCommitOut {
+    pub team: u32,
+    pub commit: TlsSerialized<MlsMessageOut>,
+}
+
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
+pub struct EncryptedAsciiMessageIn {
+    pub team: u32,
+    pub channel: u32,
+    pub ciphertext: TlsSerialized<MlsMessageIn>,
+}
+
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
+pub struct EncryptedAsciiMessageOut {
+    pub team: u32,
+    pub channel: u32,
+    pub ciphertext: TlsSerialized<MlsMessageOut>,
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
@@ -63,7 +163,7 @@ pub struct DeviceInfo {
 //
 // The "discriminant" value represents the "type" value in the documentation.  These need to be
 // kept consistent with the values in the C++ code.
-#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
 #[repr(u32)]
 pub enum NetworkToSecurityEvent {
     #[tls_codec(discriminant = 1)]
@@ -73,13 +173,13 @@ pub enum NetworkToSecurityEvent {
     MlsWelcome(MlsWelcome),
 
     #[tls_codec(discriminant = 3)]
-    MlsCommit(MlsCommit),
+    MlsCommit(MlsCommitIn),
 
     #[tls_codec(discriminant = 4)]
-    AsciiMessage(AsciiMessage),
+    EncryptedAsciiMessage(EncryptedAsciiMessageIn),
 }
 
-#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
 #[repr(u32)]
 pub enum SecurityToNetworkEvent {
     #[tls_codec(discriminant = 1)]
@@ -89,10 +189,10 @@ pub enum SecurityToNetworkEvent {
     MlsWelcome(MlsWelcome),
 
     #[tls_codec(discriminant = 3)]
-    MlsCommit(MlsCommit),
+    MlsCommitOut(MlsCommitOut),
 
     #[tls_codec(discriminant = 4)]
-    AsciiMessage(AsciiMessage),
+    EncryptedAsciiMessage(EncryptedAsciiMessageOut),
 
     #[tls_codec(discriminant = 5)]
     WatchDevices(WatchDevices),
