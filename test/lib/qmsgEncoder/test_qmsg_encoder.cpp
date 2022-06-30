@@ -452,7 +452,153 @@ namespace {
                                        sizeof(buffer) - total_bytes_consumed,
                                        &message,
                                        &bytes_consumed));
+
+        // And it should indicate no octets consumed
+        ASSERT_EQ(0, bytes_consumed);
     };
 
+    TEST_F(QMsgEncoderTest, Deserialize_UI_ShortBuffer)
+    {
+        char buffer[] =
+        {
+            // Message length
+            0x00, 0x00, 0x00, 0x16,
+
+            // Message type
+            0x00, 0x00, 0x00, 0x03,
+        };
+
+        QMsgUIMessage message{};
+        std::size_t bytes_consumed{};
+
+        // Least read should fail with a short buffer error
+        ASSERT_EQ(QMsgEncoderShortBuffer,
+                  QMsgUIDecodeMessage(context,
+                                      buffer,
+                                      sizeof(buffer),
+                                      &message,
+                                      &bytes_consumed));
+
+        // And it should indicate no octets consumed
+        ASSERT_EQ(0, bytes_consumed);
+    };
+
+    TEST_F(QMsgEncoderTest, Deserialize_Net_ShortBuffer)
+    {
+        char buffer[] =
+        {
+            // Message length
+            0x00, 0x00, 0x00, 0x16,
+
+            // Message type
+            0x00, 0x00, 0x00, 0x03,
+        };
+
+        QMsgNetMessage message{};
+        std::size_t bytes_consumed{};
+
+        // Least read should fail with a short buffer error
+        ASSERT_EQ(QMsgEncoderShortBuffer,
+                  QMsgNetDecodeMessage(context,
+                                       buffer,
+                                       sizeof(buffer),
+                                       &message,
+                                       &bytes_consumed));
+
+        // And it should indicate no octets consumed
+        ASSERT_EQ(0, bytes_consumed);
+    };
+
+    TEST_F(QMsgEncoderTest, Deserialize_UI_ReallyShortBuffer)
+    {
+        char buffer[] =
+        {
+            // Message length (partial)
+            0x00, 0x00
+        };
+
+        QMsgUIMessage message{};
+        std::size_t bytes_consumed{};
+
+        // Least read should fail with a short buffer error
+        ASSERT_EQ(QMsgEncoderShortBuffer,
+                  QMsgUIDecodeMessage(context,
+                                      buffer,
+                                      sizeof(buffer),
+                                      &message,
+                                      &bytes_consumed));
+
+        // And it should indicate no octets consumed
+        ASSERT_EQ(0, bytes_consumed);
+    };
+
+    TEST_F(QMsgEncoderTest, Deserialize_Net_ReallyShortBuffer)
+    {
+        char buffer[] =
+        {
+            // Message length (partial)
+            0x00, 0x00
+        };
+
+        QMsgNetMessage message{};
+        std::size_t bytes_consumed{};
+
+        // Least read should fail with a short buffer error
+        ASSERT_EQ(QMsgEncoderShortBuffer,
+                  QMsgNetDecodeMessage(context,
+                                       buffer,
+                                       sizeof(buffer),
+                                       &message,
+                                       &bytes_consumed));
+
+        // And it should indicate no octets consumed
+        ASSERT_EQ(0, bytes_consumed);
+    };
+
+    TEST_F(QMsgEncoderTest, Deserialize_UI_ZeroLengthMessage)
+    {
+        char buffer[] =
+        {
+            // Message length
+            0x00, 0x00, 0x00, 0x00
+        };
+
+        QMsgUIMessage message{};
+        std::size_t bytes_consumed{};
+
+        // Least read should fail with a short buffer error
+        ASSERT_EQ(QMsgEncoderInvalidMessage,
+                  QMsgUIDecodeMessage(context,
+                                      buffer,
+                                      sizeof(buffer),
+                                      &message,
+                                      &bytes_consumed));
+
+        // And it should indicate how many octets to advance the buffer (4)
+        ASSERT_EQ(sizeof(std::uint32_t), bytes_consumed);
+    };
+
+    TEST_F(QMsgEncoderTest, Deserialize_Net_ZeroLengthMessage)
+    {
+        char buffer[] =
+        {
+            // Message length
+            0x00, 0x00, 0x00, 0x00
+        };
+
+        QMsgNetMessage message{};
+        std::size_t bytes_consumed{};
+
+        // Least read should fail with a short buffer error
+        ASSERT_EQ(QMsgEncoderInvalidMessage,
+                  QMsgNetDecodeMessage(context,
+                                       buffer,
+                                       sizeof(buffer),
+                                       &message,
+                                       &bytes_consumed));
+
+        // And it should indicate how many octets to advance the buffer (4)
+        ASSERT_EQ(sizeof(std::uint32_t), bytes_consumed);
+    };
 
 } // namespace
