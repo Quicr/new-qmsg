@@ -319,18 +319,34 @@ fn main() {
         )
         .unwrap();
 
+    let mut groups = HashMap::new();
+
+    if match env::var("LEADER") {
+        Ok(v) => v == "1",
+        Err(_) => false,
+    } {
+        let group_config = &MlsGroupConfig::builder()
+            .use_ratchet_tree_extension(true)
+            .build();
+        let g = MlsGroup::new(
+            &backend,
+            group_config,
+            GroupId::from_slice(b"Static team test group"),
+            key_package.hash_ref(backend.crypto()).unwrap().value(),
+        )
+        .unwrap();
+        groups.insert(123, RefCell::new(g));
+    }
+
     let sec_proc = SecurityProcessor {
         to_network: s2n,
         from_network: n2s,
         to_ui: s2u,
         from_ui: u2s,
-        backend: OpenMlsRustCrypto::default(),
-        groups: HashMap::new(),
+        backend: backend,
+        groups: groups,
         our_kp: key_package,
     };
-
-    // TODO: decide based on leadership status whether to create group
-    // from scratch or send out join requests with our KeyPackage
 
     sec_proc.run();
 }
