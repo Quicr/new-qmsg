@@ -213,6 +213,7 @@ QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
                 *encoded_length = serializer.Serialize(
                     data_buffer,
                     message->u.mls_signature_hash);
+                break;
 
             default:
                 return QMsgEncoderInvalidMessage;

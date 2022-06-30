@@ -42,7 +42,6 @@ class QMsgDeserializerException : public std::runtime_error
         }
 };
 
-
 // Class to perform deserialization of data structures
 class QMsgDeserializer
 {
