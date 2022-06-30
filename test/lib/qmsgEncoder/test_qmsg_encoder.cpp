@@ -145,16 +145,16 @@ namespace {
 
         QMsgUIMessage message{};
         char text[] = "Hello, World!";
-        std::size_t bytes_consumed{};
+        std::size_t octets_consumed{};
 
         ASSERT_EQ(QMsgEncoderSuccess,
                   QMsgUIDecodeMessage(context,
                                       buffer,
                                       sizeof(buffer),
                                       &message,
-                                      &bytes_consumed));
+                                      &octets_consumed));
 
-        ASSERT_EQ(sizeof(buffer), bytes_consumed);
+        ASSERT_EQ(sizeof(buffer), octets_consumed);
         ASSERT_EQ(QMsgUISendASCIIMessage, message.type);
         ASSERT_EQ(std::uint32_t(0x01020304),
                   message.u.send_ascii_message.team_id);
@@ -241,16 +241,16 @@ namespace {
 
         QMsgNetMessage message{};
         char text[] = "Hello, World!";
-        std::size_t bytes_consumed{};
+        std::size_t octets_consumed{};
 
         ASSERT_EQ(QMsgEncoderSuccess,
                   QMsgNetDecodeMessage(context,
                                        buffer,
                                        sizeof(buffer),
                                        &message,
-                                       &bytes_consumed));
+                                       &octets_consumed));
 
-        ASSERT_EQ(sizeof(buffer), bytes_consumed);
+        ASSERT_EQ(sizeof(buffer), octets_consumed);
         ASSERT_EQ(QMsgUISendASCIIMessage, message.type);
         ASSERT_EQ(std::uint32_t(0x01020304),
                   message.u.send_ascii_message.team_id);
@@ -333,16 +333,16 @@ namespace {
         };
 
         QMsgNetMessage message{};
-        std::size_t bytes_consumed{};
+        std::size_t octets_consumed{};
 
         ASSERT_EQ(QMsgEncoderSuccess,
                   QMsgNetDecodeMessage(context,
                                        buffer,
                                        sizeof(buffer),
                                        &message,
-                                       &bytes_consumed));
+                                       &octets_consumed));
 
-        ASSERT_EQ(sizeof(buffer), bytes_consumed);
+        ASSERT_EQ(sizeof(buffer), octets_consumed);
         ASSERT_EQ(QMsgNetWatchDevices, message.type);
         ASSERT_EQ(std::uint32_t(0x01020304),
                   message.u.watch_devices.team_id);
@@ -428,8 +428,8 @@ namespace {
         };
 
         QMsgNetMessage message{};
-        std::size_t bytes_consumed{};
-        std::size_t total_bytes_consumed{};
+        std::size_t octets_consumed{};
+        std::size_t total_octets_consumed{};
         QMsgNetMessageType message_types[3] =
         {
             QMsgNetSendASCIIMessage,
@@ -442,28 +442,28 @@ namespace {
             ASSERT_EQ(
                 QMsgEncoderSuccess,
                 QMsgNetDecodeMessage(context,
-                                     buffer + total_bytes_consumed,
-                                     sizeof(buffer) - total_bytes_consumed,
+                                     buffer + total_octets_consumed,
+                                     sizeof(buffer) - total_octets_consumed,
                                      &message,
-                                     &bytes_consumed));
+                                     &octets_consumed));
             ASSERT_EQ(message_types[i], message.type);
-            total_bytes_consumed += bytes_consumed;
+            total_octets_consumed += octets_consumed;
         }
 
         // The forth message is incomplete, but there should be 4 octets
         // remaining
-        ASSERT_EQ(4, sizeof(buffer) - total_bytes_consumed);
+        ASSERT_EQ(4, sizeof(buffer) - total_octets_consumed);
 
         // Least read should fail with a short buffer error
         ASSERT_EQ(QMsgEncoderShortBuffer,
                   QMsgNetDecodeMessage(context,
-                                       buffer + total_bytes_consumed,
-                                       sizeof(buffer) - total_bytes_consumed,
+                                       buffer + total_octets_consumed,
+                                       sizeof(buffer) - total_octets_consumed,
                                        &message,
-                                       &bytes_consumed));
+                                       &octets_consumed));
 
         // And it should indicate no octets consumed
-        ASSERT_EQ(0, bytes_consumed);
+        ASSERT_EQ(0, octets_consumed);
     };
 
     TEST_F(QMsgEncoderTest, Deserialize_UI_ShortBuffer)
@@ -478,7 +478,7 @@ namespace {
         };
 
         QMsgUIMessage message{};
-        std::size_t bytes_consumed{};
+        std::size_t octets_consumed{};
 
         // Least read should fail with a short buffer error
         ASSERT_EQ(QMsgEncoderShortBuffer,
@@ -486,10 +486,10 @@ namespace {
                                       buffer,
                                       sizeof(buffer),
                                       &message,
-                                      &bytes_consumed));
+                                      &octets_consumed));
 
         // And it should indicate no octets consumed
-        ASSERT_EQ(0, bytes_consumed);
+        ASSERT_EQ(0, octets_consumed);
     };
 
     TEST_F(QMsgEncoderTest, Deserialize_Net_ShortBuffer)
@@ -504,7 +504,7 @@ namespace {
         };
 
         QMsgNetMessage message{};
-        std::size_t bytes_consumed{};
+        std::size_t octets_consumed{};
 
         // Least read should fail with a short buffer error
         ASSERT_EQ(QMsgEncoderShortBuffer,
@@ -512,10 +512,10 @@ namespace {
                                        buffer,
                                        sizeof(buffer),
                                        &message,
-                                       &bytes_consumed));
+                                       &octets_consumed));
 
         // And it should indicate no octets consumed
-        ASSERT_EQ(0, bytes_consumed);
+        ASSERT_EQ(0, octets_consumed);
     };
 
     TEST_F(QMsgEncoderTest, Deserialize_UI_ReallyShortBuffer)
@@ -527,7 +527,7 @@ namespace {
         };
 
         QMsgUIMessage message{};
-        std::size_t bytes_consumed{};
+        std::size_t octets_consumed{};
 
         // Least read should fail with a short buffer error
         ASSERT_EQ(QMsgEncoderShortBuffer,
@@ -535,10 +535,10 @@ namespace {
                                       buffer,
                                       sizeof(buffer),
                                       &message,
-                                      &bytes_consumed));
+                                      &octets_consumed));
 
         // And it should indicate no octets consumed
-        ASSERT_EQ(0, bytes_consumed);
+        ASSERT_EQ(0, octets_consumed);
     };
 
     TEST_F(QMsgEncoderTest, Deserialize_Net_ReallyShortBuffer)
@@ -550,7 +550,7 @@ namespace {
         };
 
         QMsgNetMessage message{};
-        std::size_t bytes_consumed{};
+        std::size_t octets_consumed{};
 
         // Least read should fail with a short buffer error
         ASSERT_EQ(QMsgEncoderShortBuffer,
@@ -558,10 +558,10 @@ namespace {
                                        buffer,
                                        sizeof(buffer),
                                        &message,
-                                       &bytes_consumed));
+                                       &octets_consumed));
 
         // And it should indicate no octets consumed
-        ASSERT_EQ(0, bytes_consumed);
+        ASSERT_EQ(0, octets_consumed);
     };
 
     TEST_F(QMsgEncoderTest, Deserialize_UI_ZeroLengthMessage)
@@ -573,7 +573,7 @@ namespace {
         };
 
         QMsgUIMessage message{};
-        std::size_t bytes_consumed{};
+        std::size_t octets_consumed{};
 
         // Least read should fail with a short buffer error
         ASSERT_EQ(QMsgEncoderInvalidMessage,
@@ -581,10 +581,10 @@ namespace {
                                       buffer,
                                       sizeof(buffer),
                                       &message,
-                                      &bytes_consumed));
+                                      &octets_consumed));
 
         // And it should indicate how many octets to advance the buffer (4)
-        ASSERT_EQ(sizeof(std::uint32_t), bytes_consumed);
+        ASSERT_EQ(sizeof(std::uint32_t), octets_consumed);
     };
 
     TEST_F(QMsgEncoderTest, Deserialize_Net_ZeroLengthMessage)
@@ -596,7 +596,7 @@ namespace {
         };
 
         QMsgNetMessage message{};
-        std::size_t bytes_consumed{};
+        std::size_t octets_consumed{};
 
         // Least read should fail with a short buffer error
         ASSERT_EQ(QMsgEncoderInvalidMessage,
@@ -604,10 +604,10 @@ namespace {
                                        buffer,
                                        sizeof(buffer),
                                        &message,
-                                       &bytes_consumed));
+                                       &octets_consumed));
 
         // And it should indicate how many octets to advance the buffer (4)
-        ASSERT_EQ(sizeof(std::uint32_t), bytes_consumed);
+        ASSERT_EQ(sizeof(std::uint32_t), octets_consumed);
     };
 
     TEST_F(QMsgEncoderTest, Deserialize_Net_Commit)
@@ -705,16 +705,16 @@ namespace {
         };
 
         QMsgNetMessage message{};
-        std::size_t bytes_consumed{};
+        std::size_t octets_consumed{};
 
         ASSERT_EQ(QMsgEncoderSuccess,
                   QMsgNetDecodeMessage(context,
                                        buffer,
                                        sizeof(buffer),
                                        &message,
-                                       &bytes_consumed));
+                                       &octets_consumed));
 
-        ASSERT_EQ(sizeof(buffer), bytes_consumed);
+        ASSERT_EQ(sizeof(buffer), octets_consumed);
         ASSERT_EQ(QMsgNetMLSCommit, message.type);
         ASSERT_EQ(123, message.u.mls_commit.team_id);
         ASSERT_EQ(684, message.u.mls_commit.commit.length);
