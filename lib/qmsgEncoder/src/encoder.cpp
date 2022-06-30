@@ -143,6 +143,9 @@ QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
                                            size_t buffer_length,
                                            size_t *encoded_length)
 {
+    // Indicate no data was encoded
+    *encoded_length = 0;
+
     // Ensure the context is not null
     if (!context || !context->opaque) return QMsgEncoderInvalidContext;
 
@@ -463,6 +466,9 @@ QMsgEncoderResult CALL QMsgNetEncodeMessage(QMsgEncoderContext *context,
                                             size_t buffer_length,
                                             size_t *encoded_length)
 {
+    // Indicate no data was encoded
+    *encoded_length = 0;
+
     // Ensure the context is not null
     if (!context || !context->opaque) return QMsgEncoderInvalidContext;
 
