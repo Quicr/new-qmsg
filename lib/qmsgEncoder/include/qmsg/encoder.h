@@ -54,6 +54,7 @@ extern "C"
 typedef enum QMsgEncoderResult
 {
     QMsgEncoderSuccess = 0,
+    QMsgEncoderBadParameter,
     QMsgEncoderUnknownError,
     QMsgEncoderShortBuffer,
     QMsgEncoderInvalidContext,

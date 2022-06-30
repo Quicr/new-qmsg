@@ -105,9 +105,6 @@ namespace {
         message.u.send_ascii_message.message.length = string_length;
         message.u.send_ascii_message.message.data =
                                     reinterpret_cast<std::uint8_t *>(text);
-        std::memcpy(message.u.send_ascii_message.message.data,
-                    text,
-                    message.u.send_ascii_message.message.length);
 
         std::size_t encoded_length;
         ASSERT_EQ(QMsgEncoderSuccess,
@@ -204,9 +201,6 @@ namespace {
         message.u.send_ascii_message.message.length = string_length;
         message.u.send_ascii_message.message.data =
                                     reinterpret_cast<std::uint8_t *>(text);
-        std::memcpy(message.u.send_ascii_message.message.data,
-                    text,
-                    message.u.send_ascii_message.message.length);
 
         std::size_t encoded_length;
         ASSERT_EQ(QMsgEncoderSuccess,
