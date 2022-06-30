@@ -1,6 +1,5 @@
 use std::io::{Read, Write};
 use tls_codec::*;
-use tls_codec_derive::*;
 
 // TlsSerialized automatically wraps TLS-serializable things in a TLS byte vector, including their
 // serialization / deserialization in that of an overall object.

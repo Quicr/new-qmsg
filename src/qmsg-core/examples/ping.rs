@@ -1,3 +1,7 @@
+// This example opens two named pipes, "ping_to_pong" and "pong_to_ping".  Every second, it writes
+// a u32 counter to "ping_to_pong", and awaits that counter being echoed back by the "pong"
+// example.  To set this up, you will need to `mkfifo ping_to_pong` and `mkfifo pong_to_ping`.
+
 use qmsg_core::*;
 use std::fs::OpenOptions;
 use std::io::Result;
