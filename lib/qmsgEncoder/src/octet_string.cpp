@@ -12,8 +12,8 @@
  *      None.
  */
 
-#include "octet_string.h"
-#include "data_buffer.h"
+#include "qmsg/octet_string.h"
+#include "qmsg/data_buffer.h"
 
 /*
  *  operator<< for OctetString
@@ -38,7 +38,7 @@
 std::ostream &operator<<(std::ostream &o, const qmsg::OctetString &octet_string)
 {
     qmsg::DataBuffer buffer(
-        const_cast<unsigned char *>(&octet_string[0]),
+        const_cast<std::uint8_t *>(&octet_string[0]),
         octet_string.size(),
         octet_string.size());
 

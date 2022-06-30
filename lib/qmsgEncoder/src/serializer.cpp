@@ -931,8 +931,7 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
     if (data_buffer.GetBufferSize())
     {
         data_buffer.AppendValue(value.length);
-        data_buffer.AppendValue(reinterpret_cast<const char *>(value.data),
-                                value.length);
+        data_buffer.AppendValue(value.data, value.length);
     }
 
     return sizeof(value.length) + value.length;

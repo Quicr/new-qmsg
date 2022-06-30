@@ -31,7 +31,8 @@ namespace {
                 QMsgEncoderDeinit(context);
             }
 
-            bool VerifyDataBuffer(const char expected[], std::size_t length)
+            bool VerifyDataBuffer(const std::uint8_t expected[],
+                                  std::size_t length)
             {
                 // Verify the buffer contents
                 for (std::size_t i = 0; i < length; i++)
@@ -58,7 +59,7 @@ namespace {
 
         protected:
             QMsgEncoderContext *context;
-            char data_buffer[1500];
+            std::uint8_t data_buffer[1500];
     };
 
     TEST_F(QMsgEncoderTest, InitAndDeinit)
@@ -72,7 +73,7 @@ namespace {
 
     TEST_F(QMsgEncoderTest, Serialize_UISendASCIIMessage)
     {
-        char expected[] =
+        std::uint8_t expected[] =
         {
             // Message length
             0x00, 0x00, 0x00, 0x1d,
@@ -123,7 +124,7 @@ namespace {
 
     TEST_F(QMsgEncoderTest, Deserialize_UISendASCIIMessage)
     {
-        char buffer[] =
+        std::uint8_t buffer[] =
         {
             // Message length
             0x00, 0x00, 0x00, 0x1d,
@@ -171,7 +172,7 @@ namespace {
 
     TEST_F(QMsgEncoderTest, Serialize_NetSendASCIIMessage)
     {
-        char expected[] =
+        std::uint8_t expected[] =
         {
             // Message length
             0x00, 0x00, 0x00, 0x1d,
@@ -222,7 +223,7 @@ namespace {
 
     TEST_F(QMsgEncoderTest, Deserialize_NetSendASCIIMessage)
     {
-        char buffer[] =
+        std::uint8_t buffer[] =
         {
             // Message length
             0x00, 0x00, 0x00, 0x1d,
@@ -271,7 +272,7 @@ namespace {
 
     TEST_F(QMsgEncoderTest, Serialize_NetWatchDevices)
     {
-        char expected[] =
+        std::uint8_t expected[] =
         {
             // Message length
             0x00, 0x00, 0x00, 0x16,
@@ -316,7 +317,7 @@ namespace {
 
     TEST_F(QMsgEncoderTest, Deserialize_NetWatchDevices)
     {
-        char buffer[] =
+        std::uint8_t buffer[] =
         {
             // Message length
             0x00, 0x00, 0x00, 0x16,
@@ -362,7 +363,7 @@ namespace {
 
     TEST_F(QMsgEncoderTest, Deserialize_MultipleMessageExample)
     {
-        char buffer[] =
+        std::uint8_t buffer[] =
         {
             // MESSAGE #1
 
@@ -473,7 +474,7 @@ namespace {
 
     TEST_F(QMsgEncoderTest, Deserialize_UI_ShortBuffer)
     {
-        char buffer[] =
+        std::uint8_t buffer[] =
         {
             // Message length
             0x00, 0x00, 0x00, 0x16,
@@ -499,7 +500,7 @@ namespace {
 
     TEST_F(QMsgEncoderTest, Deserialize_Net_ShortBuffer)
     {
-        char buffer[] =
+        std::uint8_t buffer[] =
         {
             // Message length
             0x00, 0x00, 0x00, 0x16,
@@ -525,7 +526,7 @@ namespace {
 
     TEST_F(QMsgEncoderTest, Deserialize_UI_ReallyShortBuffer)
     {
-        char buffer[] =
+        std::uint8_t buffer[] =
         {
             // Message length (partial)
             0x00, 0x00
@@ -548,7 +549,7 @@ namespace {
 
     TEST_F(QMsgEncoderTest, Deserialize_Net_ReallyShortBuffer)
     {
-        char buffer[] =
+        std::uint8_t buffer[] =
         {
             // Message length (partial)
             0x00, 0x00
@@ -571,7 +572,7 @@ namespace {
 
     TEST_F(QMsgEncoderTest, Deserialize_UI_ZeroLengthMessage)
     {
-        char buffer[] =
+        std::uint8_t buffer[] =
         {
             // Message length
             0x00, 0x00, 0x00, 0x00
@@ -594,7 +595,7 @@ namespace {
 
     TEST_F(QMsgEncoderTest, Deserialize_Net_ZeroLengthMessage)
     {
-        char buffer[] =
+        std::uint8_t buffer[] =
         {
             // Message length
             0x00, 0x00, 0x00, 0x00
@@ -714,7 +715,7 @@ namespace {
 
         ASSERT_EQ(QMsgEncoderSuccess,
                   QMsgNetDecodeMessage(context,
-                                       reinterpret_cast<char *>(buffer),
+                                       buffer,
                                        sizeof(buffer),
                                        &message,
                                        &bytes_consumed));

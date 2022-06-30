@@ -139,7 +139,7 @@ void CALL QMsgEncoderDeinit(QMsgEncoderContext *context)
  */
 QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
                                            const QMsgUIMessage *message,
-                                           char *buffer,
+                                           uint8_t *buffer,
                                            size_t buffer_length,
                                            size_t *encoded_length)
 {
@@ -163,9 +163,7 @@ QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
                 context->opaque);
 
         // Assign the buffer to a DataBuffer object
-        qmsg::DataBuffer data_buffer(reinterpret_cast<unsigned char *>(buffer),
-                                     buffer_length,
-                                     0);
+        qmsg::DataBuffer data_buffer(buffer, buffer_length, 0);
 
         // Get a reference to the serializer
         auto &serializer = internal_context->GetSerializer();
@@ -284,7 +282,7 @@ QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
  *      None.
  */
 EXPORT QMsgEncoderResult CALL QMsgUIDecodeMessage(QMsgEncoderContext *context,
-                                                  char *buffer,
+                                                  uint8_t *buffer,
                                                   size_t buffer_length,
                                                   QMsgUIMessage *message,
                                                   size_t *consumed)
@@ -318,9 +316,7 @@ EXPORT QMsgEncoderResult CALL QMsgUIDecodeMessage(QMsgEncoderContext *context,
                 context->opaque);
 
         // Assign the buffer to a DataBuffer object
-        qmsg::DataBuffer data_buffer(reinterpret_cast<unsigned char *>(buffer),
-                                     buffer_length,
-                                     buffer_length);
+        qmsg::DataBuffer data_buffer(buffer, buffer_length, buffer_length);
 
         // Get a reference to the deserializer
         auto &deserializer = internal_context->GetDeserializer();
@@ -471,7 +467,7 @@ EXPORT QMsgEncoderResult CALL QMsgUIDecodeMessage(QMsgEncoderContext *context,
  */
 QMsgEncoderResult CALL QMsgNetEncodeMessage(QMsgEncoderContext *context,
                                             const QMsgNetMessage *message,
-                                            char *buffer,
+                                            uint8_t *buffer,
                                             size_t buffer_length,
                                             size_t *encoded_length)
 {
@@ -495,9 +491,7 @@ QMsgEncoderResult CALL QMsgNetEncodeMessage(QMsgEncoderContext *context,
                 context->opaque);
 
         // Assign the buffer to a DataBuffer object
-        qmsg::DataBuffer data_buffer(reinterpret_cast<unsigned char *>(buffer),
-                                     buffer_length,
-                                     0);
+        qmsg::DataBuffer data_buffer(buffer, buffer_length, 0);
 
         // Get a reference to the serializer
         auto &serializer = internal_context->GetSerializer();
@@ -634,7 +628,7 @@ QMsgEncoderResult CALL QMsgNetEncodeMessage(QMsgEncoderContext *context,
  *      None.
  */
 EXPORT QMsgEncoderResult CALL QMsgNetDecodeMessage(QMsgEncoderContext *context,
-                                                   char *buffer,
+                                                   uint8_t *buffer,
                                                    size_t buffer_length,
                                                    QMsgNetMessage *message,
                                                    size_t *consumed)
@@ -668,9 +662,7 @@ EXPORT QMsgEncoderResult CALL QMsgNetDecodeMessage(QMsgEncoderContext *context,
                 context->opaque);
 
         // Assign the buffer to a DataBuffer object
-        qmsg::DataBuffer data_buffer(reinterpret_cast<unsigned char *>(buffer),
-                                     buffer_length,
-                                     buffer_length);
+        qmsg::DataBuffer data_buffer(buffer, buffer_length, buffer_length);
 
         // Get a reference to the deserializer
         auto &deserializer = internal_context->GetDeserializer();

@@ -74,12 +74,12 @@ EXPORT void CALL QMsgEncoderDeinit(QMsgEncoderContext *context);
 // Function prototypes for UI<=>Sec message encoding and decoding
 EXPORT QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
                                                   const QMsgUIMessage *message,
-                                                  char *buffer,
+                                                  uint8_t *buffer,
                                                   size_t buffer_length,
                                                   size_t *encoded_length);
 
 EXPORT QMsgEncoderResult CALL QMsgUIDecodeMessage(QMsgEncoderContext *context,
-                                                  char *buffer,
+                                                  uint8_t *buffer,
                                                   size_t buffer_length,
                                                   QMsgUIMessage *message,
                                                   size_t *consumed);
@@ -87,12 +87,12 @@ EXPORT QMsgEncoderResult CALL QMsgUIDecodeMessage(QMsgEncoderContext *context,
 // Function prototypes for Net<=>Sec message encoding and decoding
 EXPORT QMsgEncoderResult CALL QMsgNetEncodeMessage(QMsgEncoderContext *context,
                                                    const QMsgNetMessage *message,
-                                                   char *buffer,
+                                                   uint8_t *buffer,
                                                    size_t buffer_length,
                                                    size_t *encoded_length);
 
 EXPORT QMsgEncoderResult CALL QMsgNetDecodeMessage(QMsgEncoderContext *context,
-                                                   char *buffer,
+                                                   uint8_t *buffer,
                                                    size_t buffer_length,
                                                    QMsgNetMessage *message,
                                                    size_t *consumed);

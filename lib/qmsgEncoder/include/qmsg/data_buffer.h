@@ -1,5 +1,5 @@
 /*
- *  data_buffer_interface.h
+ *  data_buffer.h
  *
  *  Copyright (C) 2018 - 2022
  *  Cisco Systems, Inc.
@@ -25,7 +25,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <memory>
-#include "octet_string.h"
+#include "qmsg/octet_string.h"
 
 namespace qmsg
 {
@@ -57,7 +57,7 @@ class DataBuffer
     public:
         DataBuffer();
         DataBuffer(std::size_t buffer_size);
-        DataBuffer(unsigned char *buffer,
+        DataBuffer(std::uint8_t *buffer,
                    std::size_t buffer_size,
                    std::size_t data_length);
         DataBuffer(const DataBuffer &other);
@@ -71,14 +71,14 @@ class DataBuffer
         bool operator!=(const DataBuffer &other) const;
 
         // Functions to get access to the underlying data buffer
-        unsigned char *GetMutableBufferPointer(std::size_t offset = 0);
-        const unsigned char *GetBufferPointer(std::size_t offset = 0) const;
+        std::uint8_t *GetMutableBufferPointer(std::size_t offset = 0);
+        const std::uint8_t *GetBufferPointer(std::size_t offset = 0) const;
 
         // Transfer ownership of the internal buffer to the caller
-        unsigned char *TakeBufferOwnership();
+        std::uint8_t *TakeBufferOwnership();
 
         // Set the buffer to the specified address
-        void SetBuffer(unsigned char *new_buffer,
+        void SetBuffer(std::uint8_t *new_buffer,
                        std::size_t new_buffer_size,
                        std::size_t data_length,
                        bool take_ownership);
@@ -97,9 +97,9 @@ class DataBuffer
         // Functions to get contents of the internal buffer; these do not
         // adjust the read data length variable that keeps track of where to
         // perform subsequent read operations
-        unsigned char &operator[](std::size_t offset);
-        const unsigned char &operator[](std::size_t offset) const;
-        void GetValue(unsigned char *value,
+        std::uint8_t &operator[](std::size_t offset);
+        const std::uint8_t &operator[](std::size_t offset) const;
+        void GetValue(std::uint8_t *value,
                       std::size_t offset,
                       std::size_t length) const;
         void GetValue(std::uint8_t &value, std::size_t offset) const;
@@ -113,7 +113,7 @@ class DataBuffer
                       std::size_t length = 0) const;
 
         // Functions to set the contents of a internal buffer
-        void SetValue(const unsigned char *value,
+        void SetValue(const std::uint8_t *value,
                       std::size_t offset,
                       std::size_t length);
         void SetValue(std::uint8_t value, std::size_t offset);
@@ -126,8 +126,7 @@ class DataBuffer
 
         // Functions to append to the contents of a internal buffer,
         // adjusting the data length value as necessary
-        void AppendValue(const unsigned char *value, std::size_t length);
-        void AppendValue(const char *value, std::size_t length);
+        void AppendValue(const std::uint8_t *value, std::size_t length);
         void AppendValue(const std::string &value);
         void AppendValue(const OctetString &value);
         void AppendValue(std::uint8_t value);
@@ -139,8 +138,7 @@ class DataBuffer
 
         // Functions to read to the contents of a internal buffer,
         // adjusting the read data length value as it moves
-        void ReadValue(unsigned char *value, std::size_t length);
-        void ReadValue(char *value, std::size_t length);
+        void ReadValue(std::uint8_t *value, std::size_t length);
         void ReadValue(std::string &value, std::size_t length);
         void ReadValue(OctetString &value, std::size_t length);
         void ReadValue(std::uint8_t &value);
@@ -154,7 +152,7 @@ class DataBuffer
         void AllocateBuffer();
         void FreeBuffer();
 
-        unsigned char *buffer;                  // Raw data buffer
+        std::uint8_t *buffer;                   // Raw data buffer
         bool owns_buffer;                       // Buffer owned by this object?
         std::size_t buffer_size;                // Size of the allocated buffer
         std::size_t data_length;                // Length of data in buffer
