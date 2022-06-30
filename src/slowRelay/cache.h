@@ -9,6 +9,8 @@
 
 class Cache {
 public:
+  Cache() {};
+
   void put( const ShortName& name,  const std::vector<uint8_t>& data );
 
   const std::vector<uint8_t>* get( const ShortName& name ) const;
