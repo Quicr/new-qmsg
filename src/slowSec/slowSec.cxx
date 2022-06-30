@@ -32,8 +32,8 @@ int main( int argc, char* argv[]){
   fprintf(stderr, "SEC: Got pipe to uiProc\n");
   
   const int bufSize=128;
-  char netBuf[bufSize];
-  char uiBuf[bufSize];
+  uint8_t netBuf[bufSize];
+  uint8_t uiBuf[bufSize];
 
   QMsgEncoderContext* context = nullptr;
   QMsgEncoderInit( &context );

@@ -46,7 +46,7 @@ public:
     message.u.watch_channel.team_id = 0x2;
     message.u.watch_channel.channel_id = 0x3;
     
-    char encodeBuffer[1024];
+    uint8_t encodeBuffer[1024];
     size_t encodeLen;
     QMsgEncoderResult err;
     err = QMsgUIEncodeMessage( context, &message, encodeBuffer, sizeof(encodeBuffer), &encodeLen ); 
@@ -56,7 +56,7 @@ public:
     write( ui2secFD, encodeBuffer, sendLen );
   }
 
-  void sendMsg( int team, int ch, char* msg, int msgLen ) {
+  void sendMsg( int team, int ch,  uint8_t* msg, int msgLen ) {
     assert( msg );
     assert( msgLen > 0 );
     
@@ -82,8 +82,8 @@ int main( int argc, char* argv[]){
   
          
   const int bufSize=128;
-  char secBuf[bufSize];
-  char keyboardBuf[bufSize];
+  uint8_t secBuf[bufSize];
+  uint8_t keyboardBuf[bufSize];
  
   while( true ) {
     //fprintf(stderr, "UI: Loop\n");
