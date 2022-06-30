@@ -47,6 +47,7 @@ where
                             }
                         };
                         let (commit, welcome) = group.add_members(&self.backend, &[kp]).unwrap();
+                        group.merge_pending_commit().unwrap();
                         self.to_network
                             .write(
                                 &Message::from_tls(&SecurityToNetworkEvent::MlsCommitOut(
