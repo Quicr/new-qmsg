@@ -339,6 +339,14 @@ EXPORT QMsgEncoderResult CALL QMsgUIDecodeMessage(QMsgEncoderContext *context,
         // a message structure does not understand will simply be ignored)
         *consumed += message_length;
 
+        // If there is more data in the buffer than one message, adjust the
+        // DataBuffer data length to reflect a single message (i.e., do not
+        // read into the next message)
+        if (*consumed < data_buffer.GetDataLength())
+        {
+            data_buffer.SetDataLength(*consumed);
+        }
+
         // If the buffer is too short, indicate nothing was consumed and
         // return an error indicating that the buffer is shorter than the
         // total message length
@@ -680,6 +688,14 @@ EXPORT QMsgEncoderResult CALL QMsgNetDecodeMessage(QMsgEncoderContext *context,
         // Assume that all of the message will be consumed (trailing octets
         // a message structure does not understand will simply be ignored)
         *consumed += message_length;
+
+        // If there is more data in the buffer than one message, adjust the
+        // DataBuffer data length to reflect a single message (i.e., do not
+        // read into the next message)
+        if (*consumed < data_buffer.GetDataLength())
+        {
+            data_buffer.SetDataLength(*consumed);
+        }
 
         // If the buffer is too short, indicate nothing was consumed and
         // return an error indicating that the buffer is shorter than the
