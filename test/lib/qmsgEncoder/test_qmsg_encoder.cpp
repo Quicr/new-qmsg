@@ -42,6 +42,20 @@ namespace {
                 return true;
             }
 
+            template<typename T>
+            bool VerifyBuffers(const T expected[],
+                               const T actual[],
+                               std::size_t length)
+            {
+                // Verify the buffer contents
+                for (std::size_t i = 0; i < length; i++)
+                {
+                    if (expected[i] != actual[i]) return false;
+                }
+
+                return true;
+            }
+
         protected:
             QMsgEncoderContext *context;
             char data_buffer[1500];
@@ -709,6 +723,9 @@ namespace {
         ASSERT_EQ(QMsgNetMLSCommit, message.type);
         ASSERT_EQ(123, message.u.mls_commit.team_id);
         ASSERT_EQ(684, message.u.mls_commit.commit.length);
+        ASSERT_TRUE(VerifyBuffers(buffer + 16,
+                                  message.u.mls_commit.commit.data,
+                                  message.u.mls_commit.commit.length));
     }
 
 } // namespace
