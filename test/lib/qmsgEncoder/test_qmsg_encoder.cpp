@@ -346,4 +346,115 @@ namespace {
         ASSERT_EQ(3, message.u.watch_devices.device_list.device_list[2]);
     };
 
+    TEST_F(QMsgEncoderTest, Deserialize_MultipleMessageExample)
+    {
+        char buffer[] =
+        {
+            // MESSAGE #1
+
+            // Message length
+            0x00, 0x00, 0x00, 0x1d,
+
+            // Message type
+            0x00, 0x00, 0x00, 0x01,
+
+            // Team ID
+            0x01, 0x02, 0x03, 0x04,
+
+            // Channel ID
+            0x05, 0x06, 0x07, 0x08,
+
+            // Opaque data length
+            0x00, 0x00, 0x00, 0x0d,
+
+            // Hello, World!
+            0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x57,
+            0x6f, 0x72, 0x6c, 0x64, 0x21,
+
+            // MESSAGE #2
+
+            // Message length
+            0x00, 0x00, 0x00, 0x16,
+
+            // Message type
+            0x00, 0x00, 0x00, 0x03,
+
+            // Team ID
+            0x01, 0x02, 0x03, 0x04,
+
+            // Channel ID
+            0x05, 0x06, 0x07, 0x08,
+
+            // Device list length (in octets)
+            0x00, 0x00, 0x00, 0x06,
+
+            // Device list
+            0x00, 0x01, 0x00, 0x02, 0x00, 0x03,
+
+
+            // MESSAGE #3
+
+            // Message length
+            0x00, 0x00, 0x00, 0x1d,
+
+            // Message type
+            0x00, 0x00, 0x00, 0x01,
+
+            // Team ID
+            0x01, 0x02, 0x03, 0x04,
+
+            // Channel ID
+            0x05, 0x06, 0x07, 0x08,
+
+            // Opaque data length
+            0x00, 0x00, 0x00, 0x0d,
+
+            // Hello, World!
+            0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x57,
+            0x6f, 0x72, 0x6c, 0x64, 0x21,
+
+            // MESSAGE #4 -- partial message!
+
+            // Message length
+            0x00, 0x00, 0x00, 0x1d
+
+        };
+
+        QMsgNetMessage message{};
+        std::size_t bytes_consumed{};
+        std::size_t total_bytes_consumed{};
+        QMsgNetMessageType message_types[3] =
+        {
+            QMsgNetSendASCIIMessage,
+            QMsgNetWatchDevices,
+            QMsgNetSendASCIIMessage
+        };
+
+        for (std::size_t i = 0; i < 3; i++)
+        {
+            ASSERT_EQ(
+                QMsgEncoderSuccess,
+                QMsgNetDecodeMessage(context,
+                                     buffer + total_bytes_consumed,
+                                     sizeof(buffer) - total_bytes_consumed,
+                                     &message,
+                                     &bytes_consumed));
+            ASSERT_EQ(message_types[i], message.type);
+            total_bytes_consumed += bytes_consumed;
+        }
+
+        // The forth message is incomplete, but there should be 4 octets
+        // remaining
+        ASSERT_EQ(4, sizeof(buffer) - total_bytes_consumed);
+
+        // Least read should fail with a short buffer error
+        ASSERT_EQ(QMsgEncoderShortBuffer,
+                  QMsgNetDecodeMessage(context,
+                                       buffer + total_bytes_consumed,
+                                       sizeof(buffer) - total_bytes_consumed,
+                                       &message,
+                                       &bytes_consumed));
+    };
+
+
 } // namespace
