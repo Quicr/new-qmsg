@@ -14,6 +14,8 @@ Sender::~Sender()
 
 void Sender::SendMessage(char *buffer, const unsigned long buffer_length)
 {
+    char send_buffer[1024]; // FIX this probably shouldn't be hard coded?
+
     // Encode the message
     QMsgUIMessage message{};
     message.type = QMsgUISendASCIIMessage;
@@ -26,13 +28,13 @@ void Sender::SendMessage(char *buffer, const unsigned long buffer_length)
 
     QMsgEncoderResult res = QMsgUIEncodeMessage(context,
                                                 &message,
-                                                buffer,
-                                                buffer_length,
+                                                send_buffer,
+                                                sizeof(send_buffer),
                                                 &encoded_length);
 
     // Write the buffer to the fd
-    fprintf(stderr, "Sending: %d", buffer_length);
-    write(ui_to_sec_fd, buffer, buffer_length);
+    fprintf(stderr, "Sending: %d bytes - %s", encoded_length, send_buffer);
+    write(ui_to_sec_fd, send_buffer, encoded_length);
     fprintf(stderr, "\n");
 }
 
