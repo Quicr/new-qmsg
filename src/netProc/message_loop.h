@@ -11,12 +11,16 @@ enum struct LoopProcessResult {
 
 };
 
-/// Message Process Loop with encode and decode
+/// Message Process Loop with encode and decode and usually loopy stuff
 struct MessageLoop {
 
     LoopProcessResult process(uint16_t read_buffer_size_in);
 
     std::function<bool (QMsgNetMessage& )> process_net_message_fn = nullptr;
+    // generic loop fn to do other things than QMesg Parsing
+    std::function<void ()> loop_fn = nullptr;
+
+
     bool keep_processing = true;
     int read_from_fd = -1;
     const uint16_t read_buffer_size = 8192;

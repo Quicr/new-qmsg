@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <thread>
 
 #include "names.h"
 ///
@@ -21,7 +22,28 @@ to_hex(const quicr::bytes& data)
 
 Network::Network(const std::string& server_ip, const uint16_t port)
   : qr_client(delegate, server_ip, port)
-{}
+{
+    while(!qr_client.is_transport_ready()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    std::cout << "Transport is ready" << std::endl;
+}
+
+void Networkcheck_network_messages(std::vector<QuicrMessageInfo>& messages_out)
+{
+    static bool already_registered = false;
+    if (!already_registered) {
+        qr_client.register_names({"keep_alive"}, true);
+        already_registered = true;
+    }
+
+    //std::cerr << " Sending keepAlive\n";
+    auto data = quicr::bytes{1};
+    qr_client.publish_named_data("keep_alive", std::move(data), 1, 1);
+    // keep alive pings on quic connection
+
+}
 
 void Network::publish(uint32_t team_id, uint32_t channel_id, uint16_t device_id, quicr::bytes&& data)
 {
@@ -52,11 +74,15 @@ void Network::unsubscribe_from_device(uint32_t team_id, uint32_t channel_id, uin
 void Network::subscribe_for_keypackage(uint32_t team_id, quicr::bytes&& kp_hash)
 {
     auto kp_hash_str = to_hex(kp_hash);
+    std::cout << "[Network]:subscribe_for_keypackage: hash: " << kp_hash_str << std::endl;
     if(keypackage_hashes.count(team_id) && keypackage_hashes[team_id] == kp_hash_str) {
+        std::cout << "[Network]:subscribe_for_keypackage: matching hash no-op " << kp_hash_str << std::endl;
         return;
     }
 
     auto qname = QuicrName::name_for_kp_hash(std::to_string(team_id), to_hex(kp_hash));
+    std::cout << "[Network]:subscribe_for_keypackage: QName " << qname << std::endl;
+
     subscribe({qname});
 
     keypackage_hashes[team_id] = kp_hash_str;
@@ -69,12 +95,14 @@ void Network::handleKeyPackageEvent(EventSource source, const uint32_t team_id, 
                                     quicr::bytes&& key_package_hash)
 {
     if(source == EventSource::SecProc) {
+        std::cout << "[Network]:handleKeyPackageEvent: team " << team_id  << std::endl;
         // subscribe for welcome and commit
         subscribe({QuicrName::name_for_welcome(std::to_string(team_id), to_hex(key_package_hash)),
                    QuicrName::name_for_commit(std::to_string(team_id))});
 
         // publish the keypackage to the leader
         auto qname = QuicrName::name_for_kp_hash(std::to_string(team_id), to_hex(key_package_hash));
+        std::cout << "[Network]:handleKeyPackageEvent: Publishing to QName: " << qname << std::endl;
         publish(std::move(qname), std::move(key_package));
     }
 }
@@ -114,6 +142,7 @@ void Network::publish(std::string&& name, quicr::bytes&& data)
         qr_client.register_names({name}, true);
     }
 
+    std::cout << "publishing :" << to_hex(data) << std::endl;
     qr_client.publish_named_data(name, std::move(data), 1, 0);
 }
 

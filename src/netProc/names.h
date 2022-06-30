@@ -33,7 +33,7 @@ struct QuicrName {
 private:
 
   static std::string name_for_membership(const std::string& team_id) {
-      return base  + team_id + std::string(membership);
+      return base  + team_id + "/" + std::string(membership);
   }
 
   static std::string name_for_join(const std::string& team_id) {
@@ -41,7 +41,7 @@ private:
   }
 
   static std::string name_for_message(const std::string& team_id) {
-      return base  + team_id + std::string(message);
+      return base  + team_id + "/" +  std::string(message);
   }
 
 };

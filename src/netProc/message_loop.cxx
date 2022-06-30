@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
+#include <iostream>
 
 #include "message_loop.h"
 
@@ -14,6 +15,8 @@ LoopProcessResult MessageLoop::process(uint16_t read_buffer_size_in)
     if (read_from_fd == -1) {
         return  LoopProcessResult::INVALID_ARGS;
     }
+
+    std::cout << "Running Message Loop\n";
 
     uint16_t buffer_size = read_buffer_size_in;
     if (buffer_size == 0 || buffer_size >  8192) {
@@ -58,6 +61,8 @@ LoopProcessResult MessageLoop::process(uint16_t read_buffer_size_in)
                                read_buffer + fragment_size,
                                buffer_size - fragment_size);
 
+            std::cout << "Loop: Read " << num << " bytes\n";
+
             // Update the total bytes to include the previous fragment
             num += fragment_size;
 
@@ -79,10 +84,11 @@ LoopProcessResult MessageLoop::process(uint16_t read_buffer_size_in)
 
                 // Update the total octets consumed
                 total_consumed += consumed;
-
+                std::cout << "Loop: Encode Result: " << qmsg_enc_result << std::endl;
                 if (qmsg_enc_result == QMsgEncoderSuccess)
                 {
                     if(process_net_message_fn != nullptr) {
+                        std::cout << "Calling Process for net message:" << std::endl;
                         bool result = process_net_message_fn(message);
                         // log the result
                         continue;
@@ -104,6 +110,12 @@ LoopProcessResult MessageLoop::process(uint16_t read_buffer_size_in)
                 fragment_size = num - total_consumed;
             }
 
+        }
+
+        // carryout any loop related functions to carry out
+        if(loop_fn)
+        {
+            loop_fn();
         }
     }
 

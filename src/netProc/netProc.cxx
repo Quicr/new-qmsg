@@ -15,18 +15,10 @@ struct NetworkProcess
 {
     explicit NetworkProcess(const std::string& server, uint16_t port)
     : network(server, port)
-    {
-        sec2netFD = open( "/tmp/pipe-s2n", O_RDONLY, O_NONBLOCK );
-        assert( sec2netFD >= 0 );
-        fprintf(stderr, "NET: Got pipe from secProc\n");
-
-        net2secFD = open( "/tmp/pipe-n2s", O_WRONLY, O_NONBLOCK );
-        assert( net2secFD >= 0 );
-        fprintf(stderr, "NET: Got pipe to netProc\n");
-
-    }
+    {}
 
     bool process_net_message(QMsgNetMessage& message);
+    void perform_network_io();
     Network network;
     int sec2netFD = -1;
     int net2secFD = -1;
@@ -85,13 +77,15 @@ bool NetworkProcess::process_net_message(QMsgNetMessage& message)
             break;
         case QMsgNetMLSSignatureHash:
         {
+            std::cout << "[NetMsgLoop]:Got QMsgNetMLSSignatureHash " << std::endl;
             // subscribe to keypackage based on the hash
             auto &msg = message.u.mls_signature_hash;
             if (!msg.hash.data)
             {
-                // log
+                std::cout << "[NetMsgLoop]:QMsgNetMLSSignatureHash: malformed hash" << std::endl;
                 break;
             }
+
             auto kp_hash = quicr::bytes(msg.hash.data, msg.hash.data + msg.hash.length);
             network.subscribe_for_keypackage(msg.team_id, std::move(kp_hash));
         }
@@ -99,9 +93,10 @@ bool NetworkProcess::process_net_message(QMsgNetMessage& message)
         case  QMsgNetMLSKeyPackage:
             // post key package for  this device
         {
+            std::cout << "[NetMsgLoop]:Got QMsgNetMLSKeyPackage " << std::endl;
             auto& msg = message.u.mls_key_package;
             if(!msg.key_package.data || !msg.key_package_hash.data) {
-                // log error
+                std::cout << "[NetMsgLoop]: Invalid QMsgNetMLSKeyPackage " << std::endl;
                 break;
             }
 
@@ -142,22 +137,60 @@ bool NetworkProcess::process_net_message(QMsgNetMessage& message)
     return true;
 }
 
-int main( int argc, char* argv[]){
+void NetworkProcess::perform_network_io()
+{
+    auto incoming_messages = std::vector<QuicrMessageInfo>{};
+    network.check_network_messages(incoming_messages);
+    std::cout << "NetworkIO: Found " << incoming_messages.size() << ", messages to process" << std::endl;
+}
 
-  fprintf(stderr, "NET: Starting netProc\n");
-  // setup our network layer
-  auto network = Network("127.0.0.1", 7777);
+int main( int argc, char* argv[]) {
+
+
+    if(argc < 2) {
+        std::cerr << "Usage: <program> user-name" << std::endl;
+        std::cerr << "user-name: name of the user" << std::endl;
+        exit(0);
+    }
+
+    std::string user;
+    user.assign(argv[1]);
+    if(user.empty()) {
+        std::cerr << "empty user input";
+        exit(-1);
+    }
+
+    fprintf(stderr, "NET: Starting netProc\n");
+    std::string pipe_name = std::string("/tmp/pipe-s2n-") + user;
+    std::cout << "Checking for pipe from secProc %s" << pipe_name << std::endl;
+    int sec2netFD = open( pipe_name.c_str(), O_RDONLY, O_NONBLOCK );
+    assert( sec2netFD >= 0 );
+    std::cout << "NET: Got pipe from secProc %s" << pipe_name << std::endl;
+
+    pipe_name = std::string("/tmp/pipe-n2s-") + user;
+    std::cout << "Checking for pipe to netProc " << pipe_name << std::endl;
+    int net2secFD = open( pipe_name.c_str(), O_WRONLY, O_NONBLOCK );
+    assert( net2secFD >= 0 );
+    std::cout << "NET: Got pipe to netProc " << pipe_name << std::endl;
 
   // set up connectors to the network process
   NetworkProcess network_process {"127.0.0.1", 7777};
+  network_process.sec2netFD  = sec2netFD;
+  network_process.net2secFD = net2secFD;
 
-  // setup MessageLoop
+  //network_process.network.start();
+
+  fprintf(stderr, "NET: Starting message loop\n");
+
+    // setup MessageLoop
   auto message_loop = MessageLoop{};
   message_loop.read_from_fd = network_process.sec2netFD;
   message_loop.keep_processing = true;
   message_loop.process_net_message_fn = std::bind(&NetworkProcess::process_net_message,
                                                   &network_process,
                                                   std::placeholders::_1);
+  message_loop.loop_fn = std::bind(&NetworkProcess::perform_network_io,
+                                   &network_process);
 
   // kick-off the message loop
   auto err = message_loop.process(8192);
