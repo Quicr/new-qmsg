@@ -246,6 +246,15 @@ where
                             str::from_utf8(am.ascii.as_slice()).unwrap()
                         );
                     }
+		   UiToSecurityEvent::SignatureHashIn(s) => {
+			let out = s;
+			self.to_network
+                            .write(
+				&Message::from_tls(&SecurityToNetworkEvent::SignatureHashOut(
+					out,
+				))
+                            .unwrap();	
+		   }
                 }
             }
         }
