@@ -169,60 +169,60 @@ pub struct DeviceInfo {
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
 #[repr(u32)]
 pub enum NetworkToSecurityEvent {
-    #[tls_codec(discriminant = 1)]
+    #[tls_codec(discriminant = 7)]
     JoinRequest(JoinRequest),
 
-    #[tls_codec(discriminant = 2)]
+    #[tls_codec(discriminant = 8)]
     MlsWelcome(MlsWelcome),
 
-    #[tls_codec(discriminant = 3)]
+    #[tls_codec(discriminant = 9)]
     MlsCommit(MlsCommitIn),
 
-    #[tls_codec(discriminant = 4)]
+    #[tls_codec(discriminant = 2)]
     EncryptedAsciiMessage(EncryptedAsciiMessageIn),
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
 #[repr(u32)]
 pub enum SecurityToNetworkEvent {
-    #[tls_codec(discriminant = 1)]
+    #[tls_codec(discriminant = 7)]
     JoinRequest(JoinRequest),
 
-    #[tls_codec(discriminant = 2)]
+    #[tls_codec(discriminant = 8)]
     MlsWelcome(MlsWelcome),
 
-    #[tls_codec(discriminant = 3)]
+    #[tls_codec(discriminant = 9)]
     MlsCommitOut(MlsCommitOut),
 
-    #[tls_codec(discriminant = 4)]
+    #[tls_codec(discriminant = 1)]
     EncryptedAsciiMessage(EncryptedAsciiMessageOut),
 
-    #[tls_codec(discriminant = 5)]
+    #[tls_codec(discriminant = 3)]
     WatchDevices(WatchDevices),
 
-    #[tls_codec(discriminant = 6)]
+    #[tls_codec(discriminant = 4)]
     UnwatchDevices(UnwatchDevices),
 
-    #[tls_codec(discriminant = 9)]
+    #[tls_codec(discriminant = 10)]
     DeviceInfo(DeviceInfo),
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
 #[repr(u32)]
 pub enum UiToSecurityEvent {
-    #[tls_codec(discriminant = 4)]
+    #[tls_codec(discriminant = 1)]
     AsciiMessage(AsciiMessage),
 
-    #[tls_codec(discriminant = 7)]
+    #[tls_codec(discriminant = 11)]
     WatchChannel(WatchChannel),
 
-    #[tls_codec(discriminant = 8)]
+    #[tls_codec(discriminant = 12)]
     UnwatchChannel(UnwatchChannel),
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
 #[repr(u32)]
 pub enum SecurityToUiEvent {
-    #[tls_codec(discriminant = 4)]
+    #[tls_codec(discriminant = 2)]
     AsciiMessage(AsciiMessage),
 }
