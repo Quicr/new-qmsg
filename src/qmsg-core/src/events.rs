@@ -32,7 +32,10 @@ where
     T: Serialize + Deserialize + Size,
 {
     fn tls_serialized_len(&self) -> usize {
-        TlsSerializedVector::len_len() + self.inner.tls_serialized_len()
+        // Hard-coding as 4 until a bug in tls_codec is fixed where
+        // TlsByteVecU{16/32}::len_len() returns 1 (instead of 2 and 4, respectively).
+        // TlsSerializedVector::len_len() + self.inner.tls_serialized_len()
+        4 + self.inner.tls_serialized_len()
     }
 }
 
