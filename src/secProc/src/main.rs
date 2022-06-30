@@ -173,10 +173,33 @@ where
                 let msg = self.from_ui.next().unwrap();
                 match msg.to_tls::<UiToSecurityEvent>().unwrap() {
                     UiToSecurityEvent::WatchChannel(w) => {
-                        // TODO: do we as the security process need to translate from the UI's
-                        // intentions of watching a channel and figure out which device IDs to watch?
+                        let out = WatchDevices {
+                            team: w.team,
+                            channel: w.channel,
+                            // Temporary: simply watch device IDs [0, 10)
+                            device_ids: TlsVecU16::new(Vec::from_iter(0..10)),
+                        };
+                        self.to_network
+                            .write(
+                                &Message::from_tls(&SecurityToNetworkEvent::WatchDevices(out))
+                                    .unwrap(),
+                            )
+                            .unwrap();
                     }
-                    UiToSecurityEvent::UnwatchChannel(u) => {}
+                    UiToSecurityEvent::UnwatchChannel(u) => {
+                        let out = UnwatchDevices {
+                            team: u.team,
+                            channel: u.channel,
+                            // Temporary: simply unwatch device IDs [0, 10)
+                            device_ids: TlsVecU16::new(Vec::from_iter(0..10)),
+                        };
+                        self.to_network
+                            .write(
+                                &Message::from_tls(&SecurityToNetworkEvent::UnwatchDevices(out))
+                                    .unwrap(),
+                            )
+                            .unwrap();
+                    }
                     UiToSecurityEvent::AsciiMessage(am) => {
                         let mut group = match self.groups.get(&am.team) {
                             Some(group) => group.borrow_mut(),

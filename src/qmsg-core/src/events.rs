@@ -133,14 +133,14 @@ pub struct AsciiMessage {
 pub struct WatchDevices {
     pub team: u32,
     pub channel: u32,
-    pub device_ids: TlsVecU16<u16>,
+    pub device_ids: TlsVecU16<u32>,
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
 pub struct UnwatchDevices {
     pub team: u32,
     pub channel: u32,
-    pub device_ids: TlsVecU16<u16>,
+    pub device_ids: TlsVecU16<u32>,
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
