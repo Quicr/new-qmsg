@@ -11,7 +11,16 @@ their immediate subscriptions
 
 - Sort messages in a channel by timestamp
 
-TODO by the end of today
-Send a watch (channels) (integer)
-Send a message
-Receive a message
+- Initial handshake (to get the keys for the team)
+
+- Get all channels
+
+- Get all previous messages
+
+- Get keys when they change - should be handled in the receiver.
+
+- Send a watch (channels) (integer)
+
++ Send a message
+
++ Receive a message

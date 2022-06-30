@@ -21,18 +21,16 @@ int main(int argc, char *argv[])
 
     fprintf(stderr, "UI: Starting\n");
 
-    //
+    // keyboard file descriptor
     int keyboard_fd = 0;
 
     // Setup the security to ui file descriptor
     int sec_to_ui_fd = open("/tmp/pipe-s2u", O_RDONLY, O_NONBLOCK);
-    // int sec_to_ui_fd = 0 ;
     assert(sec_to_ui_fd >= 0);
     fprintf(stderr, "UI: Got pipe from secProc\n");
 
     // Setup the ui to security file descriptor
     int ui_to_sec_fd = open("/tmp/pipe-u2s", O_WRONLY, O_NONBLOCK);
-    // int ui_to_sec_fd = 0;
     assert(ui_to_sec_fd >= 0);
     fprintf(stderr, "UI: Got pipe to secProc\n");
 

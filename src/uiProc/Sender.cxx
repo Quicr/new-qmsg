@@ -17,10 +17,10 @@ void Sender::SendMessage(char *buffer, const unsigned long buffer_length)
     // Encode the message
     QMsgUIMessage message{};
     message.type = QMsgUISendASCIIMessage;
-        message.u.send_ascii_message.team_id = 0x01020304;
-        message.u.send_ascii_message.channel_id = 0x05060708;
-        message.u.send_ascii_message.message.length = buffer_length;
-        message.u.send_ascii_message.message.data = reinterpret_cast<std::uint8_t *>(buffer);
+    message.u.send_ascii_message.team_id = 0x01020304;
+    message.u.send_ascii_message.channel_id = 0x05060708;
+    message.u.send_ascii_message.message.length = buffer_length;
+    message.u.send_ascii_message.message.data = reinterpret_cast<std::uint8_t *>(buffer);
 
     std::size_t encoded_length;
 
