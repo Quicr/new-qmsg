@@ -966,7 +966,8 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
     if (data_buffer.GetBufferSize())
     {
         // Write out octet count, not a device count
-        data_buffer.AppendValue(value.num_devices * sizeof(QMsgDeviceID));
+        std::uint32_t octets = value.num_devices * sizeof(QMsgDeviceID);
+        data_buffer.AppendValue(octets);
         for(std::size_t i = 0; i < value.num_devices; i++)
         {
             data_buffer.AppendValue(value.device_list[i]);

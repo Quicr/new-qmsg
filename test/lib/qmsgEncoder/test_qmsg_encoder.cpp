@@ -254,4 +254,96 @@ namespace {
                               message.u.send_ascii_message.message.length));
     };
 
+
+    TEST_F(QMsgEncoderTest, Serialize_NetWatchDevices)
+    {
+        char expected[] =
+        {
+            // Message length
+            0x00, 0x00, 0x00, 0x16,
+
+            // Message type
+            0x00, 0x00, 0x00, 0x03,
+
+            // Team ID
+            0x01, 0x02, 0x03, 0x04,
+
+            // Channel ID
+            0x05, 0x06, 0x07, 0x08,
+
+            // Device list length (in octets)
+            0x00, 0x00, 0x00, 0x06,
+
+            // Device list
+            0x00, 0x01, 0x00, 0x02, 0x00, 0x03
+        };
+
+        QMsgNetMessage message{};
+        QMsgDeviceID devices[] = {1, 2, 3};
+
+        message.type = QMsgNetWatchDevices;
+        message.u.watch_devices.team_id = 0x01020304;
+        message.u.watch_devices.channel_id = 0x05060708;
+        message.u.watch_devices.device_list.num_devices = 3;
+        message.u.watch_devices.device_list.device_list = devices;
+
+        std::size_t encoded_length;
+        ASSERT_EQ(QMsgEncoderSuccess,
+                  QMsgNetEncodeMessage(context,
+                                       &message,
+                                       data_buffer,
+                                       sizeof(data_buffer),
+                                       &encoded_length));
+
+        ASSERT_EQ(sizeof(expected), encoded_length);
+
+        ASSERT_TRUE(VerifyDataBuffer(expected, sizeof(expected)));
+    };
+
+    TEST_F(QMsgEncoderTest, Deserialize_NetWatchDevices)
+    {
+        char buffer[] =
+        {
+            // Message length
+            0x00, 0x00, 0x00, 0x16,
+
+            // Message type
+            0x00, 0x00, 0x00, 0x03,
+
+            // Team ID
+            0x01, 0x02, 0x03, 0x04,
+
+            // Channel ID
+            0x05, 0x06, 0x07, 0x08,
+
+            // Device list length (in octets)
+            0x00, 0x00, 0x00, 0x06,
+
+            // Device list
+            0x00, 0x01, 0x00, 0x02, 0x00, 0x03
+        };
+
+        QMsgNetMessage message{};
+        std::size_t bytes_consumed{};
+
+        ASSERT_EQ(QMsgEncoderSuccess,
+                  QMsgNetDecodeMessage(context,
+                                       buffer,
+                                       sizeof(buffer),
+                                       &message,
+                                       &bytes_consumed));
+
+        ASSERT_EQ(sizeof(buffer), bytes_consumed);
+        ASSERT_EQ(QMsgNetWatchDevices, message.type);
+        ASSERT_EQ(std::uint32_t(0x01020304),
+                  message.u.watch_devices.team_id);
+        ASSERT_EQ(std::uint32_t(0x05060708),
+                  message.u.watch_devices.channel_id);
+        ASSERT_EQ(3,
+                  message.u.watch_devices.device_list.num_devices);
+        ASSERT_EQ(1, message.u.watch_devices.device_list.device_list[0]);
+        ASSERT_EQ(2, message.u.watch_devices.device_list.device_list[1]);
+        ASSERT_EQ(3, message.u.watch_devices.device_list.device_list[2]);
+    };
+
 } // namespace
