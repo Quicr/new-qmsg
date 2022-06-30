@@ -32,7 +32,7 @@ add_subdirectory(src/uiProc)
 add_subdirectory(src/netProc)
 
 add_subdirectory(src/slowTest)
-#add_subdirectory(src/slowRelay)
+add_subdirectory(src/slowRelay)
 
 include(CTest)
 

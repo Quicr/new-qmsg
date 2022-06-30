@@ -118,6 +118,7 @@ EventType: Keypackage
 Data:
 * uint32: team
 * opaque vector<0..2^32-1>: key-package bytes
+* opaque vector<0..2^32-1>: key-package-hash bytes
 
 ## Add KeyPackage (Net -> Sec)
 This event indicates to the MLS leader that a user/device wants to 
