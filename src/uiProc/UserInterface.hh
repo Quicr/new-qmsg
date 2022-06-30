@@ -63,15 +63,20 @@ private:
     FdReader* receiver;
     Sender* sender;
     Parser* parser;
-    QMsgEncoderResult qmsg_enc_result;
-    QMsgEncoderContext *context;
-    unsigned int consumed;
-    unsigned int total_consumed;
-    unsigned int fragment_size = 0;
     std::vector<Channel> joined_channels;
     std::vector<Channel> all_channels;
 
     int selected_fd;
     bool is_running;
     char* username;
+
+    // TODO move into a new a new class from keyboard (sender)
+
+    // TODO move these into a new class from security (receiver)
+    QMsgEncoderResult qmsg_enc_sec_res;
+    QMsgEncoderContext *sec_context;
+    QMsgNetMessage sec_message;
+    unsigned long sec_fragment_size = 0;
+    unsigned long sec_total_consumed = 0;
+    unsigned long sec_consumed = 0;
 };

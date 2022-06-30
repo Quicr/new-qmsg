@@ -1,18 +1,17 @@
 #include "FdReader.hh"
 
 #include <stdlib.h>
+#include <string.h>
 
-FdReader::FdReader(int fd, unsigned int buffer_size) :
-    fd(fd)
+FdReader::FdReader(int fd, unsigned long buffer_size) :
+    fd(fd), buffer_size(buffer_size), buffer_length(0)
 {
-    buffer.data = new char[buffer_size];
-    buffer.size = buffer_size;
-    buffer.length = 0;
+    buffer_data = new char[buffer_size];
 }
 
 FdReader::~FdReader()
 {
-    delete [] buffer.data;
+    delete [] buffer_data;
 }
 
 bool FdReader::HasMessage(const int selected_fd, fd_set &fdSet)
@@ -20,34 +19,38 @@ bool FdReader::HasMessage(const int selected_fd, fd_set &fdSet)
     return (selected_fd > 0) && (FD_ISSET(fd, &fdSet));
 }
 
-MsgBuffer& FdReader::Read()
+char* FdReader::Read(unsigned long offset)
 {
-    buffer.length = read(fd, buffer.data, buffer.size);
+    buffer_length = read(fd,
+                         buffer_data + offset,
+                         buffer_size - offset);
 
-    return buffer;
+    buffer_length += offset;
+
+    return buffer_data;
 }
 
-MsgBuffer& FdReader::Buffer()
+void FdReader::SlideBuffer(unsigned long offset)
 {
-    return buffer;
+    memmove(buffer_data, buffer_data + offset, buffer_length - offset);
 }
 
 char* FdReader::Data()
 {
-    return buffer.data;
+    return buffer_data;
 }
 
 unsigned int FdReader::BufferLength()
 {
-    return buffer.length;
+    return buffer_length;
 }
 
 unsigned int FdReader::BufferSize()
 {
-    return buffer.size;
+    return buffer_size;
 }
 
 void FdReader::Flush()
 {
-    free(buffer.data);
+    buffer_length = 0;
 }

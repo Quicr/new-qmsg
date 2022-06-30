@@ -45,12 +45,6 @@ int main(int argc, char *argv[])
 
     int selected_fd = 0;
 
-    Parser parser;
-    Command command;
-    FdReader keyboard(keyboard_fd, Buffer_Size);
-    FdReader receiver(sec_to_ui_fd, Buffer_Size);
-    Sender sender(ui_to_sec_fd);
-
     UserInterface user_interface(
         keyboard_fd, sec_to_ui_fd, ui_to_sec_fd, Buffer_Size);
     user_interface.Start();

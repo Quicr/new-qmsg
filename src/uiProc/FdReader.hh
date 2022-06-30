@@ -4,27 +4,23 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
-struct MsgBuffer
-{
-    char* data;
-    unsigned int size;
-    unsigned int length;
-};
-
 class FdReader
 {
 public:
-    FdReader(int fd, unsigned int buffer_size);
+    FdReader(int fd, unsigned long buffer_size);
     ~FdReader();
 
     bool HasMessage(const int selected_fd, fd_set &fdSet);
-    MsgBuffer& Read();
-    MsgBuffer& Buffer();
+    char* Read(unsigned long offset = 0);
+    void SlideBuffer(unsigned long offset);
     char* Data();
     unsigned int BufferLength();
     unsigned int BufferSize();
+
     void Flush();
 private:
     int fd;
-    MsgBuffer buffer;
+    unsigned long buffer_size;
+    unsigned long buffer_length;
+    char* buffer_data;
 };

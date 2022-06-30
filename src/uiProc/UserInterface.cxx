@@ -15,6 +15,11 @@ UserInterface::UserInterface(const int keyboard_fd,
     receiver = new FdReader(sec_to_ui_fd, buffer_size);
     sender = new Sender(ui_to_sec_id);
     parser = new Parser();
+
+    if (QMsgEncoderInit(&sec_context))
+    {
+        // TODO Log and error out.
+    }
 }
 
 UserInterface::~UserInterface()
@@ -24,7 +29,7 @@ UserInterface::~UserInterface()
     delete sender;
     delete parser;
     delete username;
-    delete context;
+    delete sec_context;
 }
 
 void UserInterface::Start()
@@ -157,7 +162,10 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                         if (channel_exists)
                         {
                             // Send a channel join request
-                            sender->SendMessage(all_channels[idx].Name().c_str(), join_token.length());
+                            // TODO clean this up..
+                            char channel_name[all_channels[idx].Name().length()];
+                            strcpy(channel_name, all_channels[idx].Name().c_str());
+                            sender->SendMessage(channel_name, join_token.length());
 
                             // Keep track of the channels we've joined
                             joined_channels.push_back(all_channels[idx]);
@@ -181,6 +189,7 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                     // error
                 }
 
+                // TODO
                 // keyboard->Flush();
                 return;
             }
@@ -205,13 +214,44 @@ void UserInterface::HandleReceiver(int selected_fd, fd_set fdSet)
 {
     if (receiver->HasMessage(selected_fd, fdSet))
     {
-        receiver->Read();
+        receiver->Read(sec_fragment_size);
         if (receiver->BufferLength() > 0)
         {
+            sec_fragment_size = 0;
+            sec_total_consumed = 0;
+
             do
             {
-                // qmsg_enc_result = QMsgNetDecod
-            } while ((total_consumed < 8192) && (consumed > 0));
+                qmsg_enc_sec_res = QMsgNetDecodeMessage(sec_context,
+                    receiver->Data() + sec_total_consumed,
+                    receiver->BufferLength() - sec_total_consumed,
+                    &sec_message,
+                    &sec_consumed);
+
+                sec_total_consumed += sec_consumed;
+
+                if (qmsg_enc_sec_res == QMsgEncoderSuccess)
+                {
+                    // TODO
+                    // We got a message yay.
+                    fprintf(stderr, "encoder got %s", sec_message.u.receive_ascii_message);
+                }
+
+                if ((qmsg_enc_sec_res == QMsgEncoderInvalidMessage) ||
+                    (qmsg_enc_sec_res == QMsgEncoderCorruptMessage))
+                {
+                    // TODO error
+                    fprintf(stderr, "got an error");
+                }
+
+            } while ((sec_total_consumed < receiver->BufferLength())
+                      && (sec_consumed > 0));
+
+            if (sec_total_consumed < receiver->BufferLength())
+            {
+                receiver->SlideBuffer(sec_total_consumed);
+                sec_fragment_size = receiver->BufferLength() - sec_total_consumed;
+            }
 
             fprintf(stderr, "UI: Read %d bytes from SecProc: ", receiver->BufferLength());
             fwrite(receiver->Data(), 1, receiver->BufferLength(), stderr);

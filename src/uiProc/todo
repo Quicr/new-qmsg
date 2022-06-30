@@ -1,17 +1,15 @@
-When start up occurs, the user needs to broadcast their id so they can
-get their immediate subscriptions
-
-Now that I am looking at it with the descriptors, I could use a switch that
-tells me if it is an incoming out outgoing message without needing
-a bunch of different classes.
 
 
-Read from a file eventually that says who you are.
+- Command class with call backs
 
-sort by timestamp
+- Make a receiver class, which has a fdReader in it.
 
-Command object with call backs
+- Make the sender class have a fdReader in it.
 
+- When start up occurs, the user needs to broadcast their id so they can get
+their immediate subscriptions
+
+- Sort messages in a channel by timestamp
 
 TODO by the end of today
 Send a watch (channels) (integer)
