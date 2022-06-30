@@ -37,13 +37,7 @@ where
                 let msg = self.from_network.next().unwrap();
                 match msg.to_tls::<NetworkToSecurityEvent>().unwrap() {
                     NetworkToSecurityEvent::JoinRequest(jr) => {
-                        let kp = match KeyPackage::tls_deserialize(&mut jr.key_package.as_slice()) {
-                            Ok(kp) => kp,
-                            Err(e) => {
-                                error!("Failed to deserialize KeyPackage: {}", e);
-                                continue;
-                            }
-                        };
+                        let kp = jr.key_package.unwrap();
                         let mut group = match self.groups.get(&jr.team) {
                             Some(group) => group.borrow_mut(),
                             None => {
@@ -54,11 +48,9 @@ where
                         let (commit, welcome) = group.add_members(&self.backend, &[kp]).unwrap();
                         self.to_network
                             .write(
-                                &Message::from_tls(&MlsCommit {
+                                &Message::from_tls(&MlsCommitOut {
                                     team: jr.team,
-                                    commit: TlsByteVecU32::from_slice(
-                                        commit.tls_serialize_detached().unwrap().as_slice(),
-                                    ),
+                                    commit: TlsSerialized::new(commit),
                                 })
                                 .unwrap(),
                             )
@@ -67,22 +59,14 @@ where
                             .write(
                                 &Message::from_tls(&MlsWelcome {
                                     team: jr.team,
-                                    welcome: TlsByteVecU32::from_slice(
-                                        welcome.tls_serialize_detached().unwrap().as_slice(),
-                                    ),
+                                    welcome: TlsSerialized::new(welcome),
                                 })
                                 .unwrap(),
                             )
                             .unwrap();
                     }
                     NetworkToSecurityEvent::MlsWelcome(w) => {
-                        let welcome = match Welcome::tls_deserialize(&mut w.welcome.as_slice()) {
-                            Ok(w) => w,
-                            Err(e) => {
-                                error!("Failed to deserialize Welcome: {}", e);
-                                continue;
-                            }
-                        };
+                        let welcome = w.welcome.unwrap();
                         let group_config = &MlsGroupConfig::builder()
                             .use_ratchet_tree_extension(true)
                             .build();
@@ -111,7 +95,7 @@ where
                                 continue;
                             }
                         };
-                        match self.verify_mls_message(&mut group, c.commit.as_slice()) {
+                        match self.verify_mls_message(&mut group, c.commit.unwrap()) {
                             Ok(res) => {
                                 if let ProcessedMessage::StagedCommitMessage(_) = res {
                                     if let Err(e) = group.merge_pending_commit() {
@@ -129,7 +113,7 @@ where
                             }
                         }
                     }
-                    NetworkToSecurityEvent::AsciiMessage(am) => {
+                    NetworkToSecurityEvent::EncryptedAsciiMessage(am) => {
                         let mut group = match self.groups.get(&am.team) {
                             Some(group) => group.borrow_mut(),
                             None => {
@@ -140,13 +124,14 @@ where
                                 continue;
                             }
                         };
-                        match self.verify_mls_message(&mut group, am.ascii.as_slice()) {
+                        match self.verify_mls_message(&mut group, am.ciphertext.unwrap()) {
                             Ok(res) => {
                                 if let ProcessedMessage::ApplicationMessage(msg) = res {
                                     let out = AsciiMessage {
                                         team: am.team,
                                         channel: am.channel,
-                                        device_id: am.device_id,
+                                        device_id: Self::get_device_id(&group, &self.our_kp)
+                                            .unwrap(),
                                         ascii: TlsByteVecU32::from_slice(
                                             msg.into_bytes().as_slice(),
                                         ),
@@ -194,12 +179,10 @@ where
                                 continue;
                             }
                         };
-                        let out_bytes = message.tls_serialize_detached().unwrap();
-                        let out = AsciiMessage {
+                        let out = EncryptedAsciiMessageOut {
                             team: am.team,
                             channel: am.channel,
-                            device_id: Self::get_device_id(&group, &self.our_kp).unwrap(),
-                            ascii: TlsByteVecU32::from_slice(out_bytes.as_slice()),
+                            ciphertext: TlsSerialized::new(message),
                         };
                         self.to_network
                             .write(&Message::from_tls(&out).unwrap())
@@ -213,12 +196,10 @@ where
     fn verify_mls_message(
         &self,
         group: &mut MlsGroup,
-        message: &[u8],
+        message: MlsMessageIn,
     ) -> Result<ProcessedMessage, String> {
-        let deserialized = MlsMessageIn::try_from_bytes(message)
-            .map_err(|e| format!("failed to deserialize message: {}", e))?;
         let unverified = group
-            .parse_message(deserialized, &self.backend)
+            .parse_message(message, &self.backend)
             .map_err(|e| format!("failed to parse message: {}", e))?;
         group
             .process_unverified_message(unverified, None, &self.backend)
