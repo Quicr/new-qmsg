@@ -1,3 +1,5 @@
+// This is the pong half of a ping/pong example.  See ping.rs for further details.
+
 use qmsg_core::*;
 use std::fs::OpenOptions;
 use std::io::Result;
