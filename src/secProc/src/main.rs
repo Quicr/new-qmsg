@@ -139,7 +139,9 @@ where
                                     let out = AsciiMessage {
                                         team: am.team,
                                         channel: am.channel,
-                                        device_id: Self::get_device_id(&group, &self.our_kp)
+                                        device_id: env::var("MLS_DEVICE_ID")
+                                            .unwrap()
+                                            .parse()
                                             .unwrap(),
                                         ascii: TlsByteVecU32::from_slice(msg_bytes.as_slice()),
                                     };
@@ -321,7 +323,7 @@ fn main() {
 
     let mut groups = HashMap::new();
 
-    if match env::var("LEADER") {
+    if match env::var("MLS_LEADER") {
         Ok(v) => v == "1",
         Err(_) => false,
     } {
