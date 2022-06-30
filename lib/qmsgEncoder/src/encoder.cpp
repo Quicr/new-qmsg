@@ -255,7 +255,10 @@ QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
  *          The message deserialized from the buffer.
  *
  *      consumed [out]
- *          The number of octets consumed in the buffer.
+ *          The number of octets consumed in the buffer.  This will be
+ *          set to 0 if no octets were consumed.  If the message is corrupt
+ *          or is invalid, this will be set to the length of that bad message
+ *          so that the caller may gracefully skip over the message.
  *
  *  Returns:
  *      This function will return one of several values of type
@@ -268,6 +271,10 @@ QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
  *      case, octets_consumed will contain how many octets to advance the
  *      buffer in order to skip this invalid message.  Further,
  *      message.type will be set to QMsgUIInvalid.
+ *
+ *      If the result is QMsgEncoderCorruptMessage, it means the message is
+ *      bad (e.g., malformed).  The total octets consumed will allowe the
+ *      caller to skip over this bad message.
  *
  *  Comments:
  *      None.
@@ -316,8 +323,14 @@ EXPORT QMsgEncoderResult CALL QMsgUIDecodeMessage(QMsgEncoderContext *context,
         // a message structure does not understand will simply be ignored)
         *consumed += message_length;
 
-        // Is the buffer sufficiently long?
-        if (buffer_length < *consumed) return QMsgEncoderShortBuffer;
+        // If the buffer is too short, indicate nothing was consumed and
+        // return an error indicating that the buffer is shorter than the
+        // total message length
+        if (buffer_length < *consumed)
+        {
+            *consumed = 0;
+            return QMsgEncoderShortBuffer;
+        }
 
         // Extract the message type
         deserialized = deserializer.Deserialize(data_buffer, message->type);

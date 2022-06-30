@@ -391,7 +391,6 @@ namespace {
             // Device list
             0x00, 0x01, 0x00, 0x02, 0x00, 0x03,
 
-
             // MESSAGE #3
 
             // Message length
@@ -417,7 +416,6 @@ namespace {
 
             // Message length
             0x00, 0x00, 0x00, 0x1d
-
         };
 
         QMsgNetMessage message{};
