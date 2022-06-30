@@ -4,5 +4,9 @@ project( slowSec )
 
 add_executable( slowSec slowSec.cxx )
 
+target_link_libraries( slowSec
+    PRIVATE
+        qmsgEncoder )
+
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)

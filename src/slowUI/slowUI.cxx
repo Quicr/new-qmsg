@@ -29,9 +29,9 @@ int main( int argc, char* argv[]){
   QMsgEncoderInit( &context );
   QMsgUIMessage message{};
 
-  message.type = QMsgUIWatch;
-  message.u.watch.team_id = 0x1;
-  message.u.watch.channel_id = 0x1;
+  message.type = QMsgUIWatchChannel;
+  message.u.watch_channel.team_id = 0x2;
+  message.u.watch_channel.channel_id = 0x3;
 
   char encodeBuffer[1024];
   size_t encodeLen;

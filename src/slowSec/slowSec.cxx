@@ -8,6 +8,8 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
+#include "qmsg/encoder.h"
+
 
 int main( int argc, char* argv[]){
 
@@ -32,7 +34,11 @@ int main( int argc, char* argv[]){
   const int bufSize=128;
   char netBuf[bufSize];
   char uiBuf[bufSize];
- 
+
+  QMsgEncoderContext* context = nullptr;
+  QMsgEncoderInit( &context );
+
+  
   while( true ) {
     //fprintf(stderr, "SEC: Loop\n");
     
@@ -51,9 +57,34 @@ int main( int argc, char* argv[]){
     
     // processs uiProc
     if ( (numSelectFD > 0) && ( FD_ISSET(ui2secFD, &fdSet) ) ) {
-      //fprintf(stderr, "SEC: Reding Sec Proc\n");
-      ssize_t num = read( ui2secFD, uiBuf, bufSize );
-      if ( num > 0 ) {
+      fprintf(stderr, "SEC: Reding Sec Proc\n");
+      uint32_t msgLen=0;
+      ssize_t num = read( ui2secFD, &msgLen, sizeof(msgLen) );
+      assert( num == sizeof(msgLen) );
+      assert( msgLen <= bufSize );
+      num = read( ui2secFD, uiBuf, msgLen );
+      assert( num == msgLen );
+
+      QMsgUIMessage message{};
+      QMsgEncoderResult err;
+      size_t consumed;
+
+      err = QMsgUIDecodeMessage( context, uiBuf, msgLen, &message, &consumed );
+      assert( err == QMsgEncoderSuccess );
+      assert( consumed == msgLen );
+
+      switch ( message.type ) {
+      case QMsgUIWatchChannel:
+         fprintf( stderr, "SEC: Got watch from UIProc: ch=%d ch=%d \n",
+                  message.u.watch_channel.team_id,
+                  message.u.watch_channel.channel_id);
+        break;
+      default:
+        assert(0);
+      }
+      
+      if (false) { // ( num > 0 ) {
+        
         fprintf( stderr, "SEC: Read %d bytes from UIProc: ", (int)num );
         fwrite( uiBuf, 1 , num , stderr );
         fprintf( stderr, "\n");
