@@ -14,11 +14,34 @@
  */
 
 #include <vector>
+#include <stdexcept>
 #include "qmsg/encoder.h"
 #include "data_buffer.h"
 
 namespace qmsg
 {
+
+/*
+ * QMsgDeserializerException
+ *
+ * This class defines an exception object that will be thrown if the
+ * QMsgDeserializer encounters an error when deserializing data.  This should
+ * only happen if an invalid or corrupt message is discovered.
+ */
+class QMsgDeserializerException : public std::runtime_error
+{
+    public:
+        explicit QMsgDeserializerException(const std::string &what_arg) :
+            std::runtime_error(what_arg)
+        {
+        }
+
+        explicit QMsgDeserializerException(const char *what_arg) :
+            std::runtime_error(what_arg)
+        {
+        }
+};
+
 
 // Class to perform deserialization of data structures
 class QMsgDeserializer
@@ -30,41 +53,58 @@ class QMsgDeserializer
             FreeAllocations();
         }
 
-        std::size_t DeserializeUIMessageType(DataBuffer &data_buffer,
-                                             QMsgUIMessageType &type);
         std::size_t DeserializeMessageLength(DataBuffer &data_buffer,
                                              std::uint32_t &message_length);
 
+        // UI<=>Sec Interface
+        std::size_t Deserialize(DataBuffer &data_buffer,
+                                QMsgUIMessageType &type);
+        std::size_t Deserialize(DataBuffer &data_buffer,
+                                QMsgUISendASCIIMessage_t &message);
+        std::size_t Deserialize(DataBuffer &data_buffer,
+                                QMsgUIReceiveASCIIMessage_t &message);
+        std::size_t Deserialize(DataBuffer &data_buffer,
+                                QMsgUIWatchChannel_t &message);
+        std::size_t Deserialize(DataBuffer &data_buffer,
+                                QMsgUIUnwatchChannel_t &message);
         std::size_t Deserialize(DataBuffer &data_buffer,
                                 QMsgUIUnlock_t &message);
         std::size_t Deserialize(DataBuffer &data_buffer,
                                 QMsgUIIsLocked_t &message);
         std::size_t Deserialize(DataBuffer &data_buffer,
-                                QMsgUIDeviceInfo_t &message);
+                                QMsgUIMLSSignatureHash_t &message);
+
+        // Net<=>Sec Interface
         std::size_t Deserialize(DataBuffer &data_buffer,
-                                QMsgUIGetTeams_t &message);
+                                QMsgNetMessageType &type);
         std::size_t Deserialize(DataBuffer &data_buffer,
-                                QMsgUITeamInfo_t &message);
+                                QMsgNetSendASCIIMessage_t &message);
         std::size_t Deserialize(DataBuffer &data_buffer,
-                                QMsgUIGetChannels_t &message);
+                                QMsgNetReceiveASCIIMessage_t &message);
         std::size_t Deserialize(DataBuffer &data_buffer,
-                                QMsgUIChannelInfo_t &message);
+                                QMsgNetWatchDevices_t &message);
         std::size_t Deserialize(DataBuffer &data_buffer,
-                                QMsgUISendASCIIMsg_t &message);
+                                QMsgNetUnwatchDevices_t &message);
         std::size_t Deserialize(DataBuffer &data_buffer,
-                                QMsgUIReceiveASCIIMessage_t &message);
+                                QMsgNetMLSSignatureHash_t &message);
         std::size_t Deserialize(DataBuffer &data_buffer,
-                                QMsgUIWatch_t &message);
+                                QMsgNetMLSKeyPackage_t &message);
         std::size_t Deserialize(DataBuffer &data_buffer,
-                                QMsgUIUnwatch_t &message);
+                                QMsgNetMLSAddKeyPackage_t &message);
         std::size_t Deserialize(DataBuffer &data_buffer,
-                                QMsgUIRequestMessages_t &message);
+                                QMsgNetMLSWelcome_t &message);
+        std::size_t Deserialize(DataBuffer &data_buffer,
+                                QMsgNetMLSCommit_t &message);
+        std::size_t Deserialize(DataBuffer &data_buffer,
+                                QMsgNetDeviceInfo_t &message);
 
     protected:
         std::size_t Deserialize(DataBuffer &data_buffer, std::uint16_t &value);
         std::size_t Deserialize(DataBuffer &data_buffer, std::uint32_t &value);
         std::size_t Deserialize(DataBuffer &data_buffer, std::uint64_t &value);
-        std::size_t Deserialize(DataBuffer &data_buffer, char *&value);
+        std::size_t Deserialize(DataBuffer &data_buffer, QMsgOpaque_t &value);
+        std::size_t Deserialize(DataBuffer &data_buffer,
+                                QMsgDeviceList_t &value);
         void FreeAllocations();
 
         std::vector<std::uint8_t *> allocations;

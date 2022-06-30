@@ -9,17 +9,23 @@
  *      The QMsg Encoder implements functions to convert data structures into
  *      binary objects that can be transmitted between QMsg entities.
  *
- *      Messages are encoding using a basic tag-length-value (TLV) scheme
+ *      Messages are encoding using a length-tag-value (TLV) scheme
  *      as follows:
- *          4 octets - message type
  *          4 octets - message length
+ *          4 octets - message type
  *          n octets - encoded message
  *
  *      All numeric values are enoded in network byte order.
  *
  *      For a given context, the library is not thread-safe.  If multiple
  *      threads wish to call into this library simultaneously, each thread
- *      should create its own context via QMsgEncoderInit().
+ *      should create its own context via QMsgEncoderInit().  The purpose for
+ *      the context is for the library to manage any internally allocated
+ *      memory.  At the moment, only the deserializer allocates memory.
+ *      Note that the deserializer will free any memory it allocated
+ *      previously when the next call is made to decode a message or when
+ *      the context is destroyed.
+ *
  *
  *  Portability Issues:
  *      None.
@@ -55,7 +61,6 @@ typedef enum QMsgEncoderResult
     QMsgEncoderCorruptMessage
 } QMsgEncoderResult;
 
-
 // Define an encoder context
 typedef struct
 {
@@ -77,7 +82,20 @@ EXPORT QMsgEncoderResult CALL QMsgUIDecodeMessage(QMsgEncoderContext *context,
                                                   char *buffer,
                                                   size_t buffer_length,
                                                   QMsgUIMessage *message,
-                                                  size_t *bytes_consumed);
+                                                  size_t *consumed);
+
+// Function prototypes for Net<=>Sec message encoding and decoding
+EXPORT QMsgEncoderResult CALL QMsgNetEncodeMessage(QMsgEncoderContext *context,
+                                                   const QMsgNetMessage *message,
+                                                   char *buffer,
+                                                   size_t buffer_length,
+                                                   size_t *encoded_length);
+
+EXPORT QMsgEncoderResult CALL QMsgNetDecodeMessage(QMsgEncoderContext *context,
+                                                   char *buffer,
+                                                   size_t buffer_length,
+                                                   QMsgNetMessage *message,
+                                                   size_t *consumed);
 
 #ifdef __cplusplus
 } // extern "C"

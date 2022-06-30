@@ -26,36 +26,52 @@ class QMsgSerializer
         QMsgSerializer() = default;
         ~QMsgSerializer() = default;
 
+        // UI<=>Sec Interface
+        std::size_t Serialize(DataBuffer &data_buffer,
+                              const QMsgUISendASCIIMessage_t &message);
+        std::size_t Serialize(DataBuffer &data_buffer,
+                              const QMsgUIReceiveASCIIMessage_t &message);
+        std::size_t Serialize(DataBuffer &data_buffer,
+                              const QMsgUIWatchChannel_t &message);
+        std::size_t Serialize(DataBuffer &data_buffer,
+                              const QMsgUIUnwatchChannel_t &message);
         std::size_t Serialize(DataBuffer &data_buffer,
                               const QMsgUIUnlock_t &message);
         std::size_t Serialize(DataBuffer &data_buffer,
                               const QMsgUIIsLocked_t &message);
         std::size_t Serialize(DataBuffer &data_buffer,
-                              const QMsgUIDeviceInfo_t &message);
+                              const QMsgUIMLSSignatureHash_t &message);
+
+        // NetI<=>Sec Interface
         std::size_t Serialize(DataBuffer &data_buffer,
-                              const QMsgUIGetTeams_t &message);
+                              const QMsgNetSendASCIIMessage_t &message);
         std::size_t Serialize(DataBuffer &data_buffer,
-                              const QMsgUITeamInfo_t &message);
+                              const QMsgNetReceiveASCIIMessage_t &message);
         std::size_t Serialize(DataBuffer &data_buffer,
-                              const QMsgUIGetChannels_t &message);
+                              const QMsgNetWatchDevices_t &message);
         std::size_t Serialize(DataBuffer &data_buffer,
-                              const QMsgUIChannelInfo_t &message);
+                              const QMsgNetUnwatchDevices_t &message);
         std::size_t Serialize(DataBuffer &data_buffer,
-                              const QMsgUISendASCIIMsg_t &message);
+                              const QMsgNetMLSSignatureHash_t &message);
         std::size_t Serialize(DataBuffer &data_buffer,
-                              const QMsgUIReceiveASCIIMessage_t &message);
+                              const QMsgNetMLSKeyPackage_t &message);
         std::size_t Serialize(DataBuffer &data_buffer,
-                              const QMsgUIWatch_t &message);
+                              const QMsgNetMLSAddKeyPackage_t &message);
         std::size_t Serialize(DataBuffer &data_buffer,
-                              const QMsgUIUnwatch_t &message);
+                              const QMsgNetMLSWelcome_t &message);
         std::size_t Serialize(DataBuffer &data_buffer,
-                              const QMsgUIRequestMessages_t &message);
+                              const QMsgNetMLSCommit_t &message);
+        std::size_t Serialize(DataBuffer &data_buffer,
+                              const QMsgNetDeviceInfo_t &message);
 
     protected:
         std::size_t Serialize(DataBuffer &data_buffer, std::uint16_t value);
         std::size_t Serialize(DataBuffer &data_buffer, std::uint32_t value);
         std::size_t Serialize(DataBuffer &data_buffer, std::uint64_t value);
-        std::size_t Serialize(DataBuffer &data_buffer, const char *value);
+        std::size_t Serialize(DataBuffer &data_buffer,
+                              const QMsgOpaque_t &value);
+        std::size_t Serialize(DataBuffer &data_buffer,
+                              const QMsgDeviceList_t &value);
 
         DataBuffer null_buffer;
 };

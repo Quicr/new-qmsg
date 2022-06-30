@@ -60,11 +60,11 @@ namespace {
     {
         char expected[] =
         {
-            // Message type
-            0x00, 0x00, 0x00, 0x08,
-
             // Message length
-            0x00, 0x00, 0x00, 0x17,
+            0x00, 0x00, 0x00, 0x1d,
+
+            // Message type
+            0x00, 0x00, 0x00, 0x01,
 
             // Team ID
             0x01, 0x02, 0x03, 0x04,
@@ -72,8 +72,8 @@ namespace {
             // Channel ID
             0x05, 0x06, 0x07, 0x08,
 
-            // String length
-            0x00, 0x0d,
+            // Opaque data length
+            0x00, 0x00, 0x00, 0x0d,
 
             // Hello, World!
             0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x57,
@@ -82,19 +82,25 @@ namespace {
 
         QMsgUIMessage message{};
         char text[] = "Hello, World!";
+        std::uint32_t string_length = strlen(text);
 
-        message.type = QMsgUISendASCIIMsg;
+        message.type = QMsgUISendASCIIMessage;
         message.u.send_ascii_message.team_id = 0x01020304;
         message.u.send_ascii_message.channel_id = 0x05060708;
-        message.u.send_ascii_message.message = text;
+        message.u.send_ascii_message.message.length = string_length;
+        message.u.send_ascii_message.message.data =
+                                    reinterpret_cast<std::uint8_t *>(text);
+        std::memcpy(message.u.send_ascii_message.message.data,
+                    text,
+                    message.u.send_ascii_message.message.length);
 
         std::size_t encoded_length;
-        ASSERT_EQ(QMsgUIEncodeMessage(context,
+        ASSERT_EQ(QMsgEncoderSuccess,
+                  QMsgUIEncodeMessage(context,
                                       &message,
                                       data_buffer,
                                       sizeof(data_buffer),
-                                      &encoded_length),
-                  QMsgEncoderSuccess);
+                                      &encoded_length));
 
         ASSERT_EQ(sizeof(expected), encoded_length);
 
@@ -105,11 +111,11 @@ namespace {
     {
         char buffer[] =
         {
-            // Message type
-            0x00, 0x00, 0x00, 0x08,
-
             // Message length
-            0x00, 0x00, 0x00, 0x17,
+            0x00, 0x00, 0x00, 0x1d,
+
+            // Message type
+            0x00, 0x00, 0x00, 0x01,
 
             // Team ID
             0x01, 0x02, 0x03, 0x04,
@@ -117,8 +123,8 @@ namespace {
             // Channel ID
             0x05, 0x06, 0x07, 0x08,
 
-            // String length
-            0x00, 0x0d,
+            // Opaque data length
+            0x00, 0x00, 0x00, 0x0d,
 
             // Hello, World!
             0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x57,
@@ -129,20 +135,123 @@ namespace {
         char text[] = "Hello, World!";
         std::size_t bytes_consumed{};
 
-        ASSERT_EQ(QMsgUIDecodeMessage(context,
+        ASSERT_EQ(QMsgEncoderSuccess,
+                  QMsgUIDecodeMessage(context,
                                       buffer,
                                       sizeof(buffer),
                                       &message,
-                                      &bytes_consumed),
-                  QMsgEncoderSuccess);
+                                      &bytes_consumed));
 
-        ASSERT_EQ(bytes_consumed, sizeof(buffer));
-        ASSERT_EQ(message.type, QMsgUISendASCIIMsg);
+        ASSERT_EQ(sizeof(buffer), bytes_consumed);
+        ASSERT_EQ(QMsgUISendASCIIMessage, message.type);
         ASSERT_EQ(std::uint32_t(0x01020304),
                   message.u.send_ascii_message.team_id);
         ASSERT_EQ(std::uint32_t(0x05060708),
                   message.u.send_ascii_message.channel_id);
-        ASSERT_EQ(std::strcmp(message.u.send_ascii_message.message, text), 0);
+        ASSERT_EQ(strlen(text), message.u.send_ascii_message.message.length);
+        ASSERT_EQ(0,
+                  std::memcmp(message.u.send_ascii_message.message.data,
+                              text,
+                              message.u.send_ascii_message.message.length));
+    };
+
+    TEST_F(QMsgEncoderTest, Serialize_NetSendASCIIMessage)
+    {
+        char expected[] =
+        {
+            // Message length
+            0x00, 0x00, 0x00, 0x1d,
+
+            // Message type
+            0x00, 0x00, 0x00, 0x01,
+
+            // Team ID
+            0x01, 0x02, 0x03, 0x04,
+
+            // Channel ID
+            0x05, 0x06, 0x07, 0x08,
+
+            // Opaque data length
+            0x00, 0x00, 0x00, 0x0d,
+
+            // Hello, World!
+            0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x57,
+            0x6f, 0x72, 0x6c, 0x64, 0x21
+        };
+
+        QMsgNetMessage message{};
+        char text[] = "Hello, World!";
+        std::uint32_t string_length = strlen(text);
+
+        message.type = QMsgNetSendASCIIMessage;
+        message.u.send_ascii_message.team_id = 0x01020304;
+        message.u.send_ascii_message.channel_id = 0x05060708;
+        message.u.send_ascii_message.message.length = string_length;
+        message.u.send_ascii_message.message.data =
+                                    reinterpret_cast<std::uint8_t *>(text);
+        std::memcpy(message.u.send_ascii_message.message.data,
+                    text,
+                    message.u.send_ascii_message.message.length);
+
+        std::size_t encoded_length;
+        ASSERT_EQ(QMsgEncoderSuccess,
+                  QMsgNetEncodeMessage(context,
+                                       &message,
+                                       data_buffer,
+                                       sizeof(data_buffer),
+                                       &encoded_length));
+
+        ASSERT_EQ(sizeof(expected), encoded_length);
+
+        ASSERT_TRUE(VerifyDataBuffer(expected, sizeof(expected)));
+    };
+
+    TEST_F(QMsgEncoderTest, Deserialize_NetSendASCIIMessage)
+    {
+        char buffer[] =
+        {
+            // Message length
+            0x00, 0x00, 0x00, 0x1d,
+
+            // Message type
+            0x00, 0x00, 0x00, 0x01,
+
+            // Team ID
+            0x01, 0x02, 0x03, 0x04,
+
+            // Channel ID
+            0x05, 0x06, 0x07, 0x08,
+
+            // Opaque data length
+            0x00, 0x00, 0x00, 0x0d,
+
+            // Hello, World!
+            0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x57,
+            0x6f, 0x72, 0x6c, 0x64, 0x21
+        };
+
+        QMsgNetMessage message{};
+        char text[] = "Hello, World!";
+        std::size_t bytes_consumed{};
+
+        ASSERT_EQ(QMsgEncoderSuccess,
+                  QMsgNetDecodeMessage(context,
+                                       buffer,
+                                       sizeof(buffer),
+                                       &message,
+                                       &bytes_consumed));
+
+        ASSERT_EQ(sizeof(buffer), bytes_consumed);
+        ASSERT_EQ(QMsgUISendASCIIMessage, message.type);
+        ASSERT_EQ(std::uint32_t(0x01020304),
+                  message.u.send_ascii_message.team_id);
+        ASSERT_EQ(std::uint32_t(0x05060708),
+                  message.u.send_ascii_message.channel_id);
+        ASSERT_EQ(strlen(text), message.u.send_ascii_message.message.length);
+        ASSERT_EQ(0,
+                  std::memcmp(message.u.send_ascii_message.message.data,
+                              text,
+                              message.u.send_ascii_message.message.length));
     };
 
 } // namespace
