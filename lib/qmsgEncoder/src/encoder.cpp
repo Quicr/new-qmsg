@@ -594,7 +594,10 @@ QMsgEncoderResult CALL QMsgNetEncodeMessage(QMsgEncoderContext *context,
  *          The message deserialized from the buffer.
  *
  *      consumed [out]
- *          The number of octets consumed in the buffer.
+ *          The number of octets consumed in the buffer.  This will be
+ *          set to 0 if no octets were consumed.  If the message is corrupt
+ *          or is invalid, this will be set to the length of that bad message
+ *          so that the caller may gracefully skip over the message.
  *
  *  Returns:
  *      This function will return one of several values of type
@@ -607,6 +610,10 @@ QMsgEncoderResult CALL QMsgNetEncodeMessage(QMsgEncoderContext *context,
  *      case, octets_consumed will contain how many octets to advance the
  *      buffer in order to skip this invalid message.  Further,
  *      message.type will be set to QMsgNetInvalid.
+ *
+ *      If the result is QMsgEncoderCorruptMessage, it means the message is
+ *      bad (e.g., malformed).  The total octets consumed will allowe the
+ *      caller to skip over this bad message.
  *
  *  Comments:
  *      None.
