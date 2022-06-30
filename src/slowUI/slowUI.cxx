@@ -8,6 +8,8 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
+#include "qmsg/encoder.h"
+
 
 int main( int argc, char* argv[]){
 
@@ -22,7 +24,24 @@ int main( int argc, char* argv[]){
   int ui2secFD = open( "/tmp/pipe-u2s" , O_WRONLY, O_NONBLOCK );
   assert( ui2secFD >= 0 );
   fprintf(stderr, "UI: Got pipe to secProc\n");
-  
+
+  QMsgEncoderContext* context = nullptr;
+  QMsgEncoderInit( &context );
+  QMsgUIMessage message{};
+
+  message.type = QMsgUIWatch;
+  message.u.watch.team_id = 0x1;
+  message.u.watch.channel_id = 0x1;
+
+  char encodeBuffer[1024];
+  size_t encodeLen;
+  QMsgEncoderResult err;
+  err = QMsgUIEncodeMessage( context, &message, encodeBuffer, sizeof(encodeBuffer), &encodeLen ); 
+  assert( err == QMsgEncoderSuccess );
+  uint32_t sendLen = encodeLen;
+  write( ui2secFD, &sendLen, sizeof(sendLen) );
+  write( ui2secFD, encodeBuffer, sendLen );
+         
   const int bufSize=128;
   char secBuf[bufSize];
   char keyboardBuf[bufSize];
