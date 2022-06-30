@@ -1,6 +1,7 @@
 
 #include <assert.h>
 #include <fcntl.h>
+#include <iostream>
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
@@ -8,39 +9,33 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
-#include "qmsg/encoder.h"
+#include "uiApi.h"
 
 
 int main( int argc, char* argv[]){
 
-  fprintf(stderr, "SEC: Starting secProc\n");
+  std::clog <<   "SEC: Starting secProc" << std::endl;
      
   int sec2netFD = open( "/tmp/pipe-s2n" , O_WRONLY, O_NONBLOCK );
   assert( sec2netFD >= 0 );
-  fprintf(stderr, "SEC: Got pipe to netProc\n");
+  std::clog <<   "SEC: Got pipe to netProc" << std::endl;
 
   int net2secFD = open( "/tmp/pipe-n2s" , O_RDONLY, O_NONBLOCK );
   assert( net2secFD >= 0 );
-  fprintf(stderr, "SEC: Got pipe from netProc\n");
+  std::clog <<   "SEC: Got pipe from netProc" << std::endl;
   
-  int sec2uiFD = open( "/tmp/pipe-s2u" , O_WRONLY, O_NONBLOCK );
-  assert( sec2uiFD >= 0 );
-  fprintf(stderr, "SEC: Got pipe from uiProc\n");
 
-  int ui2secFD = open( "/tmp/pipe-u2s" , O_RDONLY, O_NONBLOCK );
-  assert( ui2secFD >= 0 );
-  fprintf(stderr, "SEC: Got pipe to uiProc\n");
+  UiApi uiApi;
   
   const int bufSize=128;
   uint8_t netBuf[bufSize];
-  uint8_t uiBuf[bufSize];
+
 
   QMsgEncoderContext* context = nullptr;
   QMsgEncoderInit( &context );
 
   
   while( true ) {
-    //fprintf(stderr, "SEC: Loop\n");
     
     //waitForInput
     struct timeval timeout;
@@ -50,34 +45,39 @@ int main( int argc, char* argv[]){
     int maxFD=0;
     FD_ZERO(&fdSet);
     FD_SET(net2secFD, &fdSet); maxFD = (net2secFD>maxFD) ? net2secFD : maxFD;
+    int ui2secFD= uiApi.getReadFD();
     FD_SET(ui2secFD, &fdSet); maxFD = (ui2secFD>maxFD) ? ui2secFD : maxFD;
     int numSelectFD = select( maxFD+1 , &fdSet , NULL, NULL, &timeout );
     assert( numSelectFD >= 0 );
-    //fprintf(stderr, "SEC: Running\n");
     
     // processs uiProc
     if ( (numSelectFD > 0) && ( FD_ISSET(ui2secFD, &fdSet) ) ) {
-      fprintf(stderr, "SEC: Reding Sec Proc\n");
-      uint32_t msgLen=0;
-      ssize_t num = read( ui2secFD, &msgLen, sizeof(msgLen) );
-      assert( num == sizeof(msgLen) );
-      assert( msgLen <= bufSize );
-      num = read( ui2secFD, uiBuf, msgLen );
-      assert( num == msgLen );
-
+       std::clog <<   "SEC: Reading Sec Proc" << std::endl;
+    
       QMsgUIMessage message{};
-      QMsgEncoderResult err;
-      size_t consumed;
-
-      err = QMsgUIDecodeMessage( context, uiBuf, msgLen, &message, &consumed );
-      assert( err == QMsgEncoderSuccess );
-      assert( consumed == msgLen );
+      uiApi.readMsg( &message );
 
       switch ( message.type ) {
       case QMsgUIWatchChannel:
-         fprintf( stderr, "SEC: Got watch from UIProc: ch=%d ch=%d \n",
-                  message.u.watch_channel.team_id,
-                  message.u.watch_channel.channel_id);
+          std::clog << "SEC: Got watch from UIProc:"
+                  << " team=" <<    message.u.watch_channel.team_id
+                  << " ch= " <<   message.u.watch_channel.channel_id
+              << std::endl;
+        break;
+      case QMsgUISendASCIIMessage:
+
+        std::clog << "SEC: Got AsciiMsg from UIProc: "
+          << " team=" <<   message.u.send_ascii_message.team_id
+          << " ch= " <<  message.u.send_ascii_message.channel_id
+          << " val: " << std::string(  (char*)message.u.send_ascii_message.message.data,
+                                       message.u.send_ascii_message.message.length )
+          << std::endl;
+
+          uiApi.sendAsciiMsg(  message.u.send_ascii_message.team_id,
+                    message.u.send_ascii_message.channel_id,
+                    message.u.send_ascii_message.message.data,
+                    message.u.send_ascii_message.message.length );
+                    
         break;
       default:
         assert(0);
@@ -85,14 +85,14 @@ int main( int argc, char* argv[]){
       
       if (false) { // ( num > 0 ) {
         
-        fprintf( stderr, "SEC: Read %d bytes from UIProc: ", (int)num );
-        fwrite( uiBuf, 1 , num , stderr );
-        fprintf( stderr, "\n");
+        //fprintf( stderr, "SEC: Readfrom UIProc: "  );
+        //fwrite( uiBuf, 1 , num , stderr );
+        //fprintf( stderr, "\n");
         
         // send to UI processor
-        const char* prefix ="encrypt: ";
-        write( sec2netFD, prefix, strlen( prefix ) );
-        write( sec2netFD, uiBuf, num );
+        //const char* prefix ="encrypt: ";
+        //write( sec2netFD, prefix, strlen( prefix ) );
+        //write( sec2netFD, uiBuf, num );
       }
     }
     
@@ -101,14 +101,14 @@ int main( int argc, char* argv[]){
       //fprintf(stderr, "SEC: Reding Sec Proc\n");
       ssize_t num = read( net2secFD, netBuf, bufSize );
       if ( num > 0 ) {
-        fprintf( stderr, "SEC: Read %d bytes from NetProc: ", (int)num );
-        fwrite( netBuf, 1 , num , stderr );
-        fprintf( stderr, "\n");
+        //fprintf( stderr, "SEC: Read %d bytes from NetProc: ", (int)num );
+        //fwrite( netBuf, 1 , num , stderr );
+        //fprintf( stderr, "\n");
         
         // send to UI processor
-        const char* prefix ="decrypt: ";
-        write( sec2uiFD, prefix, strlen( prefix ) );
-        write( sec2uiFD, netBuf, num );
+        //const char* prefix ="decrypt: ";
+        //write( sec2uiFD, prefix, strlen( prefix ) );
+        //write( sec2uiFD, netBuf, num );
       }
     }
   }

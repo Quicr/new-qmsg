@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10 )
 
 project( slowSec )
 
-add_executable( slowSec slowSec.cxx )
+add_executable( slowSec slowSec.cxx  uiApi.cxx )
 
 target_link_libraries( slowSec
     PRIVATE

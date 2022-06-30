@@ -1,93 +1,27 @@
-
 #include <assert.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/uio.h>
-#include <unistd.h>
+#include <iostream>
+#include <sys/select.h>
 
-#include "qmsg/encoder.h"
+#include "secApi.h"
 
-class SecAPI {
-private:
-  QMsgEncoderContext* context;
-  int sec2uiFD;
-  int ui2secFD;
-public:
-
-  int getReadFD() {
-    return sec2uiFD;
-  }
-  
-  SecAPI() {
-    QMsgEncoderInit( &context );
-    
-    sec2uiFD = open( "/tmp/pipe-s2u" , O_RDONLY, O_NONBLOCK );
-    assert( sec2uiFD >= 0 );
-    fprintf(stderr, "UI: Got pipe from secProc\n");
-    
-    ui2secFD = open( "/tmp/pipe-u2s" , O_WRONLY, O_NONBLOCK );
-    assert( ui2secFD >= 0 );
-    fprintf(stderr, "UI: Got pipe to secProc\n");
-  }
-  
-  ~SecAPI() {
-    assert( context );
-    QMsgEncoderDeinit( context );
-    context = nullptr;
-  };
-
-  void watch( int team, int ch ) {
-    QMsgUIMessage message{};
-    
-    message.type = QMsgUIWatchChannel;
-    message.u.watch_channel.team_id = 0x2;
-    message.u.watch_channel.channel_id = 0x3;
-    
-    uint8_t encodeBuffer[1024];
-    size_t encodeLen;
-    QMsgEncoderResult err;
-    err = QMsgUIEncodeMessage( context, &message, encodeBuffer, sizeof(encodeBuffer), &encodeLen ); 
-    assert( err == QMsgEncoderSuccess );
-    uint32_t sendLen = encodeLen;
-    write( ui2secFD, &sendLen, sizeof(sendLen) );
-    write( ui2secFD, encodeBuffer, sendLen );
-  }
-
-  void sendMsg( int team, int ch,  uint8_t* msg, int msgLen ) {
-    assert( msg );
-    assert( msgLen > 0 );
-    
-    // send to secure processor
-    const char* sending ="sending: ";
-    write( ui2secFD, sending, strlen( sending ) );
-    write( ui2secFD, msg, msgLen );
-  }
-  
-};
 
 int main( int argc, char* argv[]){
 
   fprintf(stderr, "UI: Starting\n");
      
   int keyboardFD = 0;
-  SecAPI secAPI;
+  SecApi secApi;
   
   int team=0x2;
   int channel= 0x3;
 
-  secAPI.watch( team, channel );
-  
+  secApi.watch( team, channel );
          
   const int bufSize=128;
   uint8_t secBuf[bufSize];
   uint8_t keyboardBuf[bufSize];
  
   while( true ) {
-    //fprintf(stderr, "UI: Loop\n");
-
     //waitForInput
      struct timeval timeout;
      timeout.tv_sec = 1;
@@ -96,7 +30,7 @@ int main( int argc, char* argv[]){
      int maxFD=0;
      FD_ZERO(&fdSet);
      FD_SET(keyboardFD, &fdSet); maxFD = (keyboardFD>maxFD) ? keyboardFD : maxFD;
-     int sec2uiFD = secAPI.getReadFD();
+     int sec2uiFD = secApi.getReadFD();
      FD_SET(sec2uiFD, &fdSet); maxFD = (sec2uiFD>maxFD) ? sec2uiFD : maxFD;
      int numSelectFD = select( maxFD+1 , &fdSet , NULL, NULL, &timeout );
      assert( numSelectFD >= 0 );
@@ -111,20 +45,28 @@ int main( int argc, char* argv[]){
          fwrite( keyboardBuf, 1 , num , stderr );
          fprintf( stderr, "\n");
 
-         secAPI.sendMsg( team, channel, keyboardBuf, num ); 
+         secApi.sendAsciiMsg( team, channel, keyboardBuf, num ); 
        }
      }
      
     //processSecureProc
-     if ( (numSelectFD > 0) && ( FD_ISSET(secAPI.getReadFD(), &fdSet) ) ) {
-       //fprintf(stderr, "UI: Reding Sec Proc\n");
-       ssize_t num = read( secAPI.getReadFD(), secBuf, bufSize );
-       if ( num > 0 ) {
-         fprintf( stderr, "UI: Read %d bytes from SecProc: ", (int)num );
-         fwrite( secBuf, 1 , num , stderr );
-         fprintf( stderr, "\n");
+     if ( (numSelectFD > 0) && ( FD_ISSET(secApi.getReadFD(), &fdSet) ) ) {
+       QMsgUIMessage message{};
+       secApi.readMsg( &message );
+       
+       switch ( message.type ) {
+       case QMsgUISendASCIIMessage:
+         std::clog << "UI: Got AsciiMsg from SecProc: "
+                   << " team=" <<   message.u.send_ascii_message.team_id
+                   << " ch= " <<  message.u.send_ascii_message.channel_id
+                   << " val: " << std::string(  (char*)message.u.send_ascii_message.message.data,
+                                                message.u.send_ascii_message.message.length )
+                   << std::endl;
+         break;
+       default:
+         assert(0);
        }
-     }
+      }
   }
   
   return 0;
