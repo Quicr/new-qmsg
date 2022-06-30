@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
+
 UserInterface::UserInterface(const int keyboard_fd,
                              const int sec_to_ui_fd,
                              const int ui_to_sec_id,
@@ -23,6 +24,7 @@ UserInterface::~UserInterface()
     delete sender;
     delete parser;
     delete username;
+    delete context;
 }
 
 void UserInterface::Start()
@@ -131,12 +133,40 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                 else if (strcmp(command_token, commands[Command::connect]) == 0)
                 {
                     // Connect to a team room
-                    fprintf(stderr, "Connecting to a room");
-
                 }
                 else if (strcmp(command_token, commands[Command::join]) == 0)
                 {
                     // Join a channel
+                    std::string join_token(strtok(NULL, " "));
+                    fprintf(stderr, "Connecting to a room %s", join_token);
+
+                    if (join_token.length() > 0)
+                    {
+                        bool channel_exists = false;
+                        unsigned int idx = 0;
+                        for (unsigned int i = 0; i < all_channels.size(); i++)
+                        {
+                            if (join_token == all_channels[i].Name())
+                            {
+                                channel_exists = true;
+                                idx = i;
+                                break;
+                            }
+                        }
+
+                        if (channel_exists)
+                        {
+                            // Send a channel join request
+                            sender->SendMessage(all_channels[idx].Name().c_str(), join_token.length());
+
+                            // Keep track of the channels we've joined
+                            joined_channels.push_back(all_channels[idx]);
+                        }
+                    }
+                    else
+                    {
+                        // TODO error
+                    }
                 }
                 else if (strcmp(command_token, commands[Command::leave]) == 0)
                 {
@@ -160,7 +190,9 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                 {
                     // TODO if we are not in a chat room then
                     // normal messages do nothing.
+                    // and note we are not in a channel
                 }
+
 
                 // Send to secure process
                 sender->SendMessage(keyboard->Data(), keyboard->BufferLength());
@@ -176,11 +208,14 @@ void UserInterface::HandleReceiver(int selected_fd, fd_set fdSet)
         receiver->Read();
         if (receiver->BufferLength() > 0)
         {
+            do
+            {
+                // qmsg_enc_result = QMsgNetDecod
+            } while ((total_consumed < 8192) && (consumed > 0));
+
             fprintf(stderr, "UI: Read %d bytes from SecProc: ", receiver->BufferLength());
             fwrite(receiver->Data(), 1, receiver->BufferLength(), stderr);
             fprintf(stderr, "\n");
-
-            // TODO output a message
         }
     }
 }

@@ -2,11 +2,15 @@
 
 #include <time.h>
 #include <sys/time.h>
+#include <vector>
+#include <string>
 
 #include "FdReader.hh"
 #include "Sender.hh"
 #include "Channel.hh"
 #include "Parser.hh"
+#include "Team.hh"
+#include "qmsg/encoder.h"
 
 enum Command
 {
@@ -42,6 +46,7 @@ private:
     void Parse();
     void PrintMessage(const char* msg);
     void PrintTimestampedMessage(const char* msg);
+    void JoinTeam(const std::string team);
 
     const char* commands[7] =
     {
@@ -58,7 +63,14 @@ private:
     FdReader* receiver;
     Sender* sender;
     Parser* parser;
-    // Channel channel;
+    QMsgEncoderResult qmsg_enc_result;
+    QMsgEncoderContext *context;
+    unsigned int consumed;
+    unsigned int total_consumed;
+    unsigned int fragment_size = 0;
+    std::vector<Channel> joined_channels;
+    std::vector<Channel> all_channels;
+
     int selected_fd;
     bool is_running;
     char* username;

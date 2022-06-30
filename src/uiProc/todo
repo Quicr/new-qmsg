@@ -9,3 +9,11 @@ a bunch of different classes.
 Read from a file eventually that says who you are.
 
 sort by timestamp
+
+Command object with call backs
+
+
+TODO by the end of today
+Send a watch (channels) (integer)
+Send a message
+Receive a message

@@ -8,7 +8,7 @@ Sender::~Sender()
 {
 }
 
-void Sender::SendMessage(char *buffer, const unsigned int buffer_length)
+void Sender::SendMessage(const char *buffer, const unsigned int buffer_length)
 {
     // TODO encode the message
 

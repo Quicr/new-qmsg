@@ -12,7 +12,8 @@ public:
     bool HasMessage(int selected_fd);
     void Read(char* buffer, unsigned int &buffer_length, const unsigned int buffer_size);
     void ReadKeyboard();
-    void SendMessage(char *buffer, const unsigned int buffer_length);
+    // void SendMessage(char *buffer, const unsigned int buffer_length);
+    void SendMessage(const char *buffer, const unsigned int buffer_length);
 private:
     void EncodeMessage(char *buffer, const unsigned int buffer_length);
 

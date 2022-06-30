@@ -9,3 +9,8 @@ Channel::~Channel()
 {
 
 }
+
+std::string Channel::Name()
+{
+    return name;
+}
