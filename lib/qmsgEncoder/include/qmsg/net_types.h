@@ -15,121 +15,112 @@
 
 #pragma once
 
+#include "qmsg_common.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-// Define the Sec<=>Net message type values
+// Define the Net<=>Sec message type values
 typedef enum QMsgNetMessageType
 {
     QMsgNetInvalid = 0,
-    QMsgNetDeviceInfo,
-    QMsgNetTime,
-    QMsgNetMLSCommit,
-    QMsgNetWatchTeam,
-    QMsgNetMLSWelcome,
     QMsgNetSendASCIIMessage,
     QMsgNetReceiveASCIIMessage,
-    QMsgNetGetChannels,
-    QMsgNetWatch,
-    QMsgNetUnwatch,
-    QMsgNetRequestMessages,
+    QMsgNetWatchDevices,
+    QMsgNetUnwatchDevices,
+    QMsgNetMLSSignatureHash,
+    QMsgNetMLSKeyPackage,
+    QMsgNetMLSAddKeyPackage,
+    QMsgNetMLSWelcome,
+    QMsgNetMLSCommit,
+    QMsgNetDeviceInfo,
     QMsgNet_RESERVED_RANGE
 } QMsgNetMessageType;
 
-// The following are the Sec<=>Net message stuctures
-typedef struct QMsgNetDeviceInfo_t
-{
-    uint32_t pin;
-    char *domain;
-    uint32_t org_id;
-    uint32_t device_id;
-    char *mls_key_package;
-    uint64_t kp_fingerprint;
-} QMsgNetDeviceInfo_t;
-
-typedef struct QMsgNetTime_t
-{
-    uint64_t time;
-} QMsgNetTime_t;
-
-typedef struct QMsgNetMLSCommit_t
-{
-    char *message;
-} QMsgNetMLSCommit_t;
-
-typedef struct QMsgNetWatchTeam_t
-{
-    uint32_t team_id;
-} QMsgNetWatchTeam_t;
-
-typedef struct QMsgNetMLSWelcome_t
-{
-    char *message;
-} QMsgNetMLSWelcome_t;
-
+// Define the various Net<=>Sec Message types
 typedef struct QMsgNetSendASCIIMessage_t
 {
-    char *encrypted_message;
-    uint64_t expiry_time;
-    uint32_t team_id;
-    uint32_t channel_id;
+    QMsgTeamID team_id;
+    QMsgChannelID channel_id;
+    QMsgOpaque_t message;
 } QMsgNetSendASCIIMessage_t;
 
 typedef struct QMsgNetReceiveASCIIMessage_t
 {
-    char *encrypted_message;
-    uint32_t claimed_team;
-    uint32_t claimed_channel;
-    uint32_t claimed_device;
+    QMsgTeamID team_id;
+    QMsgChannelID channel_id;
+    QMsgDeviceID device_id;
+    QMsgOpaque_t message;
 } QMsgNetReceiveASCIIMessage_t;
 
-typedef struct QMsgNetGetChannels_t
+typedef struct QMsgNetWatchDevices_t
 {
-    uint32_t team_id;
-} QMsgNetGetChannels_t;
+    QMsgTeamID team_id;
+    QMsgChannelID channel_id;
+    QMsgDeviceList_t device_list;
+} QMsgNetWatchDevices_t;
 
-typedef struct QMsgNetWatch_t
+typedef struct QMsgNetUnwatchDevices_t
 {
-    uint32_t team_id;
-    uint32_t channel_id;
-    uint32_t sender_device;
-} QMsgNetWatch_t;
+    QMsgTeamID team_id;
+    QMsgChannelID channel_id;
+    QMsgDeviceList_t device_list;
+} QMsgNetUnwatchDevices_t;
 
-typedef struct QMsgNetUnwatch_t
+typedef struct QMsgNetMLSSignatureHash_t
 {
-    uint32_t team_id;
-    uint32_t channel_id;
-    uint32_t sender_device;
-} QMsgNetUnwatch_t;
+    QMsgTeamID team_id;
+    QMsgOpaque_t hash;
+} QMsgNetMLSSignatureHash_t;
 
-typedef struct QMsgNetRequestMessages_t
+typedef struct QMsgNetMLSKeyPackage_t
 {
-    uint32_t team_id;
-    uint32_t channel_id;
-    uint32_t sender_device;
-    uint64_t before_time;
-    uint16_t message_count;
-} QMsgNetRequestMessages_t;
+    QMsgTeamID team_id;
+    QMsgOpaque_t key_package;
+} QMsgNetMLSKeyPackage_t;
 
-// The following union will hold the contents of a single UI message
+typedef struct QMsgNetMLSAddKeyPackage_t
+{
+    QMsgTeamID team_id;
+    QMsgOpaque_t key_package;
+} QMsgNetMLSAddKeyPackage_t;
+
+typedef struct QMsgNetMLSWelcome_t
+{
+    QMsgTeamID team_id;
+    QMsgOpaque_t welcome;
+} QMsgNetMLSWelcome_t;
+
+typedef struct QMsgNetMLSCommit_t
+{
+    QMsgTeamID team_id;
+    QMsgOpaque_t commit;
+} QMsgNetMLSCommit_t;
+
+typedef struct QMsgNetDeviceInfo_t
+{
+    QMsgTeamID team_id;
+    QMsgDeviceID device_id;
+} QMsgNetDeviceInfo_t;
+
+// The following union will hold the contents of a single Net<=>Sec message
 typedef struct QMsgNetMessage
 {
     QMsgNetMessageType type;
     union
     {
-        QMsgNetDeviceInfo_t device_info;
-        QMsgNetTime_t time;
-        QMsgNetMLSCommit_t commit_message;
-        QMsgNetWatchTeam_t watch_team;
-        QMsgNetMLSWelcome_t welcome_message;
         QMsgNetSendASCIIMessage_t send_ascii_message;
         QMsgNetReceiveASCIIMessage_t receive_ascii_message;
-        QMsgNetGetChannels_t get_channels;
-        QMsgNetWatch_t watch;
-        QMsgNetUnwatch_t unwatch;
-        QMsgNetRequestMessages_t request_messages;
+        QMsgNetWatchDevices_t watch_devices;
+        QMsgNetUnwatchDevices_t unwatch_devices;
+        QMsgNetMLSSignatureHash_t mls_signature_hash;
+        QMsgNetMLSKeyPackage_t mls_key_package;
+        QMsgNetMLSAddKeyPackage_t mls_add_key_package;
+        QMsgNetMLSWelcome_t mls_welcome;
+        QMsgNetMLSCommit_t mls_commit;
+        QMsgNetDeviceInfo_t device_info;
     } u;
 } QMsgNetMessage;
 

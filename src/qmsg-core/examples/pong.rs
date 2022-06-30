@@ -1,9 +1,8 @@
+// This is the pong half of a ping/pong example.  See ping.rs for further details.
+
 use qmsg_core::*;
 use std::fs::OpenOptions;
 use std::io::Result;
-
-const PING: MessageType = 1;
-const PONG: MessageType = 2;
 
 struct Pong<T, U>
 where
@@ -22,16 +21,10 @@ where
     fn run(mut self) {
         loop {
             let ping = self.from_ping.next().unwrap();
-            assert!(ping.t == PING);
-            let count = u32::from_be_slice(&ping.v);
+            let count = u32::from_be_slice(ping.data());
             println!("recv ping: {}", count);
 
-            self.to_ping
-                .write(&Message {
-                    t: PONG,
-                    v: count.to_be_bytes().to_vec(),
-                })
-                .unwrap();
+            self.to_ping.write(&ping).unwrap();
             println!("send pong: {}x", count);
         }
     }

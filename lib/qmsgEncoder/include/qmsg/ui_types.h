@@ -15,6 +15,8 @@
 
 #pragma once
 
+#include "qmsg_common.h"
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -24,115 +26,73 @@ extern "C"
 typedef enum QMsgUIMessageType
 {
     QMsgUIInvalid = 0,
+    QMsgUISendASCIIMessage,
+    QMsgUIReceiveASCIIMessage,
+    QMsgUIWatchChannel,
+    QMsgUIUnwatchChannel,
     QMsgUIUnlock,
     QMsgUIIsLocked,
-    QMsgUIDeviceInfo,
-    QMsgUIGetTeams,
-    QMsgUITeamInfo,
-    QMsgUIGetChannels,
-    QMsgUIChannelInfo,
-    QMsgUISendASCIIMsg,
-    QMsgUIReceiveASCIIMessage,
-    QMsgUIWatch,
-    QMsgUIUnwatch,
-    QMsgUIRequestMessages,
+    QMsgUIMLSSignatureHash,
     QMsgUI_RESERVED_RANGE
 } QMsgUIMessageType;
 
-// The following are the UI<=>Sec message stuctures
+// Define the various UI<=>Sec Message types
+typedef struct QMsgUISendASCIIMessage_t
+{
+    QMsgTeamID team_id;
+    QMsgChannelID channel_id;
+    QMsgOpaque_t message;
+} QMsgUISendASCIIMessage_t;
+
+typedef struct QMsgUIReceiveASCIIMessage_t
+{
+    QMsgTeamID team_id;
+    QMsgChannelID channel_id;
+    QMsgDeviceID device_id;
+    QMsgOpaque_t message;
+} QMsgUIReceiveASCIIMessage_t;
+
+typedef struct QMsgUIWatchChannel_t
+{
+    QMsgTeamID team_id;
+    QMsgChannelID channel_id;
+} QMsgUIWatchChannel_t;
+
+typedef struct QMsgUIUnwatchChannel_t
+{
+    QMsgTeamID team_id;
+    QMsgChannelID channel_id;
+} QMsgUIUnwatchChannel_t;
+
 typedef struct QMsgUIUnlock_t
 {
-    uint32_t pin;
+    QMsgPin pin;
 } QMsgUIUnlock_t;
 
 typedef struct QMsgUIIsLocked_t
 {
-    int present;
+    void *placeholder;
 } QMsgUIIsLocked_t;
 
-typedef struct QMsgUIDeviceInfo_t
+typedef struct QMsgUIMLSSignatureHash_t
 {
-    char *domain;
-    uint32_t org;
-    uint64_t kp_fingerprint;
-} QMsgUIDeviceInfo_t;
+    QMsgTeamID team_id;
+    QMsgOpaque_t hash;
+} QMsgUIMLSSignatureHash_t;
 
-typedef struct QMsgUIGetTeams_t
-{
-    int present;
-} QMsgUIGetTeams_t;
-
-typedef struct QMsgUITeamInfo_t
-{
-    uint32_t team_id;
-    char *team_name;
-} QMsgUITeamInfo_t;
-
-typedef struct QMsgUIGetChannels_t
-{
-    uint32_t team_id;
-} QMsgUIGetChannels_t;
-
-typedef struct QMsgUIChannelInfo_t
-{
-    uint32_t team_id;
-    uint32_t channel_id;
-    char *channel_name;
-} QMsgUIChannelInfo_t;
-
-typedef struct QMsgUISendASCIIMsg_t
-{
-    uint32_t team_id;
-    uint32_t channel_id;
-    char *message;
-} QMsgUISendASCIIMsg_t;
-
-typedef struct QMsgUIReceiveASCIIMessage_t
-{
-    uint32_t team_id;
-    uint32_t channel_id;
-    uint64_t time;
-    char *message;
-} QMsgUIReceiveASCIIMessage_t;
-
-typedef struct QMsgUIWatch_t
-{
-    uint32_t team_id;
-    uint32_t channel_id;
-} QMsgUIWatch_t;
-
-typedef struct QMsgUIUnwatch_t
-{
-    uint32_t team_id;
-    uint32_t channel_id;
-} QMsgUIUnwatch_t;
-
-typedef struct QMsgUIRequestMessages_t
-{
-    uint32_t team_id;
-    uint32_t channel_id;
-    uint64_t before_time;
-    uint16_t message_count;
-} QMsgUIRequestMessages_t;
-
-// The following union will hold the contents of a single UI message
+// The following union will hold the contents of a single UI<=>Sec message
 typedef struct QMsgUIMessage
 {
     QMsgUIMessageType type;
     union
     {
+        QMsgUISendASCIIMessage_t send_ascii_message;
+        QMsgUIReceiveASCIIMessage_t receive_ascii_message;
+        QMsgUIWatchChannel_t watch_channel;
+        QMsgUIUnwatchChannel_t unwatch_channel;
         QMsgUIUnlock_t unlock;
         QMsgUIIsLocked_t is_locked;
-        QMsgUIDeviceInfo_t device_info;
-        QMsgUIGetTeams_t get_teams;
-        QMsgUITeamInfo_t teams_info;
-        QMsgUIGetChannels_t get_channels;
-        QMsgUIChannelInfo_t channel_info;
-        QMsgUISendASCIIMsg_t send_ascii_message;
-        QMsgUIReceiveASCIIMessage_t receive_ascii_message;
-        QMsgUIWatch_t watch;
-        QMsgUIUnwatch_t unwatch;
-        QMsgUIRequestMessages_t request_messages;
+        QMsgUIMLSSignatureHash_t mls_signature_hash;
     } u;
 } QMsgUIMessage;
 

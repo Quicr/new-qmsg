@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 libc = "0.2.126"
+openmls = "0.4.1"
+tls_codec = "0.2.0"
+tls_codec_derive = "0.2.0"

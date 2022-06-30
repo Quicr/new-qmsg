@@ -29,10 +29,21 @@ EventType: Ascii_Message
 Data:
 * uint32:  team
 * uint32:  channel
+* uint16:  device_id // maps to mls index
 * opaque value<0..2^32-1>: ciphertext // [4B length + uint8_t bytes]
 
 
 ## Receive Ascii Message 
+
+### Net -> Sec
+EventType: Ascii_Message
+
+Data:
+* uint32:  team
+* uint32:  channel
+* uint16:  device_id
+* opaque value<0..2^32-1>: ciphertext // [4B length + uint8_t bytes]
+
 
 ### Sec->UI
 EventType: Ascii_Message
@@ -88,6 +99,17 @@ Data:
 # MLS Group Management Messages
 This section covers message related to setting up MLS crypto state
 
+## SignatureHash (UI -> Sec / Sec -> Net)
+Identfier for a given user's device
+
+EventType: SignatureHash
+
+Data:
+* uint32: team
+* opaque vector<0..2^16-1>: key-package hash bytes or equivalent to it
+
+
+
 ## KeyPackage (Sec -> Net)
 This event reports a Keypackage for the user/device to the network process on bootup
 in order to be transmitted to the MLS leader for joining the group
@@ -97,6 +119,7 @@ EventType: Keypackage
 Data:
 * uint32: team
 * opaque vector<0..2^32-1>: key-package bytes
+* opaque vector<0..2^32-1>: key-package-hash bytes
 
 ## Add KeyPackage (Net -> Sec)
 This event indicates to the MLS leader that a user/device wants to 

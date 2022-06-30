@@ -37,7 +37,7 @@ impl Drop for FdSet {
 // Rust doesn't support non-blocking IO, so we have to reach down into libc to get it.
 pub fn open(name: &str) -> File {
     let name = CString::new(name).unwrap();
-    let fd = unsafe { libc::open(name.as_ptr(), libc::O_NONBLOCK) };
+    let fd = unsafe { libc::open(name.as_ptr(), libc::O_NONBLOCK | libc::O_RDWR) };
     unsafe { File::from_raw_fd(fd) }
 }
 
@@ -57,8 +57,8 @@ pub fn select(files: &[&mut File], wait: Duration) -> Result<Vec<bool>> {
 
     // Convert the duration to a timeval
     let mut timeout = libc::timeval {
-        tv_sec: wait.as_secs() as i64,
-        tv_usec: wait.subsec_micros() as i32,
+        tv_sec: wait.as_secs().try_into().unwrap(),
+        tv_usec: wait.subsec_micros().try_into().unwrap(),
     };
 
     // Run select()
