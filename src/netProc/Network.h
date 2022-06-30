@@ -1,6 +1,8 @@
 #pragma once
 #include <map>
 #include <queue>
+#include <set>
+
 #include <iostream>
 
 #include <quicr/quicr_client.h>
@@ -73,11 +75,6 @@ struct QuicrName {
     }
 };
 
-struct TeamInfo {
-    uint16_t device_id;
-    uint32_t & team_id;
-};
-
 enum struct EventSource {
     SecProc = 0,
     Network = 1
@@ -92,11 +89,16 @@ struct Network : public QuicrMessageProcessor
   // public api
   void set_kphash_for_welcome(std::string&& team_id, std::string&& hash);
 
+  void publish(uint32_t team_id, uint32_t channel_id, uint16_t device_id, quicr::bytes&& data);
+  void subscribe_to_devices(uint32_t team_id, uint32_t channel_id, std::vector<uint16_t>&& devices);
+
+  void unsubscribe_from_device(uint32_t team_id, uint32_t channel_id, uint16_t device_id);
+  void subscribe_for_keypackage(uint32_t team_id, quicr::bytes&& kp_hash);
   // event handlers
   void handleDeviceInfo(const uint32_t team_id, const uint16_t device_id);
-  void handleKeyPackageEvent(EventSource source, const uint32_t team_id, quicr::bytes& key_package);
-  void handleMLSWelcomeEvent(const uint32_t team_id, quicr::bytes& bytes);
-  void handleMLSCommitEvent(const uint32_t team_id, quicr::bytes& bytes);
+  void handleKeyPackageEvent(EventSource source, const uint32_t team_id, quicr::bytes&& key_package, quicr::bytes&& key_package_hash);
+  void handleMLSWelcomeEvent(EventSource source, const uint32_t team_id, quicr::bytes&& welcome);
+  void handleMLSCommitEvent(EventSource source, const uint32_t team_id, quicr::bytes&& commit);
 
 
   // quicr message processor
@@ -104,8 +106,12 @@ struct Network : public QuicrMessageProcessor
 
 private:
 
-  std::string kp_hash;
+  void publish(std::string&& name, quicr::bytes&& data);
+  void subscribe(std::vector<std::string>&& names);
 
+  std::map<uint32_t, std::string> keypackage_hashes;
+  std::map <std::string, bool> publisher_registration_status;
+  std::set<std::string> subscribers;
   QuicrDelegate delegate;
   quicr::QuicRClient qr_client;
 };

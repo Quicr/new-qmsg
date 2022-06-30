@@ -586,6 +586,7 @@ std::size_t QMsgDeserializer::Deserialize(DataBuffer &data_buffer,
 
     Deserialize(data_buffer, message.team_id);
     Deserialize(data_buffer, message.key_package);
+    Deserialize(data_buffer, message.key_package_hash);
 
     return data_buffer.GetReadLength() - initial_read_position;
 }
