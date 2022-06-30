@@ -21,7 +21,7 @@ FetchContent_Declare(   quicr
 FetchContent_MakeAvailable(quicr)
 
 
-add_executable( netProc Network.cxx netProc.cxx )
+add_executable( netProc message_loop.cxx Network.cxx netProc.cxx )
 
 target_link_libraries(netProc PRIVATE qmsgEncoder
                             PUBLIC quicr)

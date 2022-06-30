@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iomanip>
 
+#include "names.h"
 ///
 ///  Utility
 ///
@@ -18,19 +19,9 @@ to_hex(const quicr::bytes& data)
     return hex.str();
 }
 
-void Network::set_kphash_for_welcome(std::string&& team_id, std::string&& hash)
-{
-    if (!kp_hash.empty() && kp_hash == hash) {
-        // todo unsubscribe
-        return;
-    }
-
-    kp_hash = hash;
-    // subscribe to receive the key_package
-    auto name = QuicrName::name_for_kp_hash(team_id, kp_hash);
-    qr_client.subscribe({name}, false);
-}
-
+Network::Network(const std::string& server_ip, const uint16_t port)
+  : qr_client(delegate, server_ip, port)
+{}
 
 void Network::publish(uint32_t team_id, uint32_t channel_id, uint16_t device_id, quicr::bytes&& data)
 {
@@ -38,11 +29,6 @@ void Network::publish(uint32_t team_id, uint32_t channel_id, uint16_t device_id,
                                          std::to_string(channel_id),
                                          std::to_string(device_id));
     publish(std::move(qname), std::move(data));
-}
-
-void Network::publish(uint32_t team_id, uint32_t channel_id, uint16_t device_id, quicr::bytes&& data)
-{
-
 }
 
 void Network::subscribe_to_devices(uint32_t team_id, uint32_t channel_id, std::vector<uint16_t>&& devices)
@@ -133,15 +119,17 @@ void Network::publish(std::string&& name, quicr::bytes&& data)
 
 void Network::subscribe(std::vector<std::string>&& names)
 {
+
     // todo: apply set_intersection??
-    auto it = std::begin(names);
-    while (it != std::end(names)) {
-        if(subscribers.count(*it)) {
-            it = subscribers.erase(it);
-            continue;
+    auto qnames = std::move(names);
+    for (auto it = qnames.begin(); it != qnames.end(); it++)
+    {
+        if (subscribers.count(*it))
+        {
+            qnames.erase(it--);
         }
-        ++it;
     }
+
     // send subscribes to all the remaining names
-    qr_client.subscribe(names, true, true);
+    qr_client.subscribe(qnames, true, true);
 }
