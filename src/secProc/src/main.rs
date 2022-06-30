@@ -48,19 +48,23 @@ where
                         let (commit, welcome) = group.add_members(&self.backend, &[kp]).unwrap();
                         self.to_network
                             .write(
-                                &Message::from_tls(&MlsCommitOut {
-                                    team: jr.team,
-                                    commit: TlsSerialized::new(commit),
-                                })
+                                &Message::from_tls(&SecurityToNetworkEvent::MlsCommitOut(
+                                    MlsCommitOut {
+                                        team: jr.team,
+                                        commit: TlsSerialized::new(commit),
+                                    },
+                                ))
                                 .unwrap(),
                             )
                             .unwrap();
                         self.to_network
                             .write(
-                                &Message::from_tls(&MlsWelcome {
-                                    team: jr.team,
-                                    welcome: TlsSerialized::new(welcome),
-                                })
+                                &Message::from_tls(&SecurityToNetworkEvent::MlsWelcome(
+                                    MlsWelcome {
+                                        team: jr.team,
+                                        welcome: TlsSerialized::new(welcome),
+                                    },
+                                ))
                                 .unwrap(),
                             )
                             .unwrap();
@@ -136,7 +140,14 @@ where
                                             msg.into_bytes().as_slice(),
                                         ),
                                     };
-                                    self.to_ui.write(&Message::from_tls(&out).unwrap()).unwrap();
+                                    self.to_ui
+                                        .write(
+                                            &Message::from_tls(&SecurityToUiEvent::AsciiMessage(
+                                                out,
+                                            ))
+                                            .unwrap(),
+                                        )
+                                        .unwrap();
                                 } else {
                                     warn!("Got non-application message in AsciiMessage event");
                                     continue;
@@ -185,7 +196,12 @@ where
                             ciphertext: TlsSerialized::new(message),
                         };
                         self.to_network
-                            .write(&Message::from_tls(&out).unwrap())
+                            .write(
+                                &Message::from_tls(&SecurityToNetworkEvent::EncryptedAsciiMessage(
+                                    out,
+                                ))
+                                .unwrap(),
+                            )
                             .unwrap();
                     }
                 }
