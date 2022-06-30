@@ -12,3 +12,5 @@ qmsg-core = { version = "0.1.0", path = "../qmsg-core" }
 "openmls" = "0.4.1"
 "openmls_rust_crypto" = "0.1.0"
 tls_codec = "0.2.0"
+openmls_traits = "0.1.0"
+openmls_memory_keystore = "0.1.0"
