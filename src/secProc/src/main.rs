@@ -37,7 +37,10 @@ where
             if self.from_network.ready(poll_wait) {
                 let msg = self.from_network.next().unwrap();
                 match msg.to_tls::<NetworkToSecurityEvent>().unwrap() {
-                    NetworkToSecurityEvent::JoinRequest(jr) => {
+                    NetworkToSecurityEvent::MlsKeyPackage(jr) => {
+                        // TODO
+                    }
+                    NetworkToSecurityEvent::MlsAddKeyPackage(jr) => {
                         let kp = jr.key_package.unwrap();
                         let mut group = match self.groups.get(&jr.team) {
                             Some(group) => group.borrow_mut(),
@@ -174,6 +177,9 @@ where
             if self.from_ui.ready(poll_wait) {
                 let msg = self.from_ui.next().unwrap();
                 match msg.to_tls::<UiToSecurityEvent>().unwrap() {
+                    UiToSecurityEvent::MlsSignatureHash(sh) => {
+                        // TODO
+                    }
                     UiToSecurityEvent::WatchChannel(w) => {
                         let out = WatchDevices {
                             team: w.team,
