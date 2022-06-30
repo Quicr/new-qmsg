@@ -1,12 +1,13 @@
-use log::{error, warn};
+use env_logger;
+use log::{error, info, warn};
 use openmls::prelude::*;
 use openmls_rust_crypto::OpenMlsRustCrypto;
 use qmsg_core::events::*;
 use qmsg_core::*;
 use std::cell::*;
 use std::collections::HashMap;
-use std::env;
 use std::time::Duration;
+use std::{env, str};
 use tls_codec::*;
 
 struct SecurityProcessor<R, W>
@@ -68,6 +69,7 @@ where
                                 .unwrap(),
                             )
                             .unwrap();
+                        info!("Successfully added member to group, sent out commit and welcome");
                     }
                     NetworkToSecurityEvent::MlsWelcome(w) => {
                         let welcome = w.welcome.unwrap();
@@ -106,6 +108,7 @@ where
                                         warn!("Failed to merge commit: {}", e);
                                         continue;
                                     }
+                                    info!("Successfully applied incoming commit");
                                 } else {
                                     warn!("Got non-commit message in MlsCommit event");
                                     continue;
@@ -131,14 +134,13 @@ where
                         match self.verify_mls_message(&mut group, am.ciphertext.unwrap()) {
                             Ok(res) => {
                                 if let ProcessedMessage::ApplicationMessage(msg) = res {
+                                    let msg_bytes = msg.into_bytes();
                                     let out = AsciiMessage {
                                         team: am.team,
                                         channel: am.channel,
                                         device_id: Self::get_device_id(&group, &self.our_kp)
                                             .unwrap(),
-                                        ascii: TlsByteVecU32::from_slice(
-                                            msg.into_bytes().as_slice(),
-                                        ),
+                                        ascii: TlsByteVecU32::from_slice(msg_bytes.as_slice()),
                                     };
                                     self.to_ui
                                         .write(
@@ -148,6 +150,10 @@ where
                                             .unwrap(),
                                         )
                                         .unwrap();
+                                    info!(
+                                        "Got message with content \"{}\" from network, sent to UI process",
+                                        str::from_utf8(msg_bytes.as_slice()).unwrap()
+                                    );
                                 } else {
                                     warn!("Got non-application message in AsciiMessage event");
                                     continue;
@@ -203,6 +209,10 @@ where
                                 .unwrap(),
                             )
                             .unwrap();
+                        info!(
+                            "Created message with content \"{}\", sent to network",
+                            str::from_utf8(am.ascii.as_slice()).unwrap()
+                        );
                     }
                 }
             }
@@ -240,6 +250,8 @@ where
 }
 
 fn main() {
+    env_logger::init();
+
     // Communications with the network processor
     let s2n = nonblocking::open("/tmp/pipe-s2n");
     let n2s = nonblocking::open("/tmp/pipe-n2s");
