@@ -17,10 +17,6 @@ int main( int argc, char* argv[]){
 
   secApi.watch( team, channel );
          
-  const int bufSize=128;
-  uint8_t secBuf[bufSize];
-  uint8_t keyboardBuf[bufSize];
- 
   while( true ) {
     //waitForInput
      struct timeval timeout;
@@ -30,15 +26,18 @@ int main( int argc, char* argv[]){
      int maxFD=0;
      FD_ZERO(&fdSet);
      FD_SET(keyboardFD, &fdSet); maxFD = (keyboardFD>maxFD) ? keyboardFD : maxFD;
-     int sec2uiFD = secApi.getReadFD();
-     FD_SET(sec2uiFD, &fdSet); maxFD = (sec2uiFD>maxFD) ? sec2uiFD : maxFD;
+     {
+       int sec2uiFD = secApi.getReadFD();
+       FD_SET(sec2uiFD, &fdSet); maxFD = (sec2uiFD>maxFD) ? sec2uiFD : maxFD;
+     }
      int numSelectFD = select( maxFD+1 , &fdSet , NULL, NULL, &timeout );
      assert( numSelectFD >= 0 );
-     //fprintf(stderr, "UI: Running\n");
       
     //processKeyboard
      if ( (numSelectFD > 0) && ( FD_ISSET(keyboardFD, &fdSet) ) ) {
-       //fprintf(stderr, "UI: Reading Keyboard\n");
+       const int bufSize=128;
+       uint8_t keyboardBuf[bufSize];
+ 
        ssize_t num = read( keyboardFD, keyboardBuf, bufSize );
        if ( num > 0 ) {
          fprintf( stderr, "UI: Read %d bytes from keyboard: ", (int)num );
@@ -55,12 +54,13 @@ int main( int argc, char* argv[]){
        secApi.readMsg( &message );
        
        switch ( message.type ) {
-       case QMsgUISendASCIIMessage:
+       case QMsgUIReceiveASCIIMessage:
          std::clog << "UI: Got AsciiMsg from SecProc: "
-                   << " team=" <<   message.u.send_ascii_message.team_id
-                   << " ch= " <<  message.u.send_ascii_message.channel_id
-                   << " val: " << std::string(  (char*)message.u.send_ascii_message.message.data,
-                                                message.u.send_ascii_message.message.length )
+                   << " team=" <<   message.u.receive_ascii_message.team_id
+                   << " device=" <<   message.u.receive_ascii_message.device_id
+                   << " ch= " <<  message.u.receive_ascii_message.channel_id
+                   << " val: " << std::string(  (char*)message.u.receive_ascii_message.message.data,
+                                                message.u.receive_ascii_message.message.length )
                    << std::endl;
          break;
        default:

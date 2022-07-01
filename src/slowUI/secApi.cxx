@@ -52,8 +52,8 @@ void SecApi::watch(int team, int ch) {
   QMsgUIMessage message{};
 
   message.type = QMsgUIWatchChannel;
-  message.u.watch_channel.team_id = 0x2;
-  message.u.watch_channel.channel_id = 0x3;
+  message.u.watch_channel.team_id = team;
+  message.u.watch_channel.channel_id = ch;
 
   send(message);
 }
@@ -64,8 +64,8 @@ void SecApi::sendAsciiMsg(int team, int ch, uint8_t *msg, int msgLen) {
 
   QMsgUIMessage message{};
   message.type = QMsgUISendASCIIMessage;
-  message.u.send_ascii_message.team_id = 0x2;
-  message.u.send_ascii_message.channel_id = 0x3;
+  message.u.send_ascii_message.team_id = team;
+  message.u.send_ascii_message.channel_id = ch;
   message.u.send_ascii_message.message.length = msgLen;
   message.u.send_ascii_message.message.data = msg;
 

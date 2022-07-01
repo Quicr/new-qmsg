@@ -18,5 +18,5 @@ public:
   int getReadFD();
 
   void readMsg(QMsgUIMessage *message);
-  void sendAsciiMsg(int team, int ch, uint8_t *msg, int msgLen);
+  void recvAsciiMsg(int team, int dev, int ch, uint8_t *msg, int msgLen);
 };

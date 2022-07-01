@@ -70,16 +70,17 @@ void UiApi::readMsg(QMsgUIMessage *message) {
   assert(consumed == msgLen);
 }
 
-void  UiApi::sendAsciiMsg(int team, int ch, uint8_t *msg, int msgLen) {
+void  UiApi::recvAsciiMsg(int team, int dev, int ch, uint8_t *msg, int msgLen) {
     assert(msg);
   assert(msgLen > 0);
 
   QMsgUIMessage message{};
   message.type = QMsgUISendASCIIMessage;
-  message.u.send_ascii_message.team_id = 0x2;
-  message.u.send_ascii_message.channel_id = 0x3;
-  message.u.send_ascii_message.message.length = msgLen;
-  message.u.send_ascii_message.message.data = msg;
+  message.u.receive_ascii_message.team_id = team;
+  message.u.receive_ascii_message.device_id = dev;
+  message.u.receive_ascii_message.channel_id = ch;
+  message.u.receive_ascii_message.message.length = msgLen;
+  message.u.receive_ascii_message.message.data = msg;
 
   send(message);
 }
