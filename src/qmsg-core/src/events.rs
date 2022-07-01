@@ -174,12 +174,6 @@ pub struct DeviceInfo {
     pub device_id: u16,
 }
 
-#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
-pub struct SignatureHash {
-    pub team: u32,
-    pub hashed_public_keys: TlsByteVecU16,
-}
-
 // Unions of sub-event types for the various interfaces
 //
 // The "discriminant" value represents the "type" value in the documentation.  These need to be
@@ -229,9 +223,6 @@ pub enum SecurityToNetworkEvent {
 
     #[tls_codec(discriminant = 10)]
     DeviceInfo(DeviceInfo),
-
-    #[tls_codec(discriminant = 10)]
-    SignatureHashOut(SignatureHash),
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
@@ -248,9 +239,6 @@ pub enum UiToSecurityEvent {
 
     #[tls_codec(discriminant = 12)]
     UnwatchChannel(UnwatchChannel),
-
-    #[tls_codec(discriminant = 10)]
-    SignatureHashIn(SignatureHash),
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]

@@ -1,4 +1,4 @@
-use env_logger;
+//use env_logger;
 use log::{error, info, warn};
 use openmls::prelude::*;
 use openmls_rust_crypto::OpenMlsRustCrypto;
@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 use std::{env, str};
 use tls_codec::*;
+use intro::*;
 
 struct SecurityProcessor<R, W>
 where
@@ -178,8 +179,14 @@ where
                 let msg = self.from_ui.next().unwrap();
                 match msg.to_tls::<UiToSecurityEvent>().unwrap() {
                     UiToSecurityEvent::MlsSignatureHash(sh) => {
-                        // TODO
-                    }
+		    //TODO: Add this to auth_key_list
+                    self.to_network
+                            .write(
+                                &Message::from_tls(&SecurityToNetworkEvent::MlsSignatureHash(sh))
+                                    .unwrap(),
+                            )
+                            .unwrap();
+		    }
                     UiToSecurityEvent::WatchChannel(w) => {
                         let out = WatchDevices {
                             team: w.team,
@@ -246,15 +253,6 @@ where
                             str::from_utf8(am.ascii.as_slice()).unwrap()
                         );
                     }
-		   UiToSecurityEvent::SignatureHashIn(s) => {
-			let out = s;
-			self.to_network
-                            .write(
-				&Message::from_tls(&SecurityToNetworkEvent::SignatureHashOut(
-					out,
-				))
-                            .unwrap();	
-		   }
                 }
             }
         }
@@ -291,7 +289,7 @@ where
 }
 
 fn main() {
-    env_logger::init();
+    //env_logger::init();
 
     // Communications with the network processor
     let s2n = nonblocking::open("/tmp/pipe-s2n");
