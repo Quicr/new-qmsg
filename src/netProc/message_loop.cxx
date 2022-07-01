@@ -24,7 +24,7 @@ LoopProcessResult MessageLoop::process(uint16_t read_buffer_size_in)
         buffer_size = read_buffer_size;
     }
 
-    char* read_buffer = (char*) malloc(buffer_size);
+    uint8_t* read_buffer = (uint8_t *) malloc(buffer_size);
 
     size_t fragment_size = 0;
     QMsgEncoderResult qmsg_enc_result;

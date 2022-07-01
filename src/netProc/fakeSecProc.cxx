@@ -60,7 +60,7 @@ struct FakeSecProcess
                     kp_hash,
                     message.u.mls_signature_hash.hash.length);
         std::size_t encoded_length;
-        char data_buffer[1500];
+        uint8_t data_buffer[1500];
         auto encode_result = QMsgNetEncodeMessage(context,
                                        &message,
                                        data_buffer,
@@ -96,7 +96,7 @@ struct FakeSecProcess
                     message.u.mls_key_package.key_package.length);
 
         std::size_t encoded_length;
-        char data_buffer[1500];
+        uint8_t data_buffer[1500];
         auto encode_result = QMsgNetEncodeMessage(context,
                                                   &message,
                                                   data_buffer,
@@ -121,7 +121,7 @@ struct FakeSecProcess
         message.u.watch_devices.device_list.device_list = devices;
 
         std::size_t encoded_length;
-        char data_buffer[1500];
+        uint8_t data_buffer[1500];
         auto result = QMsgNetEncodeMessage(context,
                                            &message,
                                            data_buffer,
@@ -150,7 +150,7 @@ struct FakeSecProcess
                     message.u.send_ascii_message.message.length);
 
         std::size_t encoded_length;
-        char data_buffer[1500];
+        uint8_t data_buffer[1500];
         auto result = QMsgNetEncodeMessage(context,
                                           &message,
                                           data_buffer,

@@ -169,7 +169,7 @@ void NetworkProcess::perform_network_io()
         QMsgNetMessage qMsgNetMessage {};
         size_t consumed = 0;
         auto qmsg_enc_result = QMsgNetDecodeMessage(context,
-                                                    reinterpret_cast<char *>(message.data.data()),
+                                                    reinterpret_cast<uint8_t *>(message.data.data()),
                                                     message.data.size(),
                                                     &qMsgNetMessage,
                                                     &consumed);
