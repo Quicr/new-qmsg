@@ -71,7 +71,7 @@ fn is_authorized_user(auth_keys: &Vec<SignaturePublicKey>, other_pk: &SignatureP
         auth_keys.contains(other_pk)
 }
 
-fn main() {
+fn testmain() {
         println!("Generate signed keys");
         let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
         let backend = &OpenMlsRustCrypto::default();
