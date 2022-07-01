@@ -7,9 +7,11 @@
  *
  *  Description:
  *      The QMsg Encoder implements functions to convert data structures into
- *      binary objects that can be transmitted between QMsg entities.
+ *      binary objects that can be transmitted between QMsg entities.  It also
+ *      implements the logic to convert those binary objects back into
+ *      useful data structures.
  *
- *      Messages are encoding using a length-tag-value (TLV) scheme
+ *      Messages are encoding using a length-tag-value (LTV) scheme
  *      as follows:
  *          4 octets - message length
  *          4 octets - message type
@@ -54,7 +56,7 @@
  *
  *      There is additional documentation for each of the fuctions below in
  *      the encoder.cpp file, including a description of the input and output
- *      parameters and how to handle return results..
+ *      parameters and how to handle return results.
  *
  *  Portability Issues:
  *      None.
