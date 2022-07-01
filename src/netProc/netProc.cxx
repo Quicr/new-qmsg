@@ -121,12 +121,9 @@ bool NetworkProcess::process_net_message(QMsgNetMessage& message, EventSource so
             }
 
             auto kp_hash = quicr::bytes(msg.key_package_hash.data, msg.key_package_hash.data + msg.key_package_hash.length);
-            if(source == EventSource::SecProc)
-            {
-                network.handleKeyPackageEvent(source, msg.team_id, std::move(message_raw), std::move(kp_hash));
-            } else {
-                writeToSecProc(std::move(message_raw));
-            }
+            (source == EventSource::SecProc) ?
+                network.handleKeyPackageEvent(source, msg.team_id, std::move(message_raw), std::move(kp_hash))
+                    : writeToSecProc(std::move(message_raw));
         }
             break;
         case QMsgNetMLSWelcome:
@@ -137,8 +134,9 @@ bool NetworkProcess::process_net_message(QMsgNetMessage& message, EventSource so
                 // log error
                 break;
             }
-            auto welcome = quicr::bytes(msg.welcome.data, msg.welcome.data + msg.welcome.length);
-            network.handleMLSWelcomeEvent(source, msg.team_id, std::move(welcome));
+            (source == EventSource::SecProc) ?
+                network.handleMLSWelcomeEvent(source, msg.team_id, std::move(message_raw))
+                    : writeToSecProc(std::move(message_raw));
         }
             break;
         case QMsgNetMLSCommit:
@@ -149,8 +147,9 @@ bool NetworkProcess::process_net_message(QMsgNetMessage& message, EventSource so
                 // log error
                 break;
             }
-            auto commit = quicr::bytes(msg.commit.data, msg.commit.data + msg.commit.length);
-            network.handleMLSCommitEvent(source, msg.team_id, std::move(commit));
+            (source == EventSource::SecProc) ?
+                network.handleMLSCommitEvent(source, msg.team_id, std::move(message_raw))
+                    : writeToSecProc(std::move(message_raw));
         }
             break;
         default:
