@@ -80,6 +80,10 @@ void SecApi::readMsg(QMsgUIMessage *message) {
 
   uint32_t msgLen = 0;
   ssize_t num = read(sec2uiFD, &msgLen, sizeof(msgLen));
+  if ( num == 0 ) {
+    message->type = QMsgUIInvalid;
+    return;
+  }
   assert(num == sizeof(msgLen));
   assert(msgLen <= bufSize);
   num = read(sec2uiFD, uiBuf, msgLen);

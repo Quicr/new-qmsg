@@ -87,7 +87,12 @@ void NetApi::readMsg(QMsgNetMessage *message) {
 
   uint32_t msgLen = 0;
   ssize_t num = read(net2secFD, &msgLen, sizeof(msgLen));
+  if ( num == 0 ) {
+    message->type = QMsgNetInvalid;
+    return;
+  }
   assert(num == sizeof(msgLen));
+  if ( msgLen >= bufSize ) { std::cerr << "msgLen=" << msgLen << std::endl; }
   assert(msgLen <= bufSize);
   num = read(net2secFD, uiBuf, msgLen);
   assert(num == msgLen);

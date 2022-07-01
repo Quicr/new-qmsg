@@ -7,7 +7,7 @@
 
 int main( int argc, char* argv[]){
 
-  fprintf(stderr, "UI: Starting\n");
+  std::clog << "UI: Starting\n" << std::endl;
      
   int keyboardFD = 0;
   SecApi secApi;
@@ -16,7 +16,8 @@ int main( int argc, char* argv[]){
   int channel= 0x3;
 
   secApi.watch( team, channel );
-         
+
+  
   while( true ) {
     //waitForInput
      struct timeval timeout;
@@ -40,11 +41,14 @@ int main( int argc, char* argv[]){
  
        ssize_t num = read( keyboardFD, keyboardBuf, bufSize );
        if ( num > 0 ) {
-         fprintf( stderr, "UI: Read %d bytes from keyboard: ", (int)num );
-         fwrite( keyboardBuf, 1 , num , stderr );
-         fprintf( stderr, "\n");
-
-         secApi.sendAsciiMsg( team, channel, keyboardBuf, num ); 
+         std::clog << "UI: Read %d bytes from keyboard: " << num << std::endl;
+         std::string str;
+         for ( int i=0; i<num; i++ ) {
+           if ( (  keyboardBuf[i] >= 0x20 ) && ( keyboardBuf[i] <= 0x7E ) ) {
+             str.push_back( keyboardBuf[i] );
+           }
+         }
+         secApi.sendAsciiMsg( team, channel, (uint8_t*)str.data(), str.size() ); 
        }
      }
      
@@ -62,6 +66,9 @@ int main( int argc, char* argv[]){
                    << " val: " << std::string(  (char*)message.u.receive_ascii_message.message.data,
                                                 message.u.receive_ascii_message.message.length )
                    << std::endl;
+         break;
+       case QMsgUIInvalid:
+         std::clog << "UI: Got Invalid msg from SecProc: " << std::endl;
          break;
        default:
          assert(0);
