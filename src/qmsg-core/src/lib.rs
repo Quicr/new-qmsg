@@ -88,7 +88,7 @@ where
             msg_buf.extend_from_slice(&read_buf[..n]);
 
             // Attempt to parse a message
-            if let Some((msg, msg_len)) = Message::parse(&read_buf) {
+            if let Some((msg, msg_len)) = Message::parse(&msg_buf) {
                 msg_buf.drain(..msg_len);
                 return Ok(msg);
             };

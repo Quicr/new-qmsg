@@ -37,7 +37,7 @@ impl Drop for FdSet {
 // Rust doesn't support non-blocking IO, so we have to reach down into libc to get it.
 pub fn open(name: &str) -> File {
     let name = CString::new(name).unwrap();
-    let fd = unsafe { libc::open(name.as_ptr(), libc::O_NONBLOCK) };
+    let fd = unsafe { libc::open(name.as_ptr(), libc::O_NONBLOCK | libc::O_RDWR) };
     unsafe { File::from_raw_fd(fd) }
 }
 

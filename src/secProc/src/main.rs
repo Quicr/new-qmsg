@@ -1,12 +1,13 @@
-use log::{error, warn};
+use env_logger;
+use log::{error, info, warn};
 use openmls::prelude::*;
 use openmls_rust_crypto::OpenMlsRustCrypto;
 use qmsg_core::events::*;
 use qmsg_core::*;
 use std::cell::*;
 use std::collections::HashMap;
-use std::env;
 use std::time::Duration;
+use std::{env, str};
 use tls_codec::*;
 
 struct SecurityProcessor<R, W>
@@ -36,14 +37,11 @@ where
             if self.from_network.ready(poll_wait) {
                 let msg = self.from_network.next().unwrap();
                 match msg.to_tls::<NetworkToSecurityEvent>().unwrap() {
-                    NetworkToSecurityEvent::JoinRequest(jr) => {
-                        let kp = match KeyPackage::tls_deserialize(&mut jr.key_package.as_slice()) {
-                            Ok(kp) => kp,
-                            Err(e) => {
-                                error!("Failed to deserialize KeyPackage: {}", e);
-                                continue;
-                            }
-                        };
+                    NetworkToSecurityEvent::MlsKeyPackage(jr) => {
+                        // TODO
+                    }
+                    NetworkToSecurityEvent::MlsAddKeyPackage(jr) => {
+                        let kp = jr.key_package.unwrap();
                         let mut group = match self.groups.get(&jr.team) {
                             Some(group) => group.borrow_mut(),
                             None => {
@@ -52,37 +50,33 @@ where
                             }
                         };
                         let (commit, welcome) = group.add_members(&self.backend, &[kp]).unwrap();
+                        group.merge_pending_commit().unwrap();
                         self.to_network
                             .write(
-                                &Message::from_tls(&MlsCommit {
-                                    team: jr.team,
-                                    commit: TlsByteVecU32::from_slice(
-                                        commit.tls_serialize_detached().unwrap().as_slice(),
-                                    ),
-                                })
+                                &Message::from_tls(&SecurityToNetworkEvent::MlsCommitOut(
+                                    MlsCommitOut {
+                                        team: jr.team,
+                                        commit: TlsSerialized::new(commit),
+                                    },
+                                ))
                                 .unwrap(),
                             )
                             .unwrap();
                         self.to_network
                             .write(
-                                &Message::from_tls(&MlsWelcome {
-                                    team: jr.team,
-                                    welcome: TlsByteVecU32::from_slice(
-                                        welcome.tls_serialize_detached().unwrap().as_slice(),
-                                    ),
-                                })
+                                &Message::from_tls(&SecurityToNetworkEvent::MlsWelcome(
+                                    MlsWelcome {
+                                        team: jr.team,
+                                        welcome: TlsSerialized::new(welcome),
+                                    },
+                                ))
                                 .unwrap(),
                             )
                             .unwrap();
+                        info!("Successfully added member to group, sent out commit and welcome");
                     }
                     NetworkToSecurityEvent::MlsWelcome(w) => {
-                        let welcome = match Welcome::tls_deserialize(&mut w.welcome.as_slice()) {
-                            Ok(w) => w,
-                            Err(e) => {
-                                error!("Failed to deserialize Welcome: {}", e);
-                                continue;
-                            }
-                        };
+                        let welcome = w.welcome.unwrap();
                         let group_config = &MlsGroupConfig::builder()
                             .use_ratchet_tree_extension(true)
                             .build();
@@ -111,13 +105,14 @@ where
                                 continue;
                             }
                         };
-                        match self.verify_mls_message(&mut group, c.commit.as_slice()) {
+                        match self.verify_mls_message(&mut group, c.commit.unwrap()) {
                             Ok(res) => {
                                 if let ProcessedMessage::StagedCommitMessage(_) = res {
                                     if let Err(e) = group.merge_pending_commit() {
                                         warn!("Failed to merge commit: {}", e);
                                         continue;
                                     }
+                                    info!("Successfully applied incoming commit");
                                 } else {
                                     warn!("Got non-commit message in MlsCommit event");
                                     continue;
@@ -129,7 +124,7 @@ where
                             }
                         }
                     }
-                    NetworkToSecurityEvent::AsciiMessage(am) => {
+                    NetworkToSecurityEvent::EncryptedAsciiMessage(am) => {
                         let mut group = match self.groups.get(&am.team) {
                             Some(group) => group.borrow_mut(),
                             None => {
@@ -140,18 +135,31 @@ where
                                 continue;
                             }
                         };
-                        match self.verify_mls_message(&mut group, am.ascii.as_slice()) {
+                        match self.verify_mls_message(&mut group, am.ciphertext.unwrap()) {
                             Ok(res) => {
                                 if let ProcessedMessage::ApplicationMessage(msg) = res {
+                                    let msg_bytes = msg.into_bytes();
                                     let out = AsciiMessage {
                                         team: am.team,
                                         channel: am.channel,
-                                        device_id: am.device_id,
-                                        ascii: TlsByteVecU32::from_slice(
-                                            msg.into_bytes().as_slice(),
-                                        ),
+                                        device_id: env::var("MLS_DEVICE_ID")
+                                            .unwrap()
+                                            .parse()
+                                            .unwrap(),
+                                        ascii: TlsByteVecU32::from_slice(msg_bytes.as_slice()),
                                     };
-                                    self.to_ui.write(&Message::from_tls(&out).unwrap()).unwrap();
+                                    self.to_ui
+                                        .write(
+                                            &Message::from_tls(&SecurityToUiEvent::AsciiMessage(
+                                                out,
+                                            ))
+                                            .unwrap(),
+                                        )
+                                        .unwrap();
+                                    info!(
+                                        "Got message with content \"{}\" from network, sent to UI process",
+                                        str::from_utf8(msg_bytes.as_slice()).unwrap()
+                                    );
                                 } else {
                                     warn!("Got non-application message in AsciiMessage event");
                                     continue;
@@ -169,11 +177,37 @@ where
             if self.from_ui.ready(poll_wait) {
                 let msg = self.from_ui.next().unwrap();
                 match msg.to_tls::<UiToSecurityEvent>().unwrap() {
-                    UiToSecurityEvent::WatchChannel(w) => {
-                        // TODO: do we as the security process need to translate from the UI's
-                        // intentions of watching a channel and figure out which device IDs to watch?
+                    UiToSecurityEvent::MlsSignatureHash(sh) => {
+                        // TODO
                     }
-                    UiToSecurityEvent::UnwatchChannel(u) => {}
+                    UiToSecurityEvent::WatchChannel(w) => {
+                        let out = WatchDevices {
+                            team: w.team,
+                            channel: w.channel,
+                            // Temporary: simply watch device IDs [0, 10)
+                            device_ids: TlsVecU16::new(Vec::from_iter(0..10)),
+                        };
+                        self.to_network
+                            .write(
+                                &Message::from_tls(&SecurityToNetworkEvent::WatchDevices(out))
+                                    .unwrap(),
+                            )
+                            .unwrap();
+                    }
+                    UiToSecurityEvent::UnwatchChannel(u) => {
+                        let out = UnwatchDevices {
+                            team: u.team,
+                            channel: u.channel,
+                            // Temporary: simply unwatch device IDs [0, 10)
+                            device_ids: TlsVecU16::new(Vec::from_iter(0..10)),
+                        };
+                        self.to_network
+                            .write(
+                                &Message::from_tls(&SecurityToNetworkEvent::UnwatchDevices(out))
+                                    .unwrap(),
+                            )
+                            .unwrap();
+                    }
                     UiToSecurityEvent::AsciiMessage(am) => {
                         let mut group = match self.groups.get(&am.team) {
                             Some(group) => group.borrow_mut(),
@@ -194,16 +228,23 @@ where
                                 continue;
                             }
                         };
-                        let out_bytes = message.tls_serialize_detached().unwrap();
-                        let out = AsciiMessage {
+                        let out = EncryptedAsciiMessageOut {
                             team: am.team,
                             channel: am.channel,
-                            device_id: Self::get_device_id(&group, &self.our_kp).unwrap(),
-                            ascii: TlsByteVecU32::from_slice(out_bytes.as_slice()),
+                            ciphertext: TlsSerialized::new(message),
                         };
                         self.to_network
-                            .write(&Message::from_tls(&out).unwrap())
+                            .write(
+                                &Message::from_tls(&SecurityToNetworkEvent::EncryptedAsciiMessage(
+                                    out,
+                                ))
+                                .unwrap(),
+                            )
                             .unwrap();
+                        info!(
+                            "Created message with content \"{}\", sent to network",
+                            str::from_utf8(am.ascii.as_slice()).unwrap()
+                        );
                     }
                 }
             }
@@ -213,12 +254,10 @@ where
     fn verify_mls_message(
         &self,
         group: &mut MlsGroup,
-        message: &[u8],
+        message: MlsMessageIn,
     ) -> Result<ProcessedMessage, String> {
-        let deserialized = MlsMessageIn::try_from_bytes(message)
-            .map_err(|e| format!("failed to deserialize message: {}", e))?;
         let unverified = group
-            .parse_message(deserialized, &self.backend)
+            .parse_message(message, &self.backend)
             .map_err(|e| format!("failed to parse message: {}", e))?;
         group
             .process_unverified_message(unverified, None, &self.backend)
@@ -243,6 +282,8 @@ where
 }
 
 fn main() {
+    env_logger::init();
+
     // Communications with the network processor
     let s2n = nonblocking::open("/tmp/pipe-s2n");
     let n2s = nonblocking::open("/tmp/pipe-n2s");
@@ -286,18 +327,34 @@ fn main() {
         )
         .unwrap();
 
+    let mut groups = HashMap::new();
+
+    if match env::var("MLS_LEADER") {
+        Ok(v) => v == "1",
+        Err(_) => false,
+    } {
+        let group_config = &MlsGroupConfig::builder()
+            .use_ratchet_tree_extension(true)
+            .build();
+        let g = MlsGroup::new(
+            &backend,
+            group_config,
+            GroupId::from_slice(b"Static team test group"),
+            key_package.hash_ref(backend.crypto()).unwrap().value(),
+        )
+        .unwrap();
+        groups.insert(123, RefCell::new(g));
+    }
+
     let sec_proc = SecurityProcessor {
         to_network: s2n,
         from_network: n2s,
         to_ui: s2u,
         from_ui: u2s,
-        backend: OpenMlsRustCrypto::default(),
-        groups: HashMap::new(),
+        backend: backend,
+        groups: groups,
         our_kp: key_package,
     };
-
-    // TODO: decide based on leadership status whether to create group
-    // from scratch or send out join requests with our KeyPackage
 
     sec_proc.run();
 }

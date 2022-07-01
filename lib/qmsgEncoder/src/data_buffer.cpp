@@ -29,7 +29,7 @@
 #else
 #include <arpa/inet.h>
 #endif
-#include "data_buffer.h"
+#include "qmsg/data_buffer.h"
 
 namespace qmsg
 {
@@ -116,7 +116,7 @@ DataBuffer::DataBuffer(std::size_t buffer_size) :
  *  Comments:
  *      None.
  */
-DataBuffer::DataBuffer(unsigned char *buffer,
+DataBuffer::DataBuffer(std::uint8_t *buffer,
                        std::size_t buffer_size,
                        std::size_t data_length) :
     buffer(buffer),
@@ -297,7 +297,7 @@ void DataBuffer::AllocateBuffer()
     // Allocate memory for the buffer
     try
     {
-        buffer = new unsigned char[buffer_size];
+        buffer = new std::uint8_t[buffer_size];
     }
     catch (const std::exception &e)
     {
@@ -472,17 +472,11 @@ bool DataBuffer::operator!=(const DataBuffer &other) const
  *  Comments:
  *      None.
  */
-const unsigned char *
-DataBuffer::GetBufferPointer(std::size_t offset) const
+const std::uint8_t *DataBuffer::GetBufferPointer(std::size_t offset) const
 {
-    if (buffer && (offset < buffer_size))
-    {
-        return buffer + offset;
-    }
-    else
-    {
-        return nullptr;
-    }
+    if (buffer && (offset < buffer_size)) return buffer + offset;
+
+    return nullptr;
 }
 
 /*
@@ -501,16 +495,11 @@ DataBuffer::GetBufferPointer(std::size_t offset) const
  *  Comments:
  *      None.
  */
-unsigned char *DataBuffer::GetMutableBufferPointer(std::size_t offset)
+std::uint8_t *DataBuffer::GetMutableBufferPointer(std::size_t offset)
 {
-    if (buffer && (offset < buffer_size))
-    {
-        return buffer + offset;
-    }
-    else
-    {
-        return nullptr;
-    }
+    if (buffer && (offset < buffer_size)) return buffer + offset;
+
+    return nullptr;
 }
 
 /*
@@ -529,10 +518,10 @@ unsigned char *DataBuffer::GetMutableBufferPointer(std::size_t offset)
  *      The internal buffer MUST have been allocated using the same type of
  *      allocator, else there is a risk that memory will not be freed properly.
  */
-unsigned char *DataBuffer::TakeBufferOwnership()
+std::uint8_t *DataBuffer::TakeBufferOwnership()
 {
     // Assign p to the current buffer
-    unsigned char *p = buffer;
+    std::uint8_t *p = buffer;
 
     // Reset the internal data buffer values
     buffer = nullptr;
@@ -572,7 +561,7 @@ unsigned char *DataBuffer::TakeBufferOwnership()
  *      The given buffer MUST be allocated using the same type of allocator,
  *      else there is a risk that memory will not be freed properly.
  */
-void DataBuffer::SetBuffer(unsigned char *new_buffer,
+void DataBuffer::SetBuffer(std::uint8_t *new_buffer,
                            std::size_t new_buffer_size,
                            std::size_t new_data_length,
                            bool take_ownership)
@@ -785,7 +774,7 @@ void DataBuffer::AdvanceReadLength(std::size_t count)
  *      into the buffer to insert a value, the caller must call SetDataLength()
  *      if the intent is to change the data length.
  */
-unsigned char &DataBuffer::operator[](std::size_t offset)
+std::uint8_t &DataBuffer::operator[](std::size_t offset)
 {
     // Ensure the parameters will not result in an access violation
     if (offset >= buffer_size)
@@ -817,7 +806,7 @@ unsigned char &DataBuffer::operator[](std::size_t offset)
  *      into the buffer to insert a value, the caller must call SetDataLength()
  *      if the intent is to change the data length.
  */
-const unsigned char &DataBuffer::operator[](std::size_t offset) const
+const std::uint8_t &DataBuffer::operator[](std::size_t offset) const
 {
     // Ensure the parameters will not result in an access violation
     if (offset >= buffer_size)
@@ -852,7 +841,7 @@ const unsigned char &DataBuffer::operator[](std::size_t offset) const
  *  Comments:
  *      None.
  */
-void DataBuffer::GetValue(unsigned char *value,
+void DataBuffer::GetValue(std::uint8_t *value,
                           std::size_t offset,
                           std::size_t length) const
 {
@@ -893,7 +882,7 @@ void DataBuffer::GetValue(unsigned char *value,
  */
 void DataBuffer::GetValue(std::uint8_t &value, std::size_t offset) const
 {
-    GetValue(static_cast<unsigned char *>(&value),
+    GetValue(static_cast<std::uint8_t *>(&value),
              offset,
              sizeof(std::uint8_t));
 }
@@ -922,7 +911,7 @@ void DataBuffer::GetValue(std::uint8_t &value, std::size_t offset) const
  */
 void DataBuffer::GetValue(std::uint16_t &value, std::size_t offset) const
 {
-    GetValue(reinterpret_cast<unsigned char *>(&value),
+    GetValue(reinterpret_cast<std::uint8_t *>(&value),
              offset,
              sizeof(std::uint16_t));
     value = ntohs(value);
@@ -952,7 +941,7 @@ void DataBuffer::GetValue(std::uint16_t &value, std::size_t offset) const
  */
 void DataBuffer::GetValue(std::uint32_t &value, std::size_t offset) const
 {
-    GetValue(reinterpret_cast<unsigned char *>(&value),
+    GetValue(reinterpret_cast<std::uint8_t *>(&value),
              offset,
              sizeof(std::uint32_t));
     value = ntohl(value);
@@ -1145,7 +1134,7 @@ void DataBuffer::GetValue(OctetString &value,
  *  Comments:
  *      None.
  */
-void DataBuffer::SetValue(const unsigned char *value,
+void DataBuffer::SetValue(const std::uint8_t *value,
                           std::size_t offset,
                           std::size_t length)
 {
@@ -1186,7 +1175,7 @@ void DataBuffer::SetValue(const unsigned char *value,
  */
 void DataBuffer::SetValue(std::uint8_t value, std::size_t offset)
 {
-    SetValue(reinterpret_cast<const unsigned char *>(&value),
+    SetValue(reinterpret_cast<const std::uint8_t *>(&value),
              offset,
              sizeof(std::uint8_t));
 }
@@ -1216,7 +1205,7 @@ void DataBuffer::SetValue(std::uint8_t value, std::size_t offset)
 void DataBuffer::SetValue(std::uint16_t value, std::size_t offset)
 {
     value = htons(value);
-    SetValue(reinterpret_cast<const unsigned char *>(&value),
+    SetValue(reinterpret_cast<const std::uint8_t *>(&value),
              offset,
              sizeof(std::uint16_t));
 }
@@ -1246,7 +1235,7 @@ void DataBuffer::SetValue(std::uint16_t value, std::size_t offset)
 void DataBuffer::SetValue(std::uint32_t value, std::size_t offset)
 {
     value = htonl(value);
-    SetValue(reinterpret_cast<const unsigned char *>(&value),
+    SetValue(reinterpret_cast<const std::uint8_t *>(&value),
              offset,
              sizeof(std::uint32_t));
 }
@@ -1407,7 +1396,7 @@ void DataBuffer::SetValue(const OctetString &value, std::size_t offset)
  *  Comments:
  *      None.
  */
-void DataBuffer::AppendValue(const unsigned char *value, std::size_t length)
+void DataBuffer::AppendValue(const std::uint8_t *value, std::size_t length)
 {
     std::size_t offset;
 
@@ -1435,32 +1424,6 @@ void DataBuffer::AppendValue(const unsigned char *value, std::size_t length)
  *  DataBuffer::AppendValue
  *
  *  Description:
- *      Append the given octets to the end of the existing data.  The data
- *      length is increased by the given number of octets.
- *
- *  Parameters:
- *      value [in]
- *          The parameter holding the octets to be appended to the
- *          data buffer.
- *
- *      length [in]
- *          The number of octets to be appended.
- *
- *  Returns:
- *      Nothing.
- *
- *  Comments:
- *      None.
- */
-void DataBuffer::AppendValue(const char *value, std::size_t length)
-{
-    AppendValue(reinterpret_cast<const unsigned char *>(value), length);
-}
-
-/*
- *  DataBuffer::AppendValue
- *
- *  Description:
  *      Append the given string to the end of the existing data.  The data
  *      length is increased by the given number of octets.
  *
@@ -1477,7 +1440,7 @@ void DataBuffer::AppendValue(const char *value, std::size_t length)
  */
 void DataBuffer::AppendValue(const std::string &value)
 {
-    AppendValue(value.c_str(), value.length());
+    AppendValue(reinterpret_cast<const std::uint8_t *>(&value[0]), value.length());
 }
 
 /*
@@ -1525,7 +1488,7 @@ void DataBuffer::AppendValue(const OctetString &value)
  */
 void DataBuffer::AppendValue(std::uint8_t value)
 {
-    AppendValue(reinterpret_cast<const unsigned char *>(&value),
+    AppendValue(reinterpret_cast<const std::uint8_t *>(&value),
                 sizeof(std::uint8_t));
 }
 
@@ -1550,7 +1513,7 @@ void DataBuffer::AppendValue(std::uint8_t value)
 void DataBuffer::AppendValue(std::uint16_t value)
 {
     value = htons(value);
-    AppendValue(reinterpret_cast<const unsigned char *>(&value),
+    AppendValue(reinterpret_cast<const std::uint8_t *>(&value),
                 sizeof(std::uint16_t));
 }
 
@@ -1575,7 +1538,7 @@ void DataBuffer::AppendValue(std::uint16_t value)
 void DataBuffer::AppendValue(std::uint32_t value)
 {
     value = htonl(value);
-    AppendValue(reinterpret_cast<const unsigned char *>(&value),
+    AppendValue(reinterpret_cast<const std::uint8_t *>(&value),
                 sizeof(std::uint32_t));
 }
 
@@ -1702,7 +1665,7 @@ void DataBuffer::AppendValue(double value)
  *  Comments:
  *      None.
  */
-void DataBuffer::ReadValue(unsigned char *value, std::size_t length)
+void DataBuffer::ReadValue(std::uint8_t *value, std::size_t length)
 {
     // Do nothing if the length is 0
     if (!length) return;
@@ -1718,34 +1681,6 @@ void DataBuffer::ReadValue(unsigned char *value, std::size_t length)
 
     // Increment the read_length value
     read_length += length;
-}
-
-/*
- *  DataBuffer::ReadValue
- *
- *  Description:
- *      Read the given number of octets from the data buffer.  The internal
- *      read length variable will be adjusted so that subsequent reads will
- *      be from the next position in the data buffer.  This function is limited
- *      by the length of the data, not the length of the buffer.
- *
- *  Parameters:
- *      value [in]
- *          The parameter holding the octets into which data should be
- *          placed.
- *
- *      length [in]
- *          The number of octets to read from the buffer.
- *
- *  Returns:
- *      Nothing.
- *
- *  Comments:
- *      None.
- */
-void DataBuffer::ReadValue(char *value, std::size_t length)
-{
-    ReadValue(reinterpret_cast<unsigned char*>(value), length);
 }
 
 /*
@@ -1857,7 +1792,7 @@ void DataBuffer::ReadValue(OctetString &value, std::size_t length)
  */
 void DataBuffer::ReadValue(std::uint8_t &value)
 {
-    ReadValue(reinterpret_cast<unsigned char*>(&value), 1);
+    ReadValue(reinterpret_cast<std::uint8_t *>(&value), 1);
 }
 
 /*
@@ -1881,7 +1816,7 @@ void DataBuffer::ReadValue(std::uint8_t &value)
  */
 void DataBuffer::ReadValue(std::uint16_t &value)
 {
-    ReadValue(reinterpret_cast<unsigned char*>(&value), sizeof(value));
+    ReadValue(reinterpret_cast<std::uint8_t *>(&value), sizeof(value));
     value = ntohs(value);
 }
 
@@ -1906,7 +1841,7 @@ void DataBuffer::ReadValue(std::uint16_t &value)
  */
 void DataBuffer::ReadValue(std::uint32_t &value)
 {
-    ReadValue(reinterpret_cast<unsigned char*>(&value), sizeof(value));
+    ReadValue(reinterpret_cast<std::uint8_t *>(&value), sizeof(value));
     value = ntohl(value);
 }
 
@@ -2040,7 +1975,7 @@ void DataBuffer::ReadValue(double &value)
 std::ostream &operator<<(std::ostream &o,
                          const qmsg::DataBuffer &data_buffer)
 {
-    std::size_t counter = 0;                    // Character counter
+    std::size_t counter = 0;                    // Octet counter
 
     // Get the current stream flags
     auto flags = o.flags();
@@ -2052,7 +1987,7 @@ std::ostream &operator<<(std::ostream &o,
     o << std::hex << std::uppercase;
 
     // Get a pointer to the start of the buffer and buffer length
-    const unsigned char *p = data_buffer.GetBufferPointer();
+    const std::uint8_t *p = data_buffer.GetBufferPointer();
     std::size_t length = data_buffer.GetDataLength();
 
     // Iterate over the data buffer

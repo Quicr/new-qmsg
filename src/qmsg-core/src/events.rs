@@ -1,6 +1,5 @@
 use std::io::{Read, Write};
 use tls_codec::*;
-use tls_codec_derive::*;
 
 // TlsSerialized automatically wraps TLS-serializable things in a TLS byte vector, including their
 // serialization / deserialization in that of an overall object.
@@ -32,7 +31,10 @@ where
     T: Serialize + Deserialize + Size,
 {
     fn tls_serialized_len(&self) -> usize {
-        TlsSerializedVector::len_len() + self.inner.tls_serialized_len()
+        // Hard-coding as 4 until a bug in tls_codec is fixed where
+        // TlsByteVecU{16/32}::len_len() returns 1 (instead of 2 and 4, respectively).
+        // TlsSerializedVector::len_len() + self.inner.tls_serialized_len()
+        4 + self.inner.tls_serialized_len()
     }
 }
 
@@ -82,7 +84,14 @@ use openmls::prelude::{KeyPackage, MlsMessageIn, MlsMessageOut, Welcome};
 
 // Specific event types
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
-pub struct JoinRequest {
+pub struct MlsKeyPackage {
+    pub team: u32,
+    pub key_package: TlsSerialized<KeyPackage>,
+    pub hash_bytes: TlsByteVecU32,
+}
+
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
+pub struct MlsAddKeyPackage {
     pub team: u32,
     pub key_package: TlsSerialized<KeyPackage>,
 }
@@ -131,14 +140,20 @@ pub struct AsciiMessage {
 pub struct WatchDevices {
     pub team: u32,
     pub channel: u32,
-    pub device_ids: TlsVecU16<u16>,
+    pub device_ids: TlsVecU16<u32>,
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
 pub struct UnwatchDevices {
     pub team: u32,
     pub channel: u32,
-    pub device_ids: TlsVecU16<u16>,
+    pub device_ids: TlsVecU16<u32>,
+}
+
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
+pub struct MlsSignatureHash {
+    pub team: u32,
+    pub hash_bytes: TlsByteVecU32,
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
@@ -166,60 +181,69 @@ pub struct DeviceInfo {
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
 #[repr(u32)]
 pub enum NetworkToSecurityEvent {
-    #[tls_codec(discriminant = 1)]
-    JoinRequest(JoinRequest),
+    #[tls_codec(discriminant = 6)]
+    MlsKeyPackage(MlsKeyPackage),
 
-    #[tls_codec(discriminant = 2)]
+    #[tls_codec(discriminant = 7)]
+    MlsAddKeyPackage(MlsAddKeyPackage),
+
+    #[tls_codec(discriminant = 8)]
     MlsWelcome(MlsWelcome),
 
-    #[tls_codec(discriminant = 3)]
+    #[tls_codec(discriminant = 9)]
     MlsCommit(MlsCommitIn),
 
-    #[tls_codec(discriminant = 4)]
+    #[tls_codec(discriminant = 2)]
     EncryptedAsciiMessage(EncryptedAsciiMessageIn),
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
 #[repr(u32)]
 pub enum SecurityToNetworkEvent {
-    #[tls_codec(discriminant = 1)]
-    JoinRequest(JoinRequest),
+    #[tls_codec(discriminant = 7)]
+    JoinRequest(MlsAddKeyPackage),
 
-    #[tls_codec(discriminant = 2)]
+    #[tls_codec(discriminant = 8)]
     MlsWelcome(MlsWelcome),
 
-    #[tls_codec(discriminant = 3)]
+    #[tls_codec(discriminant = 9)]
     MlsCommitOut(MlsCommitOut),
 
-    #[tls_codec(discriminant = 4)]
+    #[tls_codec(discriminant = 1)]
     EncryptedAsciiMessage(EncryptedAsciiMessageOut),
 
-    #[tls_codec(discriminant = 5)]
+    #[tls_codec(discriminant = 3)]
     WatchDevices(WatchDevices),
 
-    #[tls_codec(discriminant = 6)]
+    #[tls_codec(discriminant = 4)]
     UnwatchDevices(UnwatchDevices),
 
-    #[tls_codec(discriminant = 9)]
+    #[tls_codec(discriminant = 5)]
+    MlsSignatureHash(MlsSignatureHash),
+
+    #[tls_codec(discriminant = 10)]
     DeviceInfo(DeviceInfo),
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
 #[repr(u32)]
 pub enum UiToSecurityEvent {
-    #[tls_codec(discriminant = 4)]
+    #[tls_codec(discriminant = 1)]
     AsciiMessage(AsciiMessage),
 
-    #[tls_codec(discriminant = 7)]
+    #[tls_codec(discriminant = 5)]
+    MlsSignatureHash(MlsSignatureHash),
+
+    #[tls_codec(discriminant = 11)]
     WatchChannel(WatchChannel),
 
-    #[tls_codec(discriminant = 8)]
+    #[tls_codec(discriminant = 12)]
     UnwatchChannel(UnwatchChannel),
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
 #[repr(u32)]
 pub enum SecurityToUiEvent {
-    #[tls_codec(discriminant = 4)]
+    #[tls_codec(discriminant = 2)]
     AsciiMessage(AsciiMessage),
 }

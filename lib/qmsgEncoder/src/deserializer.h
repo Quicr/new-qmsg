@@ -16,7 +16,7 @@
 #include <vector>
 #include <stdexcept>
 #include "qmsg/encoder.h"
-#include "data_buffer.h"
+#include "qmsg/data_buffer.h"
 
 namespace qmsg
 {
@@ -41,7 +41,6 @@ class QMsgDeserializerException : public std::runtime_error
         {
         }
 };
-
 
 // Class to perform deserialization of data structures
 class QMsgDeserializer

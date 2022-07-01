@@ -14,7 +14,7 @@
  */
 
 #include "qmsg/encoder.h"
-#include "data_buffer.h"
+#include "qmsg/data_buffer.h"
 
 namespace qmsg
 {
