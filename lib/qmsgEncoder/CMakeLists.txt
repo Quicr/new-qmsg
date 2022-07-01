@@ -1,4 +1,4 @@
-# Define the QmsgEnoder project, inheriting the version from the root
+# Define the QMsgEnoder project, inheriting the version from the root
 # of the QMsg project
 project(QMsgEncoder
         VERSION ${PROJECT_VERSION}
