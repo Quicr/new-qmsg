@@ -37,5 +37,5 @@ add_subdirectory(src/slowRelay)
 include(CTest)
 
 if(BUILD_TESTING AND qmsg_BUILD_TESTS)
-    #add_subdirectory(test)
+    add_subdirectory(test)
 endif()
