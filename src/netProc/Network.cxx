@@ -6,6 +6,7 @@
 #include <thread>
 
 #include "names.h"
+
 ///
 ///  Utility
 ///
@@ -30,19 +31,9 @@ Network::Network(const std::string& server_ip, const uint16_t port)
     std::cout << "Transport is ready" << std::endl;
 }
 
-void Networkcheck_network_messages(std::vector<QuicrMessageInfo>& messages_out)
+void Network::check_network_messages(std::vector<QuicrMessageInfo>& messages_out)
 {
-    static bool already_registered = false;
-    if (!already_registered) {
-        qr_client.register_names({"keep_alive"}, true);
-        already_registered = true;
-    }
-
-    //std::cerr << " Sending keepAlive\n";
-    auto data = quicr::bytes{1};
-    qr_client.publish_named_data("keep_alive", std::move(data), 1, 1);
-    // keep alive pings on quic connection
-
+    return delegate.get_queued_messages(messages_out);
 }
 
 void Network::publish(uint32_t team_id, uint32_t channel_id, uint16_t device_id, quicr::bytes&& data)

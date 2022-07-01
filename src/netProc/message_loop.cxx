@@ -7,6 +7,7 @@
 #include <sys/uio.h>
 #include <unistd.h>
 #include <iostream>
+#include <vector>
 
 #include "message_loop.h"
 
@@ -76,20 +77,21 @@ LoopProcessResult MessageLoop::process(uint16_t read_buffer_size_in)
             do
             {
                 consumed = 0;
+                auto message_ptr = read_buffer + total_consumed;
                 qmsg_enc_result = QMsgNetDecodeMessage(context,
-                                                       read_buffer + total_consumed,
+                                                       message_ptr,
                                                        num - total_consumed,
                                                        &message,
                                                        &consumed);
 
                 // Update the total octets consumed
                 total_consumed += consumed;
-                std::cout << "Loop: Encode Result: " << qmsg_enc_result << std::endl;
                 if (qmsg_enc_result == QMsgEncoderSuccess)
                 {
                     if(process_net_message_fn != nullptr) {
+                        auto message_raw = quicr::bytes(message_ptr, message_ptr + consumed);
                         std::cout << "Calling Process for net message:" << std::endl;
-                        bool result = process_net_message_fn(message);
+                        bool result = process_net_message_fn(message, EventSource::SecProc, std::move(message_raw));
                         // log the result
                         continue;
                     }

@@ -8,16 +8,21 @@
 #include <sys/uio.h>
 #include <unistd.h>
 #include <iostream>
+#include <future>
+#include <thread>
+#include <chrono>
 
 #include "message_loop.h"
 
 // Handy abstraction to store pipes and so on
+// This is wired up in a short time to test the flow
+// There is a lot of repetition which is intentional
 struct FakeSecProcess
 {
     QMsgEncoderContext *context;
     int sec2netFD = -1;
     int net2secFD = -1;
-
+    bool is_leader = false;
 
     FakeSecProcess(const std::string& user)
     {
@@ -104,6 +109,90 @@ struct FakeSecProcess
         write(net2secFD, data_buffer, encoded_length);
     }
 
+    void send_watch(uint32_t team, uint32_t channel, uint16_t device) {
+        std::cout << "Sending Watch for team:" << team << ",Channel:" << channel << ", Device" << device << std::endl;
+        QMsgNetMessage message{};
+        QMsgDeviceID devices[] = {1};
+
+        message.type = QMsgNetWatchDevices;
+        message.u.watch_devices.team_id = 1000;
+        message.u.watch_devices.channel_id = 2;
+        message.u.watch_devices.device_list.num_devices = 1;
+        message.u.watch_devices.device_list.device_list = devices;
+
+        std::size_t encoded_length;
+        char data_buffer[1500];
+        auto result = QMsgNetEncodeMessage(context,
+                                           &message,
+                                           data_buffer,
+                                           sizeof(data_buffer),
+                                           &encoded_length);
+
+        write(net2secFD, data_buffer, encoded_length);
+    }
+
+
+    void send_ascii_message(const std::string& ascii_message, uint32_t team, uint32_t channel, uint16_t device) {
+        std::cout << "Sending Ascii for team:" << team << ",Channel:" << channel << ", Device" << device << std::endl;
+
+        QMsgUIMessage message{};
+        std::uint32_t string_length = ascii_message.length();
+
+        message.type = QMsgUISendASCIIMessage;
+        message.u.send_ascii_message.team_id = 1000;
+        message.u.send_ascii_message.channel_id = 2;
+        message.u.send_ascii_message.message.length = string_length;
+        message.u.send_ascii_message.message.data =
+                reinterpret_cast<std::uint8_t *>(const_cast<char*>(ascii_message.c_str()));
+        std::memcpy(message.u.send_ascii_message.message.data,
+                    ascii_message.c_str(),
+                    message.u.send_ascii_message.message.length);
+
+        std::size_t encoded_length;
+        char data_buffer[1500];
+        auto result = QMsgUIEncodeMessage(context,
+                                          &message,
+                                          data_buffer,
+                                          sizeof(data_buffer),
+                                          &encoded_length);
+
+        write(net2secFD, data_buffer, encoded_length);
+    }
+
+    bool process_net_message(QMsgNetMessage& message, EventSource source, quicr::bytes&& message_raw)
+    {
+        switch (message.type)
+        {
+            case  QMsgNetMLSKeyPackage:
+                std::cout << "Leader received the key package at leader?" << is_leader << std::endl;
+                // subscribe to team-1000, channel-2, device-1
+                send_watch(1000, 2, 1);
+                break;
+            default:
+                fprintf(stderr, "unknown message type");
+        }
+        return true;
+    }
+
+    static std::string read_input() {
+        std::cout << "Enter QMsg Chat Input\n";
+        std::string input;
+        std::cin >> input;
+        return input;
+    }
+
+    void io_loop() {
+        std::future<std::string> future = std::async(read_input);
+        std::string input;
+        if(future.wait_for(std::chrono::seconds(5)) == std::future_status::ready) {
+            input = future.get();
+        }
+
+        if(!input.empty()) {
+            send_ascii_message(input);
+        }
+    }
+
 };
 
 int main( int argc, char* argv[]){
@@ -132,22 +221,36 @@ int main( int argc, char* argv[]){
   fprintf(stderr, "NET: Starting SecProcess as leader ? %d\n", is_leader);
 
   FakeSecProcess secProc{user};
+  secProc.is_leader = is_leader;
 
-  // secProc.send_kp_hash();
-
-  while(1)
-  {
-        std::cout << "Waiting for input" << std::endl;
-        std::string input;
-        std::cin >> input;
-        if(input == "kp_hash") {
-            secProc.send_kp_hash();
-        }
-
-        if (input == "key_package") {
-            secProc.send_key_package();
-        }
+  if(is_leader) {
+      std::cout << "Sec: send mls_signature_hash: to net to subscribe for key_package" << std::endl;
+      secProc.send_kp_hash();
+  } else {
+      std::cout << "Sec: send mls_key_package: to net to be forwarded to the leader " << std::endl;
+      secProc.send_key_package();
   }
+
+
+  auto message_loop = MessageLoop{};
+  message_loop.read_from_fd = secProc.sec2netFD;
+  message_loop.keep_processing = true;
+  message_loop.process_net_message_fn = std::bind(&FakeSecProcess::process_net_message,
+                                                    &secProc,
+                                                    std::placeholders::_1,
+                                                    std::placeholders::_2,
+                                                    std::placeholders::_3);
+
+    message_loop.loop_fn = std::bind(&FakeSecProcess::io_loop,
+                                     &secProc);
+
+    // kick-off the message loop
+    auto err = message_loop.process(8192);
+
+    if (err != LoopProcessResult::SUCCESS) {
+        // log and fail
+    }
+
 
   return 0;
 }

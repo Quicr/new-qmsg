@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include <quicr/quicr_client.h>
+#include "message_loop.h"
 
 struct QuicrMessageProcessor {
     virtual void on_quicr_message(const std::string& name, quicr::bytes&& message, std::uint64_t object_id) = 0;
@@ -26,7 +27,7 @@ struct QuicrDelegate: public quicr::QuicRClient::Delegate {
                                std::uint64_t object_id) override {
       log(quicr::LogLevel::debug, "on_data_arrived: " + name);
       std::lock_guard<std::mutex> lock(queue_mutex);
-      received_byte_queues[name].push(QuicrMessageInfo{name, group_id, object_id, data});
+      receive_queue.push(QuicrMessageInfo{name, group_id, object_id, data});
   }
 
     virtual void on_connection_close(const std::string& name) override{
@@ -40,18 +41,22 @@ struct QuicrDelegate: public quicr::QuicRClient::Delegate {
 
     void get_queued_messages(std::vector<QuicrMessageInfo>& messages_out)
     {
-        
+        std::lock_guard<std::mutex> lock(queue_mutex);
+        if(receive_queue.empty()) {
+            return;
+        }
+
+        while (!receive_queue.empty())
+        {
+            auto data = receive_queue.front();
+            messages_out.push_back(data);
+            receive_queue.pop();
+        }
     }
 
 private:
   std::mutex queue_mutex;
-  std::map<std::string, std::queue<QuicrMessageInfo>> received_byte_queues;
-};
-
-
-enum struct EventSource {
-    SecProc = 0,
-    Network = 1
+  std::queue<QuicrMessageInfo> receive_queue;
 };
 
 

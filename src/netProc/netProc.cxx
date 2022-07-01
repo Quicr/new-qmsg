@@ -15,16 +15,31 @@ struct NetworkProcess
 {
     explicit NetworkProcess(const std::string& server, uint16_t port)
     : network(server, port)
-    {}
+    {
+        if (QMsgEncoderInit(&context))
+        {
+            // log an error and...
+            assert(0);
+        }
+    }
 
-    bool process_net_message(QMsgNetMessage& message);
+    bool process_net_message(QMsgNetMessage& message, EventSource source, quicr::bytes&& message_raw);
     void perform_network_io();
+    void writeToSecProc(quicr::bytes&& message);
+
     Network network;
     int sec2netFD = -1;
     int net2secFD = -1;
+    QMsgEncoderContext *context;
 };
 
-bool NetworkProcess::process_net_message(QMsgNetMessage& message)
+void NetworkProcess::writeToSecProc(quicr::bytes&& message)
+{
+    std::cout << "Writing to secproc:" << message.size() << " bytes" << std::endl;
+    write( net2secFD, message.data(), message.size());
+}
+
+bool NetworkProcess::process_net_message(QMsgNetMessage& message, EventSource source, quicr::bytes&& message_raw)
 {
     switch (message.type)
     {
@@ -100,10 +115,13 @@ bool NetworkProcess::process_net_message(QMsgNetMessage& message)
                 break;
             }
 
-            auto kp = quicr::bytes(msg.key_package.data, msg.key_package.data + msg.key_package.length);
             auto kp_hash = quicr::bytes(msg.key_package_hash.data, msg.key_package_hash.data + msg.key_package_hash.length);
-
-            network.handleKeyPackageEvent(EventSource::SecProc, msg.team_id, std::move(kp), std::move(kp_hash));
+            if(source == EventSource::SecProc)
+            {
+                network.handleKeyPackageEvent(source, msg.team_id, std::move(message_raw), std::move(kp_hash));
+            } else {
+                writeToSecProc(std::move(message_raw));
+            }
         }
             break;
         case QMsgNetMLSWelcome:
@@ -115,7 +133,7 @@ bool NetworkProcess::process_net_message(QMsgNetMessage& message)
                 break;
             }
             auto welcome = quicr::bytes(msg.welcome.data, msg.welcome.data + msg.welcome.length);
-            network.handleMLSWelcomeEvent(EventSource::SecProc, msg.team_id, std::move(welcome));
+            network.handleMLSWelcomeEvent(source, msg.team_id, std::move(welcome));
         }
             break;
         case QMsgNetMLSCommit:
@@ -127,7 +145,7 @@ bool NetworkProcess::process_net_message(QMsgNetMessage& message)
                 break;
             }
             auto commit = quicr::bytes(msg.commit.data, msg.commit.data + msg.commit.length);
-            network.handleMLSCommitEvent(EventSource::SecProc, msg.team_id, std::move(commit));
+            network.handleMLSCommitEvent(source, msg.team_id, std::move(commit));
         }
             break;
         default:
@@ -141,7 +159,24 @@ void NetworkProcess::perform_network_io()
 {
     auto incoming_messages = std::vector<QuicrMessageInfo>{};
     network.check_network_messages(incoming_messages);
-    std::cout << "NetworkIO: Found " << incoming_messages.size() << ", messages to process" << std::endl;
+    // decode and process  - todo move this into the message_loop as well
+    for(auto& message : incoming_messages) {
+        QMsgNetMessage qMsgNetMessage {};
+        size_t consumed = 0;
+        auto qmsg_enc_result = QMsgNetDecodeMessage(context,
+                                                    reinterpret_cast<char *>(message.data.data()),
+                                                    message.data.size(),
+                                                    &qMsgNetMessage,
+                                                    &consumed);
+
+        if(qmsg_enc_result != QMsgEncoderSuccess) {
+            std::cout << "NetworkIO: Decoder Failed " << qmsg_enc_result << "consumed: " << consumed << std::endl;
+            continue;
+        }
+
+        process_net_message(qMsgNetMessage, EventSource::Network, std::move(message.data));
+
+    }
 }
 
 int main( int argc, char* argv[]) {
@@ -188,7 +223,10 @@ int main( int argc, char* argv[]) {
   message_loop.keep_processing = true;
   message_loop.process_net_message_fn = std::bind(&NetworkProcess::process_net_message,
                                                   &network_process,
-                                                  std::placeholders::_1);
+                                                  std::placeholders::_1,
+                                                  std::placeholders::_2,
+                                                  std::placeholders::_3);
+
   message_loop.loop_fn = std::bind(&NetworkProcess::perform_network_io,
                                    &network_process);
 

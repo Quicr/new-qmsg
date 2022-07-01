@@ -22,11 +22,11 @@ FetchContent_MakeAvailable(quicr)
 
 
 add_executable( netProc message_loop.cxx Network.cxx netProc.cxx )
-target_link_libraries(netProc PRIVATE qmsgEncoder
-                            PUBLIC quicr)
+target_link_libraries(netProc PRIVATE qmsgEncoder quicr)
+                           # PUBLIC quicr)
 
-add_executable(fakeSecProc fakeSecProc.cxx)
-target_link_libraries(fakeSecProc PRIVATE qmsgEncoder)
+add_executable(fakeSecProc message_loop.cxx fakeSecProc.cxx)
+target_link_libraries(fakeSecProc PRIVATE qmsgEncoder quicr)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
