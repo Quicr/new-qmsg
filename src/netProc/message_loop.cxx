@@ -62,7 +62,7 @@ LoopProcessResult MessageLoop::process(uint16_t read_buffer_size_in)
                                read_buffer + fragment_size,
                                buffer_size - fragment_size);
 
-            std::cout << "Loop: Read " << num << " bytes\n";
+            std::cout << "[MessageLoop]: Read " << num << " bytes\n";
 
             // Update the total bytes to include the previous fragment
             num += fragment_size;
@@ -101,6 +101,7 @@ LoopProcessResult MessageLoop::process(uint16_t read_buffer_size_in)
                     (qmsg_enc_result == QMsgEncoderCorruptMessage))
                 {
                     /// Just log the fact the message was invalid or corrupu; it will get skipped over
+                    std::cout << "[MessageLoop]: MessageDecode Failure: " << qmsg_enc_result << std::endl;
                 }
             } while ((total_consumed < num) && (consumed > 0));
 

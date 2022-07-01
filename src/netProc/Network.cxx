@@ -38,9 +38,10 @@ void Network::check_network_messages(std::vector<QuicrMessageInfo>& messages_out
 
 void Network::publish(uint32_t team_id, uint32_t channel_id, uint16_t device_id, quicr::bytes&& data)
 {
- auto qname = QuicrName::name_for_device(std::to_string(team_id),
+    auto qname = QuicrName::name_for_device(std::to_string(team_id),
                                          std::to_string(channel_id),
                                          std::to_string(device_id));
+    std::cout << "[Network]: Publishing for the device: " << qname << std::endl;
     publish(std::move(qname), std::move(data));
 }
 
@@ -55,6 +56,10 @@ void Network::subscribe_to_devices(uint32_t team_id, uint32_t channel_id, std::v
                                                           std::to_string(channel_id),
                                                           std::to_string(device));
                     });
+
+    for(auto& name: qnames) {
+        std::cout << "[Network] Subscribing to Device " << name << std::endl;
+    }
 
     subscribe(std::move(qnames));
 }
@@ -131,6 +136,7 @@ void Network::publish(std::string&& name, quicr::bytes&& data)
 {
     if(!publisher_registration_status.count(name)) {
         qr_client.register_names({name}, true);
+        publisher_registration_status[name] = true;
     }
 
     std::cout << "publishing :" << to_hex(data) << std::endl;

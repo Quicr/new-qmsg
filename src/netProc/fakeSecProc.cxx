@@ -110,7 +110,7 @@ struct FakeSecProcess
     }
 
     void send_watch(uint32_t team, uint32_t channel, uint16_t device) {
-        std::cout << "Sending Watch for team:" << team << ",Channel:" << channel << ", Device" << device << std::endl;
+        std::cout << "Sending Watch for team:" << team << ",Channel:" << channel << ", Device:" << device << std::endl;
         QMsgNetMessage message{};
         QMsgDeviceID devices[] = {1};
 
@@ -133,14 +133,15 @@ struct FakeSecProcess
 
 
     void send_ascii_message(const std::string& ascii_message, uint32_t team, uint32_t channel, uint16_t device) {
-        std::cout << "Sending Ascii for team:" << team << ",Channel:" << channel << ", Device" << device << std::endl;
+        std::cout << "Sending Ascii for team:" << team << ",Channel:" << channel << ", Device: " << device << std::endl;
 
-        QMsgUIMessage message{};
+        QMsgNetMessage message{};
         std::uint32_t string_length = ascii_message.length();
 
-        message.type = QMsgUISendASCIIMessage;
+        message.type = QMsgNetSendASCIIMessage;
         message.u.send_ascii_message.team_id = 1000;
         message.u.send_ascii_message.channel_id = 2;
+        message.u.send_ascii_message.device_id = 1;
         message.u.send_ascii_message.message.length = string_length;
         message.u.send_ascii_message.message.data =
                 reinterpret_cast<std::uint8_t *>(const_cast<char*>(ascii_message.c_str()));
@@ -150,12 +151,13 @@ struct FakeSecProcess
 
         std::size_t encoded_length;
         char data_buffer[1500];
-        auto result = QMsgUIEncodeMessage(context,
+        auto result = QMsgNetEncodeMessage(context,
                                           &message,
                                           data_buffer,
                                           sizeof(data_buffer),
                                           &encoded_length);
-
+        assert(result == QMsgEncoderSuccess);
+        std::cout << "Encoded Text Message Length:" << encoded_length << std::endl;
         write(net2secFD, data_buffer, encoded_length);
     }
 
@@ -164,9 +166,18 @@ struct FakeSecProcess
         switch (message.type)
         {
             case  QMsgNetMLSKeyPackage:
-                std::cout << "Leader received the key package at leader?" << is_leader << std::endl;
+                std::cout << "Leader received the key package at leader(?) " << is_leader << std::endl;
                 // subscribe to team-1000, channel-2, device-1
                 send_watch(1000, 2, 1);
+                break;
+            case QMsgNetSendASCIIMessage:
+            {
+                auto &msg = message.u.send_ascii_message;
+                auto text = std::string(msg.message.data, msg.message.data + msg.message.length);
+                std::cout << "Ascii message lwngth" << msg.message.length << std::endl;
+                std::cout << "Got Chat:\tTeam:" << msg.team_id << ":Channel:" << msg.channel_id
+                          << "\n \t Message:" << text << std::endl;
+            }
                 break;
             default:
                 fprintf(stderr, "unknown message type");
@@ -177,11 +188,14 @@ struct FakeSecProcess
     static std::string read_input() {
         std::cout << "Enter QMsg Chat Input\n";
         std::string input;
-        std::cin >> input;
+        std::getline(std::cin, input);
         return input;
     }
 
-    void io_loop() {
+    void chat_io_loop() {
+        if (is_leader) {
+            return;
+        }
         std::future<std::string> future = std::async(read_input);
         std::string input;
         if(future.wait_for(std::chrono::seconds(5)) == std::future_status::ready) {
@@ -189,7 +203,7 @@ struct FakeSecProcess
         }
 
         if(!input.empty()) {
-            send_ascii_message(input);
+            send_ascii_message(input, 1000, 2, 1);
         }
     }
 
@@ -241,7 +255,7 @@ int main( int argc, char* argv[]){
                                                     std::placeholders::_2,
                                                     std::placeholders::_3);
 
-    message_loop.loop_fn = std::bind(&FakeSecProcess::io_loop,
+    message_loop.loop_fn = std::bind(&FakeSecProcess::chat_io_loop,
                                      &secProc);
 
     // kick-off the message loop

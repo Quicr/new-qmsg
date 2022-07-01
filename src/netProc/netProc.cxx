@@ -45,23 +45,28 @@ bool NetworkProcess::process_net_message(QMsgNetMessage& message, EventSource so
     {
         case QMsgNetSendASCIIMessage:
         {
+            std::cout << "[NetMsgLoop]:Got QMsgNetSendASCIIMessage " << std::endl;
+
             // publish message for this device
             const auto &msg = message.u.send_ascii_message;
             if(!msg.message.data) {
-                // log
+                std::cout << "[NetMsgLoop]:QMsgNetSendASCIIMessage: Missing Data" << std::endl;
                 break;
             }
-            auto data = quicr::bytes(msg.message.data, msg.message.data + msg.message.length);
-            network.publish(msg.team_id, msg.channel_id, msg.device_id, std::move(data));
+
+            (source == EventSource::SecProc)
+                ? network.publish(msg.team_id, msg.channel_id, msg.device_id, std::move(message_raw))
+                    : writeToSecProc(std::move(message_raw));
         }
             break;
         case QMsgNetWatchDevices:
         {
+            std::cout << "[NetMsgLoop]:Got QMsgNetWatchDevices " << std::endl;
             // send subscribes
             const auto &msg = message.u.watch_devices;
             if (msg.device_list.num_devices == 0 || !msg.device_list.device_list)
             {
-                // log error
+                std::cout << "[NetMsgLoop]: QMsgNetWatchDevices: Device list malformed" << std::endl;
                 break;
             }
 
@@ -170,7 +175,7 @@ void NetworkProcess::perform_network_io()
                                                     &consumed);
 
         if(qmsg_enc_result != QMsgEncoderSuccess) {
-            std::cout << "NetworkIO: Decoder Failed " << qmsg_enc_result << "consumed: " << consumed << std::endl;
+            std::cout << "[NetworkIO]: Decoder Failed " << qmsg_enc_result << ", consumed: " << consumed << std::endl;
             continue;
         }
 
