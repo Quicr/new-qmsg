@@ -36,12 +36,13 @@ RUN cp src/uiProc/uiProc  /usr/local/bin/.
 RUN cp  src/slowRelay/slowRelay  /usr/local/bin/.
 RUN cp  src/slowTest/slowTest  /usr/local/bin/.
 
-WORKDIR /src/qmsg/src/qmsg-core
-RUN cargo build 
+RUN cp  src/slowUI/slowUI /usr/local/bin/.
+RUN cp  src/slowSec/slowSec  /usr/local/bin/.
+RUN cp  src/slowNet/slowNet  /usr/local/bin/.
+
 WORKDIR /src/qmsg/src/secProc
-RUN cargo build 
-RUN cargo install --path .
-RUN cp /root/.cargo/bin/sec-proc /usr/local/bin/.
+#RUN cargo --bin sec-proc install --path .
+#RUN cp /root/.cargo/bin/sec-proc /usr/local/bin/.
 
 RUN ls -lh /usr/local/bin
 
@@ -53,11 +54,15 @@ RUN apk add --no-cache bash tcsh
 
 COPY --from=builder /usr/local/bin/uiProc /usr/local/bin/.
 #COPY --from=builder /usr/local/bin/secProc /usr/local/bin/.
-COPY --from=builder /usr/local/bin//sec-proc /usr/local/bin/.
+COPY --from=builder /usr/local/bin/sec-proc /usr/local/bin/.
 #COPY --from=builder /usr/local/bin/netProc /usr/local/bin/.
 
 COPY --from=builder /usr/local/bin/slowRelay /usr/local/bin/.
 COPY --from=builder /usr/local/bin/slowTest /usr/local/bin/.
+
+COPY --from=builder /usr/local/bin/slowUI /usr/local/bin/.
+COPY --from=builder /usr/local/bin/slowSec /usr/local/bin/.
+COPY --from=builder /usr/local/bin/slowNet /usr/local/bin/.
 
 RUN addgroup -S qmsg
 RUN adduser -D -S -S -G qmsg qmsg
