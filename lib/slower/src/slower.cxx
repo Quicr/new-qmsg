@@ -109,7 +109,7 @@ int slowerSetup( SlowerConnection& slower, uint16_t port) {
   return 0;
 }
 
-int slowerRemote(  SlowerRemote& remote, char* server, uint16_t port ){
+int slowerRemote(  SlowerRemote& remote, const char* server, const uint16_t port ){
   struct addrinfo hints;
   memset(&hints, 0, sizeof(hints));
   hints.ai_flags = AI_ADDRCONFIG | AI_V4MAPPED | AI_ALL;
@@ -183,6 +183,11 @@ static int slowerSend( SlowerConnection& slower, char buf[], int bufLen, SlowerR
 }
 
 
+
+int slowerGetFD( SlowerConnection& slower) {
+  return slower.fd;
+}
+
 int slowerWait( SlowerConnection& slower ){
   fd_set fdSet;
   FD_ZERO( &fdSet );
@@ -236,13 +241,13 @@ static int slowerRecv( SlowerConnection& slower, char buf[], int bufSize, int* b
 }
 
 
-int slowerAddRelay( SlowerConnection& slower, SlowerRemote& remote ){
+int slowerAddRelay( SlowerConnection& slower, const SlowerRemote& remote ){
   slower.relay = remote;
   return 0;
 }
 
   
-int slowerPub( SlowerConnection& slower, ShortName& name, char buf[], int bufLen, SlowerRemote* remote ){
+int slowerPub( SlowerConnection& slower, const ShortName& name, char buf[], int bufLen, SlowerRemote* remote ){
   assert( bufLen < slowerMTU-20 ); 
   assert( slower.fd > 0 );
   assert( bufLen > 0 );
@@ -379,7 +384,7 @@ int slowerRecvPub( SlowerConnection& slower, ShortName* name, char buf[], int bu
 }
 
 
-int slowerAck( SlowerConnection& slower, ShortName& name,  SlowerRemote* remote ){
+int slowerAck( SlowerConnection& slower, const ShortName& name,  SlowerRemote* remote ){
   assert( slower.fd > 0 );
   
   char msg[slowerMTU];
@@ -399,7 +404,7 @@ int slowerAck( SlowerConnection& slower, ShortName& name,  SlowerRemote* remote 
 
 
 
-int slowerSub( SlowerConnection& slower, ShortName& name, int mask , SlowerRemote* remote ){
+int slowerSub( SlowerConnection& slower, const ShortName& name, int mask , SlowerRemote* remote ){
   assert( slower.fd > 0 );
   assert( mask >= 0 );
   assert( mask < 128 ); 
@@ -423,7 +428,7 @@ int slowerSub( SlowerConnection& slower, ShortName& name, int mask , SlowerRemot
 }
 
 
-int slowerUnSub( SlowerConnection& slower, ShortName& name, int mask , SlowerRemote* remote  ) {
+int slowerUnSub( SlowerConnection& slower, const ShortName& name, int mask , SlowerRemote* remote  ) {
   assert( slower.fd > 0 );
   assert( mask >= 0 );
   assert( mask < 128 ); 

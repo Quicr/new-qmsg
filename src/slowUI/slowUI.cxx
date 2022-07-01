@@ -12,8 +12,8 @@ int main( int argc, char* argv[]){
   int keyboardFD = 0;
   SecApi secApi;
   
-  int team=0x2;
-  int channel= 0x3;
+  int team=9;
+  int channel= 5;
 
   secApi.watch( team, channel );
 

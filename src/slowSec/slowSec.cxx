@@ -18,10 +18,11 @@ int main( int argc, char* argv[]){
   
   std::clog <<   "SEC: Starting secProc" << std::endl;
   
-  int myDeviceID = 10; // TODO 
+  int myDeviceID = 1; // TODO 
   std::vector<uint16_t> otherDeviceID;
-  otherDeviceID.push_back( 11 );
-  otherDeviceID.push_back( 12 );
+  otherDeviceID.push_back( 1 );
+  otherDeviceID.push_back( 2 );
+  otherDeviceID.push_back( 7 );
   
   UiApi uiApi;
   NetApi netApi;
