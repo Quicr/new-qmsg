@@ -44,7 +44,7 @@ typedef struct QMsgNetSendASCIIMessage_t
 {
     QMsgTeamID team_id;
     QMsgChannelID channel_id;
-    QMsgDeviceID  device_id;
+    QMsgDeviceID device_id;
     QMsgOpaque_t message;
 } QMsgNetSendASCIIMessage_t;
 
