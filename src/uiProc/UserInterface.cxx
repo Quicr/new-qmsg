@@ -143,7 +143,7 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                 {
                     // Join a channel
                     std::string join_token(strtok(NULL, " "));
-                    fprintf(stderr, "Connecting to a room %s", join_token);
+                    //fprintf(stderr, "Connecting to a room %s", join_token);
 
                     if (join_token.length() > 0)
                     {
