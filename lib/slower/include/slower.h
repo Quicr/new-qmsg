@@ -8,7 +8,7 @@
 
 float slowerVersion(); 
 
-const uint16_t slowerDefaultPort = 2022;
+const uint16_t slowerDefaultPort = 5004;
 const uint16_t slowerMTU = 1200;
 
 
