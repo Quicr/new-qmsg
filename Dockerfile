@@ -30,8 +30,8 @@ RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 WORKDIR /src/qmsg/build
 RUN make -j 4
 
-RUN cp  src/uiProc/uiProc  /usr/local/bin/.
-RUN cp  src/netProc/netProc  /usr/local/bin/.
+RUN cp src/uiProc/uiProc  /usr/local/bin/.
+#RUN cp src/netProc/netProc  /usr/local/bin/.
 
 RUN cp  src/slowRelay/slowRelay  /usr/local/bin/.
 RUN cp  src/slowTest/slowTest  /usr/local/bin/.
@@ -54,7 +54,7 @@ RUN apk add --no-cache bash tcsh
 COPY --from=builder /usr/local/bin/uiProc /usr/local/bin/.
 #COPY --from=builder /usr/local/bin/secProc /usr/local/bin/.
 COPY --from=builder /usr/local/bin//sec-proc /usr/local/bin/.
-COPY --from=builder /usr/local/bin/netProc /usr/local/bin/.
+#COPY --from=builder /usr/local/bin/netProc /usr/local/bin/.
 
 COPY --from=builder /usr/local/bin/slowRelay /usr/local/bin/.
 COPY --from=builder /usr/local/bin/slowTest /usr/local/bin/.
