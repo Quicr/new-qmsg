@@ -25,14 +25,14 @@ public:
     uint64_t c = channel;
     uint64_t n = msgNum;
     
-    name.part[1] = (t<<32) + d;
-    name.part[0] = (c<<32) + n;
+    name.part[1] = (t<<32) + c;
+    name.part[0] = (d<<32) + n;
   }
 
-  int team()    { uint64_t r=name.part[1]; r = r>>32; return (int)(r); };
-  int device()  { uint64_t r=name.part[1]; r = r>> 0; return (int)(r); };
-  int channel() { uint64_t r=name.part[0]; r = r>>32; return (int)(r); };
-  int msgNum()  { uint64_t r=name.part[0]; r = r>> 0; return (int)(r); };
+  uint32_t team()   { uint64_t r=name.part[1]; r = r>>32; return (uint32_t )(r); };
+  uint32_t channel(){ uint64_t r=name.part[1]; r = r>> 0; return (uint32_t )(r); };
+  uint32_t device() { uint64_t r=name.part[0]; r = r>>32; return (uint32_t )(r); };
+  uint32_t msgNum() { uint64_t r=name.part[0]; r = r>> 0; return (uint32_t )(r); };
 
   ShortName& sname() { return name; }
   std::string lname() {
@@ -192,7 +192,7 @@ int main( int argc, char* argv[]){
         {
         std::clog << "NET: Got SendAsciiMsg from SecProc: "
           << " team=" <<   message.u.send_ascii_message.team_id
-          //<< " device=" <<   message.u.send_ascii_message.device_id
+          << " device=" <<  message.u.send_ascii_message.device_id
           << " ch= " <<  message.u.send_ascii_message.channel_id
           << " val: " << std::string(  (char*)message.u.send_ascii_message.message.data,
                                        message.u.send_ascii_message.message.length )
@@ -202,7 +202,7 @@ int main( int argc, char* argv[]){
 
 #if 1
         Name name( message.u.send_ascii_message.team_id,
-                         0x7, // TODO message.u.send_ascii_message.device_id,
+                         message.u.send_ascii_message.device_id,
                          message.u.send_ascii_message.channel_id,
                          msgNum++ // TODO - persiste msg nums 
                    );
@@ -213,7 +213,7 @@ int main( int argc, char* argv[]){
                    message.u.send_ascii_message.message.length );
 #else
           secApi.recvAsciiMsg(  message.u.send_ascii_message.team_id,
-                                0x7, // TODO message.u.send_ascii_message.device_id,
+                                message.u.send_ascii_message.device_id,
                     message.u.send_ascii_message.channel_id,
                     message.u.send_ascii_message.message.data,
                     message.u.send_ascii_message.message.length );

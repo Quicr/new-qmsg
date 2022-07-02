@@ -16,13 +16,20 @@
 
 int main( int argc, char* argv[]){
   
-  std::clog <<   "SEC: Starting secProc" << std::endl;
+  int myDeviceID = 1; // TODO
+  char *devIdName = getenv( "SLOWR_DEVID" );
+  if ( devIdName ) {
+    myDeviceID = atoi( devIdName );
+  }
+
+  std::clog <<   "SEC: Starting secProc devId=" << std::hex << myDeviceID << std::dec << std::endl;
   
-  int myDeviceID = 1; // TODO 
   std::vector<uint16_t> otherDeviceID;
   otherDeviceID.push_back( 1 );
   otherDeviceID.push_back( 2 );
-  otherDeviceID.push_back( 7 );
+  otherDeviceID.push_back( 3 );
+  otherDeviceID.push_back( 4 );
+  otherDeviceID.push_back( 5 );
   
   UiApi uiApi;
   NetApi netApi;
@@ -73,8 +80,8 @@ int main( int argc, char* argv[]){
           << std::endl;
 
           netApi.sendAsciiMsg(  message.u.send_ascii_message.team_id,
-                    message.u.send_ascii_message.channel_id,
                                 myDeviceID,
+                    message.u.send_ascii_message.channel_id,
                     message.u.send_ascii_message.message.data,
                     message.u.send_ascii_message.message.length );
                     

@@ -71,7 +71,7 @@ void NetApi::sendAsciiMsg(int team, int device, int ch, uint8_t *msg,
   QMsgNetMessage message{};
   message.type = QMsgNetSendASCIIMessage;
   message.u.send_ascii_message.team_id = team;
-  // TODO add device
+  message.u.send_ascii_message.device_id = device;
   message.u.send_ascii_message.channel_id = ch;
   message.u.send_ascii_message.message.length = msgLen;
   message.u.send_ascii_message.message.data = msg;

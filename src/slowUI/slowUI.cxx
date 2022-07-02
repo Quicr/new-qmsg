@@ -48,7 +48,11 @@ int main( int argc, char* argv[]){
            }
          }
          if ( str.size() > 0 ) {
-           std::clog << "UI: SendAscii (len=%d): " << str.size() << std::endl;
+           std::clog << "UI: SendAscii"
+                     << " len=" << str.size()
+                     << " team=" << team
+                     << " ch=" << channel
+                     << std::endl;
            secApi.sendAsciiMsg( team, channel, (uint8_t*)str.data(), str.size() );
          }
        }
