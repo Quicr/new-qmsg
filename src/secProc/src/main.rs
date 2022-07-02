@@ -9,6 +9,8 @@ use std::collections::HashMap;
 use std::time::Duration;
 use std::{env, str};
 use tls_codec::*;
+mod intro_auth;
+use intro_auth::intro_auth::*;
 
 struct SecurityProcessor<R, W>
 where
@@ -22,6 +24,7 @@ where
 
     backend: OpenMlsRustCrypto,
     groups: HashMap<u32, RefCell<MlsGroup>>,
+    auth_map: HashMap<u32, Vec<Vec<u8>>>,
     our_kp: KeyPackage,
 }
 
@@ -174,17 +177,21 @@ where
                 }
             }
 
+
+
             if self.from_ui.ready(poll_wait) {
                 let msg = self.from_ui.next().unwrap();
                 match msg.to_tls::<UiToSecurityEvent>().unwrap() {
                     UiToSecurityEvent::MlsSignatureHash(sh) => {
-		    //TODO: Add this to auth_key_list
-                    self.to_network
+		    let sh_copy = sh.clone();
+		    self.to_network
                             .write(
                                 &Message::from_tls(&SecurityToNetworkEvent::MlsSignatureHash(sh))
                                     .unwrap(),
                             )
                             .unwrap();
+		    let hash_bytes_u8 = sh_copy.hash_bytes;
+		    add_key_auth_map(&mut self.auth_map,sh_copy.team, hash_bytes_u8.into()); 
 		    }
                     UiToSecurityEvent::WatchChannel(w) => {
                         let out = WatchDevices {
@@ -334,7 +341,7 @@ fn main() {
         .unwrap();
 
     let mut groups = HashMap::new();
-
+    let mut auth_map = HashMap::new();
     if match env::var("MLS_LEADER") {
         Ok(v) => v == "1",
         Err(_) => false,
@@ -359,6 +366,7 @@ fn main() {
         from_ui: u2s,
         backend: backend,
         groups: groups,
+	auth_map: auth_map,
         our_kp: key_package,
     };
 

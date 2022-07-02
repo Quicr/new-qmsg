@@ -150,7 +150,7 @@ pub struct UnwatchDevices {
     pub device_ids: TlsVecU16<u32>,
 }
 
-#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug, Clone)]
 pub struct MlsSignatureHash {
     pub team: u32,
     pub hash_bytes: TlsByteVecU32,

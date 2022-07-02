@@ -1,7 +1,35 @@
-mod intro_auth {
+pub mod intro_auth {
 use openmls::prelude::*;
 use openmls_rust_crypto::{OpenMlsRustCrypto};
+use std::collections::HashMap;
+use std::str;
 
+pub fn add_key_auth_map(auth_map: &mut HashMap<u32, Vec<Vec<u8>>>, team_id: u32, hash_public_key: Vec<u8>){
+	auth_map.entry(team_id).or_insert(Vec::new()).push(hash_public_key);
+}
+pub fn is_authorized(auth_map: &HashMap<u32, Vec<Vec<u8>>>, team_id: u32, hash_public_key: Vec<u8>) -> bool {
+	let public_key_str = str::from_utf8(&hash_public_key).unwrap();
+	println!("{:?}",public_key_str);
+	if auth_map.contains_key(&team_id) {
+		let auth_list_pk = auth_map.get(&team_id);
+		for elem in auth_list_pk.iter() {
+			let elemstr = str::from_utf8(&elem[0]).unwrap();
+			if elemstr.eq(public_key_str) {
+				return true;
+			}
+		}
+
+	
+			
+	//	if auth_list_pk.contains(hash_public_key){
+	/*	if auth_list_pk.iter().any(|&i| i==&hash_public_key) {
+			return true;
+		} else {
+			return false;
+		}*/
+	}
+	return false;
+}
 
 // A helper to create and store credentials.
 fn generate_credential_bundle(
