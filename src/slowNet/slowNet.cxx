@@ -56,16 +56,16 @@ private:
   SlowerConnection slower;
   SecApi& secApi;
 public:
-  Relay(  SecApi& secApiVal ) : secApi( secApiVal ) {
-    const char relayName[] = "relay.us-east-2.qmsg.ctgpoc.com";
+  Relay(  SecApi& secApiVal, const char* relayName=NULL ) : secApi( secApiVal ) {
+    const char defaultRelayName[] = "relay.us-east-2.qmsg.ctgpoc.com";
     const int port = 5004;
     const int mask=16;
     
-    int err = slowerSetup( slower, port  );
+    int err = slowerSetup( slower  );
     assert( err == 0 );
     
     SlowerRemote relay;
-    err = slowerRemote( relay , relayName, port );
+    err = slowerRemote( relay , relayName?relayName:defaultRelayName, port );
     if ( err ) {
       std::cerr << "Could not lookup IP address for relay: " << relayName << std::endl;
     }
@@ -104,8 +104,9 @@ public:
     Name name( shortName );
     
     if ( bufLen > 0 ) {
-      std::clog << "Got data for name="
-                << std::hex << shortName.part[1] << "-" <<  shortName.part[0] << std::dec 
+      std::clog << "NET: Recv PUB shorName="
+                << std::hex << shortName.part[1] << "-" <<  shortName.part[0] << std::dec
+                << "   name=" << name.lname() 
                 << " data=" ;
       for ( int i=0; i< bufLen; i++ ) {
         char c = buf[i];
@@ -114,9 +115,6 @@ public:
         }
       }
       std::clog << std::endl;
-
-      std::clog << "   name=" << name.lname() << std::endl;
-      
 
       secApi.recvAsciiMsg( name.team(), name.device(), name.channel(),
                            (uint8_t*)buf, bufLen );
@@ -129,7 +127,7 @@ int main( int argc, char* argv[]){
   std::clog <<   "NET: Starting netProc" << std::endl;
   SecApi secApi;
 
-  Relay relay( secApi );
+  Relay relay( secApi, getenv("SLOWR_RELAY") );
 
   const int mask = 16;
   int msgNum=1; // TODO - make msgnum per team/device/ch
@@ -161,7 +159,7 @@ int main( int argc, char* argv[]){
     
     // processs secProc
     if ( (numSelectFD > 0) && ( FD_ISSET( secApi.getReadFD(), &fdSet) ) ) {
-       std::clog <<   "NET: Reading from SecProc" << std::endl;
+      //std::clog <<   "NET: Reading from SecProc" << std::endl;
      
       QMsgNetMessage message{};
       secApi.readMsg( &message );

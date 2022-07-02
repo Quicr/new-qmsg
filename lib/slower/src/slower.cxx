@@ -32,6 +32,7 @@ static int slowerSend( SlowerConnection& slower, char buf[], int bufLen, SlowerR
 bool operator<( const ShortName& a, const ShortName& b )
 {
   if (a.part[1] > b.part[1] ) return false;
+  if (a.part[1] < b.part[1] ) return true;
   return (a.part[0] < b.part[0] );
 }
 
@@ -53,7 +54,7 @@ bool operator<( const SlowerRemote& a, const SlowerRemote& b ){
 
 
 float slowerVersion() {
-  return 0.1;
+  return 0.11;
 }
 
 bool operator==( const ShortName& a, const ShortName& b ){

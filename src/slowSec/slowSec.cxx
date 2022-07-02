@@ -49,7 +49,7 @@ int main( int argc, char* argv[]){
     
     // processs uiProc
     if ( (numSelectFD > 0) && ( FD_ISSET( uiApi.getReadFD(), &fdSet) ) ) {
-       std::clog <<   "SEC: Reading Sec Proc" << std::endl;
+      //std::clog <<   "SEC: Reading Sec Proc" << std::endl;
     
       QMsgUIMessage message{};
       uiApi.readMsg( &message );
@@ -89,7 +89,7 @@ int main( int argc, char* argv[]){
     
     // processs netProc
       if ( (numSelectFD > 0) && ( FD_ISSET(netApi.getReadFD(), &fdSet) ) ) {
-        std::clog <<  "SEC: Reading Net Proc" << std::endl;
+        //std::clog <<  "SEC: Reading Net Proc" << std::endl;
         
        QMsgNetMessage message{};
       netApi.readMsg( &message );

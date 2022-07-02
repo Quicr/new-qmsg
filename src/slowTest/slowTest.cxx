@@ -40,9 +40,8 @@ int main(int argc, char* argv[]) {
   }
   
   SlowerConnection slower;
-  int err = slowerSetup( slower, port  );
+  int err = slowerSetup( slower  );
   assert( err == 0 );
-
   
   SlowerRemote relay;
   err = slowerRemote( relay , relayName, port );

@@ -41,14 +41,16 @@ int main( int argc, char* argv[]){
  
        ssize_t num = read( keyboardFD, keyboardBuf, bufSize );
        if ( num > 0 ) {
-         std::clog << "UI: Read %d bytes from keyboard: " << num << std::endl;
          std::string str;
          for ( int i=0; i<num; i++ ) {
            if ( (  keyboardBuf[i] >= 0x20 ) && ( keyboardBuf[i] <= 0x7E ) ) {
              str.push_back( keyboardBuf[i] );
            }
          }
-         secApi.sendAsciiMsg( team, channel, (uint8_t*)str.data(), str.size() ); 
+         if ( str.size() > 0 ) {
+           std::clog << "UI: SendAscii (len=%d): " << str.size() << std::endl;
+           secApi.sendAsciiMsg( team, channel, (uint8_t*)str.data(), str.size() );
+         }
        }
      }
      
