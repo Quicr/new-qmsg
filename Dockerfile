@@ -41,8 +41,8 @@ RUN cp  src/slowSec/slowSec  /usr/local/bin/.
 RUN cp  src/slowNet/slowNet  /usr/local/bin/.
 
 WORKDIR /src/qmsg/src/secProc
-#RUN cargo --bin sec-proc install --path .
-#RUN cp /root/.cargo/bin/sec-proc /usr/local/bin/.
+RUN cargo install --path . --bin sec-proc 
+RUN cp /root/.cargo/bin/sec-proc /usr/local/bin/.
 
 RUN ls -lh /usr/local/bin
 
@@ -53,7 +53,6 @@ RUN apk add --no-cache bash tcsh
 #CMD /bin/tcsh
 
 COPY --from=builder /usr/local/bin/uiProc /usr/local/bin/.
-#COPY --from=builder /usr/local/bin/secProc /usr/local/bin/.
 COPY --from=builder /usr/local/bin/sec-proc /usr/local/bin/.
 #COPY --from=builder /usr/local/bin/netProc /usr/local/bin/.
 
