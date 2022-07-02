@@ -49,8 +49,8 @@ std::list<ShortName> Cache::find(  const ShortName& name, const int mask ) const
   ShortName endName = name;
   endName.part[0] |= 0xFFFFl;
   
-  std::cerr << "Cache::find lower = " << std::hex << startName.part[1] << "-" <<  startName.part[0] << std::dec << std::endl;
-  std::cerr << "Cache::find upper = " << std::hex << endName.part[1] << "-" <<  endName.part[0] << std::dec << std::endl;
+  //std::clog << "Cache::find lower = " << std::hex << startName.part[1] << "-" <<  startName.part[0] << std::dec << std::endl;
+  //std::clog << "Cache::find upper = " << std::hex << endName.part[1] << "-" <<  endName.part[0] << std::dec << std::endl;
     
   auto start = dataCache.lower_bound( startName );
   auto end = dataCache.upper_bound( endName );
