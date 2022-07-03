@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-#include "FdReader.hh"
+#include "KeyBoardReader.hh"
 #include "Sender.hh"
 #include "Channel.hh"
 #include "Parser.hh"
@@ -14,13 +14,14 @@
 
 enum Command
 {
-    help,
+    help = 0,
     info,
     set, // set command for a username
     connect,
     join,
     leave,
     direct,
+    bye
 };
 
 class UserInterface
@@ -48,7 +49,7 @@ private:
     void PrintTimestampedMessage(const char* msg);
     void JoinTeam(const std::string team);
 
-    const char* commands[7] =
+    const char* commands[8] =
     {
         "/help",
         "/info",
@@ -56,11 +57,25 @@ private:
         "/connect",
         "/join",
         "/leave",
-        "/direct"
+        "/direct",
+        "/bye"
     };
 
-    FdReader* keyboard;
-    FdReader* receiver;
+    const char* help_desc[9] = {
+            "Next steps set your user name by entering /set username <xyz>\n",
+            "Connect to your team by entering /connect <team>\n",
+            "Once connected you'll be automatically added to all channels\n",
+            "Join a chat by entering /join <chat name>\n",
+            "Leave a chat by entering /leave <chat name>\n",
+            "Access help at any time by entering /help\n",
+            "Access info at any time by entering /info\n",
+            "Message a user directly by entering /direct <username>\n",
+            "Enter /bye to exit the Cisco Secure Messaging app\n"
+    };
+    const std::string bye_str = "Thanks for joining Cisco Secure Messaging\n";
+
+    KeyBoardReader* keyboard;
+    KeyBoardReader* receiver;
     Sender* sender;
     Parser* parser;
     std::vector<Channel> joined_channels;

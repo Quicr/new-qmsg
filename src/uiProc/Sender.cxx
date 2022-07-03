@@ -26,7 +26,7 @@ void Sender::SendMessage(char *buffer, const unsigned long buffer_length)
 
     QMsgEncoderResult res = QMsgUIEncodeMessage(context,
                                                 &message,
-                                                buffer,
+                                                (uint8_t *)buffer,
                                                 buffer_length,
                                                 &encoded_length);
 
