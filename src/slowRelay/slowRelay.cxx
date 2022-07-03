@@ -14,6 +14,7 @@
 #include <sstream>
 
 #include <slower.h>
+#include <name.h>
 
 #include "subscription.h"
 #include "cache.h"
@@ -91,7 +92,7 @@ int main(int argc, char* argv[]) {
       
       std::clog << "Got "
                 << ( duplicate ? "dup " : "" )
-                << "PUB " << std::hex << name.part[1] << "-" <<  name.part[0] << std::dec 
+                << "PUB " << Name(name).longString()
                 << " from " << inet_ntoa( remote.addr.sin_addr)
                 << ":" << ntohs( remote.addr.sin_port )
                 << std::endl;
@@ -128,7 +129,7 @@ int main(int argc, char* argv[]) {
     // ============ SUBSCRIBE ==================
     if ( type == SlowerMsgSub  ) {
       std::clog << "Got SUB" 
-                << " for " << std::hex << name.part[1] << "-" <<  name.part[0] << std::dec << "*" << mask
+                << " for " << Name(name).longString() << "*" << mask
                 << " from " << inet_ntoa( remote.addr.sin_addr) << ":" <<  ntohs( remote.addr.sin_port )
                 << std::endl;
       subscribeList.add( name, mask, remote );
@@ -137,7 +138,7 @@ int main(int argc, char* argv[]) {
       names.reverse(); // send the highest (and likely most recent) first 
 
       for ( auto n : names ) {
-        std::clog << "  Sent cache " << std::hex << n.part[1] << "-" <<  n.part[0] << std::dec << std::endl;
+        std::clog << "  Sent cache " << Name(name).shortString() << std::dec << std::endl;
         const std::vector<uint8_t>* priorData = cache.get( n );
           
 
@@ -154,7 +155,7 @@ int main(int argc, char* argv[]) {
     // ============== Un SUBSSCRIBE ===========
     if ( type == SlowerMsgUnSub  ) {
        std::clog << "Got UnSUB" 
-                 << " for " << std::hex << name.part[1] << "-" <<  name.part[0] << std::dec << "*" << mask
+                 << " for " <<  Name(name).longString() << "*" << mask
                  << " from " << inet_ntoa( remote.addr.sin_addr) << ":" <<  ntohs( remote.addr.sin_port )
                  << std::endl;
        subscribeList.remove( name, mask, remote );

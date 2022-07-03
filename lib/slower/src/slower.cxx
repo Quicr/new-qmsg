@@ -29,11 +29,8 @@
 static int slowerRecv( SlowerConnection& slower, char buf[], int bufSize, int* bufLen, SlowerRemote* remote );
 static int slowerSend( SlowerConnection& slower, char buf[], int bufLen, SlowerRemote& remote );
 
-bool operator<( const ShortName& a, const ShortName& b )
-{
-  if (a.part[1] > b.part[1] ) return false;
-  if (a.part[1] < b.part[1] ) return true;
-  return (a.part[0] < b.part[0] );
+float slowerVersion() {
+  return 0.11;
 }
 
 
@@ -44,17 +41,21 @@ bool operator!=( const SlowerRemote& a, const SlowerRemote& b ){
   return false;
 }
 
-
 bool operator<( const SlowerRemote& a, const SlowerRemote& b ){
   if ( a.addr.sin_port > b.addr.sin_port ) return true;
+  if ( a.addr.sin_port < b.addr.sin_port ) return false;
   if ( a.addrLen > b.addrLen ) return true;
+  if ( a.addrLen < b.addrLen ) return false;
   if ( memcmp( &(a.addr.sin_addr), &(b.addr.sin_addr),4 ) > 0)  return true; // TODO broken for v6
   return false;
 }
 
 
-float slowerVersion() {
-  return 0.11;
+bool operator<( const ShortName& a, const ShortName& b )
+{
+  if (a.part[1] > b.part[1] ) return false;
+  if (a.part[1] < b.part[1] ) return true;
+  return (a.part[0] < b.part[0] );
 }
 
 bool operator==( const ShortName& a, const ShortName& b ){
@@ -64,6 +65,7 @@ bool operator==( const ShortName& a, const ShortName& b ){
 bool operator!=( const ShortName& a, const ShortName& b ){
   return ( (a.part[0] != b.part[0]) || (a.part[1] != b.part[1] ) );
 }
+
 
 int slowerSetup( SlowerConnection& slower, uint16_t port) {
   slower.fd=0;
@@ -451,7 +453,6 @@ int slowerUnSub( SlowerConnection& slower, const ShortName& name, int mask , Slo
   int err = slowerSend( slower, msg, msgLen, remote );
   return err;
 }
-
 
 
 int slowerClose( SlowerConnection& slower ){

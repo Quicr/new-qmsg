@@ -6,6 +6,9 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
+// TODO - flip this to be a class
+
+
 float slowerVersion(); 
 
 const uint16_t slowerDefaultPort = 5004;

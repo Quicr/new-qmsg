@@ -6,50 +6,14 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
-#include <sstream>
+
 #include <arpa/inet.h>
 
 #include <slower.h>
+#include <name.h>
 
 
 #include "secApi.h"
-
-class Name{
-private:
-  ShortName name;
-public:
-  Name( ShortName& n ) : name(n) {};
-  Name( int team, int device, int channel, int msgNum=0 ){
-    uint64_t t = team;
-    uint64_t d = device;
-    uint64_t c = channel;
-    uint64_t n = msgNum;
-    
-    name.part[1] = (t<<32) + c;
-    name.part[0] = (d<<32) + n;
-  }
-
-  uint32_t team()   { uint64_t r=name.part[1]; r = r>>32; return (uint32_t )(r); };
-  uint32_t channel(){ uint64_t r=name.part[1]; r = r>> 0; return (uint32_t )(r); };
-  uint32_t device() { uint64_t r=name.part[0]; r = r>>32; return (uint32_t )(r); };
-  uint32_t msgNum() { uint64_t r=name.part[0]; r = r>> 0; return (uint32_t )(r); };
-
-  ShortName& sname() { return name; }
-  std::string lname() {
-    std::stringstream ss;
-    ss << "team-" << team()
-       << "/dev-" << device() 
-       << "/ch-" << channel() ;
-    if ( msgNum() == 0 ) {
-      ss << "/*";
-    }
-    else {
-      ss << "/msg-" << msgNum() ;
-    }
-    return ss.str();
-  };
-};
-
 
 class Relay {
 private:
@@ -104,9 +68,8 @@ public:
     Name name( shortName );
     
     if ( bufLen > 0 ) {
-      std::clog << "NET: Recv PUB shorName="
-                << std::hex << shortName.part[1] << "-" <<  shortName.part[0] << std::dec
-                << "   name=" << name.lname() 
+      std::clog << "NET: Recv PUB "
+                << name.longString() 
                 << " data=" ;
       for ( int i=0; i< bufLen; i++ ) {
         char c = buf[i];
@@ -129,6 +92,8 @@ int main( int argc, char* argv[]){
 
   Relay relay( secApi, getenv("SLOWR_RELAY") );
 
+  const uint32_t org=1; // TODO load from config 
+  
   const int mask = 16;
   int msgNum=1; // TODO - make msgnum per team/device/ch
   
@@ -180,10 +145,11 @@ int main( int argc, char* argv[]){
          std::clog << std::endl;
 #if 1
          for ( const auto& dev : devList ) {
-           Name name(  message.u.watch_devices.team_id, dev,  message.u.watch_devices.channel_id  );
-           std::clog << "   sub=" << name.lname() << std::endl;
+           assert( message.u.watch_devices.channel_id <= 0xFFFF );
+           Name name(  NamePath::message, org, message.u.watch_devices.team_id,  (uint16_t)message.u.watch_devices.channel_id , dev );
+           std::clog << "   sub=" << name.longString() << std::endl;
 
-           relay.sub( name.sname() , mask );
+           relay.sub( name.shortName() , mask );
          }
 #endif
         } 
@@ -201,14 +167,16 @@ int main( int argc, char* argv[]){
         
 
 #if 1
-        Name name( message.u.send_ascii_message.team_id,
-                         message.u.send_ascii_message.device_id,
-                         message.u.send_ascii_message.channel_id,
-                         msgNum++ // TODO - persiste msg nums 
+        assert( message.u.watch_devices.channel_id <= 0xFFFF );
+        Name name(  NamePath::message, org,
+                    message.u.send_ascii_message.team_id,
+                    (uint16_t)message.u.send_ascii_message.channel_id,
+                    message.u.send_ascii_message.device_id,
+                    msgNum++ // TODO - persiste msg nums 
                    );
         
-          std::clog << "Pub to " << name.lname() << std::endl;
-          relay.pub( name.sname(),
+          std::clog << "Pub to " << name.longString() << std::endl;
+          relay.pub( name.shortName(),
                    message.u.send_ascii_message.message.data,
                    message.u.send_ascii_message.message.length );
 #else
