@@ -68,7 +68,7 @@ int main( int argc, char* argv[]){
          std::clog << "UI: Got AsciiMsg from SecProc: "
                    << " team=" <<   message.u.receive_ascii_message.team_id
                    << " device=" <<   message.u.receive_ascii_message.device_id
-                   << " ch= " <<  message.u.receive_ascii_message.channel_id
+                   << " ch=" <<  message.u.receive_ascii_message.channel_id
                    << " val: " << std::string(  (char*)message.u.receive_ascii_message.message.data,
                                                 message.u.receive_ascii_message.message.length )
                    << std::endl;

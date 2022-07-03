@@ -65,7 +65,7 @@ int main( int argc, char* argv[]){
       case QMsgUIWatchChannel:
           std::clog << "SEC: Got watch from UIProc:"
                   << " team=" <<    message.u.watch_channel.team_id
-                  << " ch= " <<   message.u.watch_channel.channel_id
+                  << " ch=" <<   message.u.watch_channel.channel_id
               << std::endl;
 
           netApi.watch( message.u.watch_channel.team_id, otherDeviceID,  message.u.watch_channel.channel_id );
@@ -74,7 +74,7 @@ int main( int argc, char* argv[]){
 
         std::clog << "SEC: Got AsciiMsg from UIProc: "
           << " team=" <<   message.u.send_ascii_message.team_id
-          << " ch= " <<  message.u.send_ascii_message.channel_id
+          << " ch=" <<  message.u.send_ascii_message.channel_id
           << " val: " << std::string(  (char*)message.u.send_ascii_message.message.data,
                                        message.u.send_ascii_message.message.length )
           << std::endl;
@@ -109,7 +109,7 @@ int main( int argc, char* argv[]){
         
          std::clog << " team=" <<   message.u.receive_ascii_message.team_id
                   << " device=" <<   message.u.receive_ascii_message.device_id
-          << " ch= " <<  message.u.receive_ascii_message.channel_id
+          << " ch=" <<  message.u.receive_ascii_message.channel_id
           << " val: " << std::string(  (char*)message.u.receive_ascii_message.message.data,
                                        message.u.receive_ascii_message.message.length )
           << std::endl;
