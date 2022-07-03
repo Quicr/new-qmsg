@@ -411,6 +411,7 @@ std::size_t QMsgDeserializer::Deserialize(DataBuffer &data_buffer,
 
     Deserialize(data_buffer, message.team_id);
     Deserialize(data_buffer, message.channel_id);
+    Deserialize(data_buffer, message.device_id);
     Deserialize(data_buffer, message.message);
 
     return data_buffer.GetReadLength() - initial_read_position;
@@ -586,6 +587,7 @@ std::size_t QMsgDeserializer::Deserialize(DataBuffer &data_buffer,
 
     Deserialize(data_buffer, message.team_id);
     Deserialize(data_buffer, message.key_package);
+    Deserialize(data_buffer, message.key_package_hash);
 
     return data_buffer.GetReadLength() - initial_read_position;
 }
@@ -851,7 +853,7 @@ std::size_t QMsgDeserializer::Deserialize(DataBuffer &data_buffer,
     data_buffer.ReadValue(value.length);
     value.data = new std::uint8_t[value.length];
     allocations.push_back(value.data);
-    data_buffer.ReadValue(reinterpret_cast<char *>(value.data), value.length);
+    data_buffer.ReadValue(value.data, value.length);
 
     return data_buffer.GetReadLength() - initial_read_position;
 }

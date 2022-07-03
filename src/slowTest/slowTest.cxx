@@ -10,7 +10,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include<algorithm>
+#include <algorithm>
+#include <cstdlib>
 
 #include <slower.h>
 
@@ -32,13 +33,18 @@ int main(int argc, char* argv[]) {
     data = argv[3];
   }
 
+  char* portVar = getenv( "SLOWER_PORT" ); 
+  int port = 5004;
+  if ( portVar ) {
+    port = atoi( portVar );
+  }
+  
   SlowerConnection slower;
   int err = slowerSetup( slower  );
   assert( err == 0 );
-
   
   SlowerRemote relay;
-  err = slowerRemote( relay , relayName );
+  err = slowerRemote( relay , relayName, port );
   if ( err ) {
     std::cerr << "Could not lookup IP address for relay: " << relayName << std::endl;
   }

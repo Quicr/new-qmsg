@@ -84,7 +84,14 @@ use openmls::prelude::{KeyPackage, MlsMessageIn, MlsMessageOut, Welcome};
 
 // Specific event types
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
-pub struct JoinRequest {
+pub struct MlsKeyPackage {
+    pub team: u32,
+    pub key_package: TlsSerialized<KeyPackage>,
+    pub hash_bytes: TlsByteVecU32,
+}
+
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
+pub struct MlsAddKeyPackage {
     pub team: u32,
     pub key_package: TlsSerialized<KeyPackage>,
 }
@@ -144,6 +151,12 @@ pub struct UnwatchDevices {
 }
 
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
+pub struct MlsSignatureHash {
+    pub team: u32,
+    pub hash_bytes: TlsByteVecU32,
+}
+
+#[derive(TlsSerialize, TlsDeserialize, TlsSize, PartialEq, Eq, Debug)]
 pub struct WatchChannel {
     pub team: u32,
     pub channel: u32,
@@ -168,8 +181,11 @@ pub struct DeviceInfo {
 #[derive(TlsSerialize, TlsDeserialize, TlsSize, Debug)]
 #[repr(u32)]
 pub enum NetworkToSecurityEvent {
+    #[tls_codec(discriminant = 6)]
+    MlsKeyPackage(MlsKeyPackage),
+
     #[tls_codec(discriminant = 7)]
-    JoinRequest(JoinRequest),
+    MlsAddKeyPackage(MlsAddKeyPackage),
 
     #[tls_codec(discriminant = 8)]
     MlsWelcome(MlsWelcome),
@@ -185,7 +201,7 @@ pub enum NetworkToSecurityEvent {
 #[repr(u32)]
 pub enum SecurityToNetworkEvent {
     #[tls_codec(discriminant = 7)]
-    JoinRequest(JoinRequest),
+    JoinRequest(MlsAddKeyPackage),
 
     #[tls_codec(discriminant = 8)]
     MlsWelcome(MlsWelcome),
@@ -202,6 +218,9 @@ pub enum SecurityToNetworkEvent {
     #[tls_codec(discriminant = 4)]
     UnwatchDevices(UnwatchDevices),
 
+    #[tls_codec(discriminant = 5)]
+    MlsSignatureHash(MlsSignatureHash),
+
     #[tls_codec(discriminant = 10)]
     DeviceInfo(DeviceInfo),
 }
@@ -211,6 +230,9 @@ pub enum SecurityToNetworkEvent {
 pub enum UiToSecurityEvent {
     #[tls_codec(discriminant = 1)]
     AsciiMessage(AsciiMessage),
+
+    #[tls_codec(discriminant = 5)]
+    MlsSignatureHash(MlsSignatureHash),
 
     #[tls_codec(discriminant = 11)]
     WatchChannel(WatchChannel),

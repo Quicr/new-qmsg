@@ -13,7 +13,6 @@
  *      None.
  */
 
-#include <cstring>
 #include "qmsg/encoder.h"
 #include "encoder_internal.h"
 
@@ -139,33 +138,22 @@ void CALL QMsgEncoderDeinit(QMsgEncoderContext *context)
  */
 QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
                                            const QMsgUIMessage *message,
-                                           char *buffer,
+                                           uint8_t *buffer,
                                            size_t buffer_length,
                                            size_t *encoded_length)
 {
-    // Indicate no data was encoded
-    *encoded_length = 0;
-
-    // Ensure the context is not null
-    if (!context || !context->opaque) return QMsgEncoderInvalidContext;
-
-    // Ensure there is a message
-    if (!message) return QMsgEncoderInvalidMessage;
-
-    // Ensure there is a buffer
-    if (!buffer || !buffer_length) return QMsgEncoderShortBuffer;
-
     try
     {
-        // Get the encoder context
-        qmsg::QMsgEncoderContextInternal *internal_context =
-            reinterpret_cast<qmsg::QMsgEncoderContextInternal *>(
-                context->opaque);
+        // Check encode parameters, do initialization
+        auto [result, internal_context] = qmsg::EncodeCommon(context,
+                                                              message,
+                                                              buffer,
+                                                              buffer_length,
+                                                              encoded_length);
+        if (result != QMsgEncoderSuccess) return result;
 
         // Assign the buffer to a DataBuffer object
-        qmsg::DataBuffer data_buffer(reinterpret_cast<unsigned char *>(buffer),
-                                     buffer_length,
-                                     0);
+        qmsg::DataBuffer data_buffer(buffer, buffer_length, 0);
 
         // Get a reference to the serializer
         auto &serializer = internal_context->GetSerializer();
@@ -284,7 +272,7 @@ QMsgEncoderResult CALL QMsgUIEncodeMessage(QMsgEncoderContext *context,
  *      None.
  */
 EXPORT QMsgEncoderResult CALL QMsgUIDecodeMessage(QMsgEncoderContext *context,
-                                                  char *buffer,
+                                                  uint8_t *buffer,
                                                   size_t buffer_length,
                                                   QMsgUIMessage *message,
                                                   size_t *consumed)
@@ -292,41 +280,21 @@ EXPORT QMsgEncoderResult CALL QMsgUIDecodeMessage(QMsgEncoderContext *context,
     std::uint32_t message_length;               // Expected message length
     std::size_t deserialized;                   // Octets actually deserialized
 
-    // Indicate no data was consumed
-    *consumed = 0;
-
-    // Initialize the message type
-    message->type = QMsgUIInvalid;
-
-    // Ensure the context is not null
-    if (!context || !context->opaque) return QMsgEncoderInvalidContext;
-
-    // Ensure there is a message structure
-    if (!message) return QMsgEncoderInvalidMessage;
-
-    // Ensure there is a buffer that at least holds a message length
-    if (!buffer || !buffer_length || (buffer_length < sizeof(std::uint32_t)))
-    {
-        return QMsgEncoderShortBuffer;
-    }
-
     try
     {
-        // Get the encoder context
-        qmsg::QMsgEncoderContextInternal *internal_context =
-            reinterpret_cast<qmsg::QMsgEncoderContextInternal *>(
-                context->opaque);
+        // Check decode parameters, do initialization
+        auto [result, internal_context] = qmsg::DecodeCommon(context,
+                                                             buffer,
+                                                             buffer_length,
+                                                             message,
+                                                             consumed);
+        if (result != QMsgEncoderSuccess) return result;
 
         // Assign the buffer to a DataBuffer object
-        qmsg::DataBuffer data_buffer(reinterpret_cast<unsigned char *>(buffer),
-                                     buffer_length,
-                                     buffer_length);
+        qmsg::DataBuffer data_buffer(buffer, buffer_length, buffer_length);
 
         // Get a reference to the deserializer
         auto &deserializer = internal_context->GetDeserializer();
-
-        // Zero the message structure
-        std::memset(message, 0, sizeof(QMsgUIMessage));
 
         // Determine the length of the message
         *consumed = deserializer.DeserializeMessageLength(data_buffer,
@@ -471,33 +439,22 @@ EXPORT QMsgEncoderResult CALL QMsgUIDecodeMessage(QMsgEncoderContext *context,
  */
 QMsgEncoderResult CALL QMsgNetEncodeMessage(QMsgEncoderContext *context,
                                             const QMsgNetMessage *message,
-                                            char *buffer,
+                                            uint8_t *buffer,
                                             size_t buffer_length,
                                             size_t *encoded_length)
 {
-    // Indicate no data was encoded
-    *encoded_length = 0;
-
-    // Ensure the context is not null
-    if (!context || !context->opaque) return QMsgEncoderInvalidContext;
-
-    // Ensure there is a message
-    if (!message) return QMsgEncoderInvalidMessage;
-
-    // Ensure there is a buffer
-    if (!buffer || !buffer_length) return QMsgEncoderShortBuffer;
-
     try
     {
-        // Get the encoder context
-        qmsg::QMsgEncoderContextInternal *internal_context =
-            reinterpret_cast<qmsg::QMsgEncoderContextInternal *>(
-                context->opaque);
+        // Check encode parameters, do initialization
+        auto [result, internal_context] = qmsg::EncodeCommon(context,
+                                                              message,
+                                                              buffer,
+                                                              buffer_length,
+                                                              encoded_length);
+        if (result != QMsgEncoderSuccess) return result;
 
         // Assign the buffer to a DataBuffer object
-        qmsg::DataBuffer data_buffer(reinterpret_cast<unsigned char *>(buffer),
-                                     buffer_length,
-                                     0);
+        qmsg::DataBuffer data_buffer(buffer, buffer_length, 0);
 
         // Get a reference to the serializer
         auto &serializer = internal_context->GetSerializer();
@@ -634,7 +591,7 @@ QMsgEncoderResult CALL QMsgNetEncodeMessage(QMsgEncoderContext *context,
  *      None.
  */
 EXPORT QMsgEncoderResult CALL QMsgNetDecodeMessage(QMsgEncoderContext *context,
-                                                   char *buffer,
+                                                   uint8_t *buffer,
                                                    size_t buffer_length,
                                                    QMsgNetMessage *message,
                                                    size_t *consumed)
@@ -642,41 +599,21 @@ EXPORT QMsgEncoderResult CALL QMsgNetDecodeMessage(QMsgEncoderContext *context,
     std::uint32_t message_length;               // Expected message length
     std::size_t deserialized;                   // Octets actually deserialized
 
-    // Indicate no data was consumed
-    *consumed = 0;
-
-    // Initialize the message type
-    message->type = QMsgNetInvalid;
-
-    // Ensure the context is not null
-    if (!context || !context->opaque) return QMsgEncoderInvalidContext;
-
-    // Ensure there is a message structure
-    if (!message) return QMsgEncoderInvalidMessage;
-
-    // Ensure there is a buffer that at least holds a message length
-    if (!buffer || !buffer_length || (buffer_length < sizeof(std::uint32_t)))
-    {
-        return QMsgEncoderShortBuffer;
-    }
-
     try
     {
-        // Get the encoder context
-        qmsg::QMsgEncoderContextInternal *internal_context =
-            reinterpret_cast<qmsg::QMsgEncoderContextInternal *>(
-                context->opaque);
+        // Check decode parameters, do initialization
+        auto [result, internal_context] = qmsg::DecodeCommon(context,
+                                                             buffer,
+                                                             buffer_length,
+                                                             message,
+                                                             consumed);
+        if (result != QMsgEncoderSuccess) return result;
 
         // Assign the buffer to a DataBuffer object
-        qmsg::DataBuffer data_buffer(reinterpret_cast<unsigned char *>(buffer),
-                                     buffer_length,
-                                     buffer_length);
+        qmsg::DataBuffer data_buffer(buffer, buffer_length, buffer_length);
 
         // Get a reference to the deserializer
         auto &deserializer = internal_context->GetDeserializer();
-
-        // Zero the message structure
-        std::memset(message, 0, sizeof(QMsgNetMessage));
 
         // Determine the length of the message
         *consumed = deserializer.DeserializeMessageLength(data_buffer,

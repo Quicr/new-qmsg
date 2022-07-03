@@ -1,4 +1,4 @@
-use env_logger;
+//use env_logger;
 use log::{error, info, warn};
 use openmls::prelude::*;
 use openmls_rust_crypto::OpenMlsRustCrypto;
@@ -37,7 +37,10 @@ where
             if self.from_network.ready(poll_wait) {
                 let msg = self.from_network.next().unwrap();
                 match msg.to_tls::<NetworkToSecurityEvent>().unwrap() {
-                    NetworkToSecurityEvent::JoinRequest(jr) => {
+                    NetworkToSecurityEvent::MlsKeyPackage(jr) => {
+                        // TODO
+                    }
+                    NetworkToSecurityEvent::MlsAddKeyPackage(jr) => {
                         let kp = jr.key_package.unwrap();
                         let mut group = match self.groups.get(&jr.team) {
                             Some(group) => group.borrow_mut(),
@@ -139,7 +142,9 @@ where
                                     let out = AsciiMessage {
                                         team: am.team,
                                         channel: am.channel,
-                                        device_id: Self::get_device_id(&group, &self.our_kp)
+                                        device_id: env::var("MLS_DEVICE_ID")
+                                            .unwrap()
+                                            .parse()
                                             .unwrap(),
                                         ascii: TlsByteVecU32::from_slice(msg_bytes.as_slice()),
                                     };
@@ -172,6 +177,15 @@ where
             if self.from_ui.ready(poll_wait) {
                 let msg = self.from_ui.next().unwrap();
                 match msg.to_tls::<UiToSecurityEvent>().unwrap() {
+                    UiToSecurityEvent::MlsSignatureHash(sh) => {
+		    //TODO: Add this to auth_key_list
+                    self.to_network
+                            .write(
+                                &Message::from_tls(&SecurityToNetworkEvent::MlsSignatureHash(sh))
+                                    .unwrap(),
+                            )
+                            .unwrap();
+		    }
                     UiToSecurityEvent::WatchChannel(w) => {
                         let out = WatchDevices {
                             team: w.team,
@@ -274,7 +288,7 @@ where
 }
 
 fn main() {
-    env_logger::init();
+    //env_logger::init();
 
     // Communications with the network processor
     let s2n = nonblocking::open("/tmp/pipe-s2n");
@@ -319,18 +333,34 @@ fn main() {
         )
         .unwrap();
 
+    let mut groups = HashMap::new();
+
+    if match env::var("MLS_LEADER") {
+        Ok(v) => v == "1",
+        Err(_) => false,
+    } {
+        let group_config = &MlsGroupConfig::builder()
+            .use_ratchet_tree_extension(true)
+            .build();
+        let g = MlsGroup::new(
+            &backend,
+            group_config,
+            GroupId::from_slice(b"Static team test group"),
+            key_package.hash_ref(backend.crypto()).unwrap().value(),
+        )
+        .unwrap();
+        groups.insert(123, RefCell::new(g));
+    }
+
     let sec_proc = SecurityProcessor {
         to_network: s2n,
         from_network: n2s,
         to_ui: s2u,
         from_ui: u2s,
-        backend: OpenMlsRustCrypto::default(),
-        groups: HashMap::new(),
+        backend: backend,
+        groups: groups,
         our_kp: key_package,
     };
-
-    // TODO: decide based on leadership status whether to create group
-    // from scratch or send out join requests with our KeyPackage
 
     sec_proc.run();
 }

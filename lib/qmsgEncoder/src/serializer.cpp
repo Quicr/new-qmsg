@@ -367,6 +367,7 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
                           static_cast<std::uint32_t>(QMsgNetSendASCIIMessage));
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.channel_id);
+    message_length += Serialize(null_buffer, message.device_id);
     message_length += Serialize(null_buffer, message.message);
 
     // Now serialize the data in LTV form
@@ -377,6 +378,7 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
                           static_cast<std::uint32_t>(QMsgNetSendASCIIMessage));
     total_length += Serialize(data_buffer, message.team_id);
     total_length += Serialize(data_buffer, message.channel_id);
+    total_length += Serialize(data_buffer, message.device_id);
     total_length += Serialize(data_buffer, message.message);
 
     return total_length;
@@ -607,6 +609,7 @@ std::size_t QMsgSerializer::Serialize(
                           static_cast<std::uint32_t>(QMsgNetMLSKeyPackage));
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.key_package);
+    message_length += Serialize(null_buffer, message.key_package_hash);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
@@ -616,6 +619,7 @@ std::size_t QMsgSerializer::Serialize(
                           static_cast<std::uint32_t>(QMsgNetMLSKeyPackage));
     total_length += Serialize(data_buffer, message.team_id);
     total_length += Serialize(data_buffer, message.key_package);
+    total_length += Serialize(data_buffer, message.key_package_hash);
 
     return total_length;
 }
@@ -931,8 +935,7 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
     if (data_buffer.GetBufferSize())
     {
         data_buffer.AppendValue(value.length);
-        data_buffer.AppendValue(reinterpret_cast<const char *>(value.data),
-                                value.length);
+        data_buffer.AppendValue(value.data, value.length);
     }
 
     return sizeof(value.length) + value.length;

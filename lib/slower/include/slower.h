@@ -8,7 +8,7 @@
 
 float slowerVersion(); 
 
-const uint16_t slowerDefaultPort = 2022;
+const uint16_t slowerDefaultPort = 5004;
 const uint16_t slowerMTU = 1200;
 
 
@@ -46,17 +46,19 @@ typedef enum {
 } SlowerMsgType;
 
 
-int slowerSetup( SlowerConnection& slower, uint16_t port=0);
-int slowerRemote( SlowerRemote& remote, char server[], uint16_t port=slowerDefaultPort );
-int slowerAddRelay( SlowerConnection& slower, SlowerRemote& remote );
+int slowerSetup( SlowerConnection& slower, const uint16_t port=0);
+int slowerRemote( SlowerRemote& remote, const char server[], const uint16_t port=slowerDefaultPort );
+int slowerAddRelay( SlowerConnection& slower, const SlowerRemote& remote );
 int slowerClose( SlowerConnection& slower );
 
 int slowerWait( SlowerConnection& slower );
 
-int slowerPub( SlowerConnection& slower, ShortName& name, char buf[], int bufLen, SlowerRemote* remote=NULL );
-int slowerAck( SlowerConnection& slower, ShortName& name, SlowerRemote* remote=NULL );
-int slowerSub( SlowerConnection& slower, ShortName& name, int mask, SlowerRemote* remote=NULL );
-int slowerUnSub( SlowerConnection& slower, ShortName& name, int mask, SlowerRemote* remote=NULL );
+int slowerGetFD( SlowerConnection& slower);
+
+int slowerPub( SlowerConnection& slower, const ShortName& name, char buf[], int bufLen, SlowerRemote* remote=NULL );
+int slowerAck( SlowerConnection& slower, const ShortName& name, SlowerRemote* remote=NULL );
+int slowerSub( SlowerConnection& slower, const ShortName& name, int mask, SlowerRemote* remote=NULL );
+int slowerUnSub( SlowerConnection& slower, const ShortName& name, int mask, SlowerRemote* remote=NULL );
 
 int slowerRecvPub( SlowerConnection& slower, ShortName* name, char buf[], int bufSize, int* bufLen );
 int slowerRecvAck( SlowerConnection& slower, ShortName* name  );
