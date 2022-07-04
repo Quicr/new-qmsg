@@ -1,17 +1,18 @@
 
 #include <arpa/inet.h>
 #include <cassert>
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <netdb.h>
+#include <sstream>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <cstdlib>
-#include <sstream>
 
 #include <slower.h>
 #include <name.h>
@@ -19,8 +20,6 @@
 #include "subscription.h"
 #include "cache.h"
 
-
-  
 
 int main(int argc, char* argv[]) {
   std::clog << "Starting slowerReal (slower version " << slowerVersion() << ")" << std::endl;
@@ -105,6 +104,25 @@ int main(int argc, char* argv[]) {
         std::vector<uint8_t> data( buf, buf+bufLen );
         cache.put( name,  data );
 
+        // report metrics for QMsg
+        if ( true ) {
+          Name qmsgName( name );
+          if ( ( qmsgName.orginID() == 0x88 )
+               && ( qmsgName.appID() == 0x88 )
+               && ( qmsgName.path() == NamePath::message )
+               && ( data.size() >= 6 ) ) {
+            uint64_t nowMs = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+
+            uint64_t thenMs = 0;
+            for ( int i=0; i<6; i++ ) {
+              thenMs <<= 8;
+              thenMs |= data[i];
+            }
+
+            std::clog << "    " << qmsgName.longString() << " latency:" << ( nowMs - thenMs ) << std::endl;
+          }
+        }
+        
         // send to other relays
         for ( SlowerRemote dest: relays ) {
             if ( dest != remote ) {
@@ -138,9 +156,8 @@ int main(int argc, char* argv[]) {
       names.reverse(); // send the highest (and likely most recent) first 
 
       for ( auto n : names ) {
-        std::clog << "  Sent cache " << Name(name).shortString() << std::dec << std::endl;
+        std::clog << "  Sent cache " << Name(n).longString() << std::dec << std::endl;
         const std::vector<uint8_t>* priorData = cache.get( n );
-          
 
         if ( priorData->size() != 0 ) {
           err = slowerPub( slower, n, (char*)(priorData->data()), priorData->size(), &remote );
