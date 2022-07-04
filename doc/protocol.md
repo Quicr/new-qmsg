@@ -56,7 +56,7 @@ subscribing to a channelID with 40 bit wildcard (for device and message)
 
 ## Messages
 
-Each messages has an envelope data taht is authenticated but not
+Each messages has an envelope data that is authenticated but not
 encrypeted followed by and encryped payload. 
 
 ### Envelope Data 

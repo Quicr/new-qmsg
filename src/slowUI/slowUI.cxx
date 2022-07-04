@@ -19,7 +19,6 @@ int main( int argc, char* argv[]){
   int channel= 5;
 
   secApi.watch( team, channel );
-
   
   while( true ) {
     //waitForInput
