@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
               thenMs |= data[i];
             }
 
-            std::clog << "    msg:" << qmsgName.longString() << " latency:" << ( nowMs - thenMs ) << std::endl;
+            std::clog << "    " << qmsgName.longString() << " latency:" << ( nowMs - thenMs ) << std::endl;
           }
         }
         
@@ -156,9 +156,8 @@ int main(int argc, char* argv[]) {
       names.reverse(); // send the highest (and likely most recent) first 
 
       for ( auto n : names ) {
-        std::clog << "  Sent cache " << Name(name).shortString() << std::dec << std::endl;
+        std::clog << "  Sent cache " << Name(n).longString() << std::dec << std::endl;
         const std::vector<uint8_t>* priorData = cache.get( n );
-          
 
         if ( priorData->size() != 0 ) {
           err = slowerPub( slower, n, (char*)(priorData->data()), priorData->size(), &remote );
