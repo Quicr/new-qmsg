@@ -61,20 +61,19 @@ encrypeted followed by and encryped payload.
 
 ### Envelope Data 
 
-* expiry time (32 bit in ms since unix epoch)
 * short name (128bit)
+* expiry time (32 bit in ms since unix epoch - this wraps ) 
+* creation time (48 bit in ms since epoch) 
 * epoch used for encryption (low 16 bits of epoch)
 
-## Encryped Payload Data
+### Encryped Payload Data
 
-* creation time (64 bit ms)
-* msg data len = 16 bits 
-* message data 
 * option flags 16 bit 
 * optional reply to device/msg 
 * optional replaces device/msg 
-* optional bool updates channel display name (8 bit with other) 
+* optional bool updates channel display name 
 * optional bool updates team display name 
+* message data 
 
 To create a threat, the reply to is set to identify the first message of
 the thread. Threads can not be nested.

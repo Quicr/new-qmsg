@@ -62,15 +62,16 @@ int main( int argc, char* argv[]){
       uiApi.readMsg( &message );
 
       switch ( message.type ) {
-      case QMsgUIWatchChannel:
+      case QMsgUIWatchChannel: {
           std::clog << "SEC: Got watch from UIProc:"
                   << " team=" <<    message.u.watch_channel.team_id
                   << " ch=" <<   message.u.watch_channel.channel_id
               << std::endl;
 
           netApi.watch( message.u.watch_channel.team_id, otherDeviceID,  message.u.watch_channel.channel_id );
+      }
         break;
-      case QMsgUISendASCIIMessage:
+      case QMsgUISendASCIIMessage: {
 
         std::clog << "SEC: Got AsciiMsg from UIProc: "
           << " team=" <<   message.u.send_ascii_message.team_id
@@ -79,16 +80,21 @@ int main( int argc, char* argv[]){
                                        message.u.send_ascii_message.message.length )
           << std::endl;
 
-          netApi.sendAsciiMsg(  message.u.send_ascii_message.team_id,
-                                myDeviceID,
-                    message.u.send_ascii_message.channel_id,
-                    message.u.send_ascii_message.message.data,
-                    message.u.send_ascii_message.message.length );
+        std::vector<uint8_t> asciiText( message.u.send_ascii_message.message.data,
+                                        message.u.send_ascii_message.message.data + message.u.send_ascii_message.message.length );
+        
+        netApi.sendAsciiMsg(  message.u.send_ascii_message.team_id,
+                              myDeviceID,
+                              message.u.send_ascii_message.channel_id,
+                              asciiText.data(),
+                              asciiText.size() );
                     
+      }
         break;
-      case QMsgUIInvalid:
+      case QMsgUIInvalid: {
          std::clog << "SEC: Got Invalid msg from UIProc: " << std::endl;
-         break;
+      }
+        break;
       default:
         assert(0);
       }
