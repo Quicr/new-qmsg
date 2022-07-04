@@ -40,6 +40,7 @@ public:
     void Stop();
 
     void DisplayHelpMessage();
+    bool isValidChannel(std::string channelExists);
 private:
     tm* GetCurrentSystemTime();
     void HandleKeyboard(int selected_fd, fd_set fdSet);
@@ -63,7 +64,7 @@ private:
 
     const char* help_desc[9] = {
             "Next steps set your user name by entering /set username <xyz>\n",
-            "Connect to your team by entering /connect <team>\n",
+            "Connect to your team by entering /connect <team name> <chat name>\n",
             "Once connected you'll be automatically added to all channels\n",
             "Join a chat by entering /join <chat name>\n",
             "Leave a chat by entering /leave <chat name>\n",
@@ -72,6 +73,7 @@ private:
             "Message a user directly by entering /direct <username>\n",
             "Enter /bye to exit the Cisco Secure Messaging app\n"
     };
+
     const std::string bye_str = "Thanks for joining Cisco Secure Messaging\n";
 
     KeyBoardReader* keyboard;

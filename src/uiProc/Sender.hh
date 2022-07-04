@@ -15,6 +15,7 @@ public:
     void Read(char* buffer, unsigned int &buffer_length, const unsigned int buffer_size);
     void ReadKeyboard();
     void SendMessage(char *buffer, const unsigned long buffer_length);
+    void SendWatchMessage(unsigned int team_id, unsigned int channel_id);
 private:
     void EncodeMessage(char *buffer, const unsigned int buffer_length);
 

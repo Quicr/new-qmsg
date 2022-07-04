@@ -67,6 +67,21 @@ void UserInterface::DisplayHelpMessage()
     }
 }
 
+bool UserInterface::isValidChannel(std::string channel_id) {
+    bool channel_exists = false;
+    unsigned int idx = 0;
+    for (unsigned int i = 0; i < all_channels.size(); i++)
+    {
+        if (channel_id == all_channels[i].Name())
+        {
+            channel_exists = true;
+            idx = i;
+            break;
+        }
+    }
+    return channel_exists;
+}
+
 tm *UserInterface::GetCurrentSystemTime()
 {
     time_t raw_time;
@@ -136,7 +151,30 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                 }
                 else if (strcmp(command_token, commands[Command::connect]) == 0)
                 {
-                    // Connect to a team room
+                    char* team_id_str = strtok(NULL, " ");
+                    if (team_id_str == NULL) {
+                        std::cout << "Team id is missing, Try again" <<std::endl;
+                    }
+                    std::cout << "Connect to team " <<team_id_str << std::endl;
+                    if (team_id_str == NULL) {
+                        std::cout << "team id is null, Try again";
+                        return;
+                    }
+
+                    unsigned int team_id = static_cast<unsigned int>(*team_id_str);
+                    char* channel_id_str = strtok(NULL, " ");
+                    std::cout << "Connect to channel " <<channel_id_str << std::endl;
+                    if (channel_id_str == NULL) {
+                            std::cout << "Channel id is missing, Try again" <<std::endl;
+                            return;
+                    }
+                   /* if (!isValidChannel(channel_id_str)) {
+                        std::cout << "Enter a valid channel"<<std::endl;
+                        return;
+                    }*/
+                    unsigned int channel_id = static_cast<unsigned int>(*channel_id_str);
+                    sender->SendWatchMessage(team_id, channel_id);
+
                 }
                 else if (strcmp(command_token, commands[Command::join]) == 0)
                 {
