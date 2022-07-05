@@ -30,7 +30,7 @@ static int slowerRecv( SlowerConnection& slower, char buf[], int bufSize, int* b
 static int slowerSend( SlowerConnection& slower, char buf[], int bufLen, SlowerRemote& remote );
 
 float slowerVersion() {
-  return 0.11;
+  return 0.2;
 }
 
 

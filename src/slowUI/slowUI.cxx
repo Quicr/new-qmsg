@@ -16,8 +16,8 @@ int main( int argc, char* argv[]){
   int keyboardFD = 0;
   SecApi secApi;
   
-  int team=9;
-  int channel= 5;
+  int team=1;
+  int channel= 1;
 
   secApi.watch( team, channel );
   
@@ -67,9 +67,9 @@ int main( int argc, char* argv[]){
          
          if ( msg.size() > 6 ) {
            std::clog << "UI: SendAscii"
-                     << " len=" << msg.size()
                      << " team=" << team
                      << " ch=" << channel
+                     << " len=" << msg.size()
                      << " time=" << std::put_time(&nowDateTime, "%T")
                      << std::endl;
          

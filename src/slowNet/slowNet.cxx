@@ -70,15 +70,9 @@ public:
     if ( bufLen > 0 ) {
       std::clog << "NET: Recv PUB "
                 << name.longString() 
-                << " data=" ;
-      for ( int i=0; i< bufLen; i++ ) {
-        char c = buf[i];
-        if (( c >= 32 ) && ( c <= 0x7e ) ) {
-          std::clog << c;
-        }
-      }
-      std::clog << std::endl;
-
+                << " len=" << bufLen 
+                << std::endl;
+      
       secApi.recvAsciiMsg( name.team(), name.device(), name.channel(),
                            (uint8_t*)buf, bufLen );
     }
@@ -94,7 +88,7 @@ int main( int argc, char* argv[]){
 
   const uint32_t org=1; // TODO load from config 
   
-  const int mask = 16;
+  //  const int mask = 16;
   int msgNum=1; // TODO - make msgnum per team/device/ch
   
   
@@ -145,10 +139,20 @@ int main( int argc, char* argv[]){
          std::clog << std::endl;
 #if 1
          for ( const auto& dev : devList ) {
-           assert( message.u.watch_devices.channel_id <= 0xFFFF );
-           Name name(  NamePath::message, org, message.u.watch_devices.team_id,  (uint16_t)message.u.watch_devices.channel_id , dev );
+           assert( message.u.watch_devices.team_id > 0);
+           assert( org >0  );
+           assert( message.u.watch_devices.channel_id >0 );
+
+           assert( message.u.watch_devices.team_id <= (1<<20) );
+           assert( org <= (1<<18) );
+           assert( message.u.watch_devices.channel_id < (1<<10) );
+           //assert( dev < (1<<20) ); // TODO - move dev id to 32 bits 
+                   
+           Name name(  NamePath::message, org, message.u.watch_devices.team_id,
+                       (uint16_t)message.u.watch_devices.channel_id , dev );
            std::clog << "   sub=" << name.longString() << std::endl;
 
+           const int mask = (dev==0) ? 40 : 20;
            relay.sub( name.shortName() , mask );
          }
 #endif
@@ -159,9 +163,8 @@ int main( int argc, char* argv[]){
         std::clog << "NET: Got SendAsciiMsg from SecProc: "
           << " team=" <<   message.u.send_ascii_message.team_id
           << " device=" <<  message.u.send_ascii_message.device_id
-          << " ch= " <<  message.u.send_ascii_message.channel_id
-          << " val: " << std::string(  (char*)message.u.send_ascii_message.message.data,
-                                       message.u.send_ascii_message.message.length )
+          << " ch=" <<  message.u.send_ascii_message.channel_id
+          << " val=" << message.u.send_ascii_message.message.length 
           << std::endl;
 
         
@@ -182,9 +185,9 @@ int main( int argc, char* argv[]){
 #else
           secApi.recvAsciiMsg(  message.u.send_ascii_message.team_id,
                                 message.u.send_ascii_message.device_id,
-                    message.u.send_ascii_message.channel_id,
-                    message.u.send_ascii_message.message.data,
-                    message.u.send_ascii_message.message.length );
+                                message.u.send_ascii_message.channel_id,
+                                message.u.send_ascii_message.message.data,
+                                message.u.send_ascii_message.message.length );
 #endif    
         }
           break;
