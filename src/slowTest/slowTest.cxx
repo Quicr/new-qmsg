@@ -161,6 +161,9 @@ int main(int argc, char* argv[]) {
               << " aka "
               << Name( shortName ).longString()   << ":" << mask
               << std::endl;
+
+    assert( mask < 64 );
+    
     err = slowerSub( slower,  shortName, mask  );
     assert( err == 0 );
 
