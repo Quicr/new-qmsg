@@ -26,15 +26,21 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_subdirectory(contrib)
 
-add_subdirectory(lib/slower)
-add_subdirectory(lib/qmsgEncoder)
+if (NOT PROJECT_NAME STREQUAL "slow-relay")
+    add_subdirectory(contrib)
 
-add_subdirectory(src/uiProc)
-#add_subdirectory(src/secProc)
-if(qmsg_ENABLE_QUICR)
-    add_subdirectory(src/netProc)
+    add_subdirectory(lib/slower)
+    add_subdirectory(lib/qmsgEncoder)
+
+    add_subdirectory(src/uiProc)
+    #add_subdirectory(src/secProc)
+    if(qmsg_ENABLE_QUICR)
+        add_subdirectory(src/netProc)
+    endif()
+else()
+    add_subdirectory(lib/slower)
+    add_subdirectory(lib/qmsgEncoder)
 endif()
 
 add_subdirectory(src/slowTest)
