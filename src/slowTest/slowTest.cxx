@@ -14,30 +14,105 @@
 #include <cstdlib>
 
 #include <slower.h>
+#include <name.h>
 
 
 int main(int argc, char* argv[]) {
-  if ( ( argc != 3 ) && (  argc != 4 ) ) {
+  if ( ( argc != 2 ) && (  argc != 3 ) ) {
     float slowVer = slowerVersion();
-    std::cerr << "Usage PUB: slowTest <relayName> 1234 pubData" << std::endl; 
-    std::cerr << "Usage SUB: slowTest <relayName> 1234 " << std::endl;
+    std::cerr << "Relay address and port set in SLOWR_RELAY and SLOWR_PORT env variables as well as SLOWR_ORG" << std::endl; 
+    std::cerr << "Usage PUB: slowTest <team>/<channel>/<device/<message> pubData" << std::endl; 
+    std::cerr << "Usage SUB: slowTest <team>/<channel>/<device/<message>" << std::endl; 
+    std::cerr << "Usage SUB: slowTest <team>/<channel>/<device>" << std::endl;
+    std::cerr << "Usage SUB: slowTest <team>/<channel>" << std::endl;
+    std::cerr <<  std::endl; 
+    std::cerr << "Usage PUB: slowTest FF0001 pubData" << std::endl; 
+    std::cerr << "Usage SUB: slowTest FF0000:16" << std::endl;
     std::cerr << "slowTest lib version " << slowVer << std::endl;
     exit(-1);
   }
   
-  char* relayName =  argv[1];
-  std::string name( argv[2] );
-  int mask=16;
-  char* data = NULL;
-  if ( argc == 4 ) {
-    data = argv[3];
+  char* relayName =  getenv( "SLOWR_RELAY" );
+  if ( !relayName ) {
+    static  char defaultRelay[]  = "relay.us-east-2.qmsg.ctgpoc.com ";
+    relayName = defaultRelay;
+  }
+   
+  uint32_t org = 1;
+  char* orgVar = getenv( "SLOWR_ORG" ); 
+  if ( orgVar ) {
+    org = atoi( orgVar );
   }
 
-  char* portVar = getenv( "SLOWER_PORT" ); 
   int port = 5004;
+  char* portVar = getenv( "SLOWR_PORT" ); 
   if ( portVar ) {
     port = atoi( portVar );
   }
+
+  std::string nameString( argv[1] );
+  ShortName shortName;
+  int mask=16;
+  try {
+    if ( nameString.find('/') != std::string::npos ) {
+      uint32_t team=1;
+      uint32_t channel=1;
+      uint32_t device=0;
+      uint32_t msgID=0;
+
+      team    = std::stoul( nameString.substr(0,  nameString.find('/') ), nullptr, 16);
+      nameString.erase( 0, nameString.find('/') );
+
+      channel = std::stoul( nameString.substr(1,  nameString.find('/',1) ), nullptr, 16);
+      nameString.erase( 0, nameString.find('/',1) );
+      mask=40;
+
+      if ( nameString.length() > 0 ) {
+        device  = std::stoul( nameString.substr(1,  nameString.find('/',1) ), nullptr, 16);
+        nameString.erase( 0, nameString.find('/',1) );
+        mask = 20;
+        
+        if ( nameString.length() > 0 ) {
+          msgID   = std::stoul( nameString.substr(1,  nameString.length() ), nullptr, 16);
+          nameString.erase( 0, nameString.length() );
+          mask = 0; 
+        }
+      }
+      
+      Name nameObj( NamePath::message, org, team, channel, device , msgID );
+      shortName = nameObj.shortName();
+    } else {
+      if ( nameString.find(':') != std::string::npos ) {
+        mask = std::stoul( nameString.substr( nameString.find(':')+1, std::string::npos ), nullptr, 10);
+        nameString.erase( nameString.find(':'), std::string::npos );
+      }
+      std::string low;
+      std::string high;
+      if ( nameString.length() <= 16 ) {
+        low = nameString;
+        shortName.part[0] = std::stoul(low,nullptr,16);
+        shortName.part[1] = 0;
+      } else {
+        low =  nameString.substr( nameString.length()-16 , std::string::npos );
+        high = nameString.substr( 0 , nameString.length()-16 );
+        shortName.part[0] = std::stoul(low,nullptr,16);
+        shortName.part[1] = std::stoul(high,nullptr,16);
+      }
+    }
+  } catch ( ... ) {
+    std::clog << "invalid input name: " << nameString <<  std::endl;
+    exit (1);
+  }
+ 
+  std::cerr << "Name=" << Name( shortName ).shortString()
+            << " " <<  Name( shortName ).longString() << std::endl; 
+  
+    
+  char* data = NULL;
+  if ( argc == 3 ) {
+    data = argv[2];
+  }
+
   
   SlowerConnection slower;
   int err = slowerSetup( slower  );
@@ -56,26 +131,13 @@ int main(int argc, char* argv[]) {
   assert( err == 0 );
 
   
-  std::string low;
-  std::string high;
-  ShortName shortName;  
-  if ( name.length() <= 16 ) {
-    low = name;
-    shortName.part[0] = std::stoul(low,nullptr,16);
-    shortName.part[1] = 0;
-  } else {
-    low =  name.substr( name.length()-16 , std::string::npos );
-    high =  name.substr( 0 , name.length()-16 );
-    shortName.part[0] = std::stoul(low,nullptr,16);
-    shortName.part[1] = std::stoul(high,nullptr,16);
-  }
-  //std::cerr << "low=" << low <<  std::endl;
-  //std::cerr << "high=" << high <<  std::endl;
-  //std::cerr << "Name=" << std::hex << shortName.part[1] << "-" <<  shortName.part[0] << std::dec << std::endl;
-
-  
   if ( data ) {
-    // do publish 
+    // do publish
+    std::clog << "PUB to "
+              <<  Name( shortName ).shortString()
+              << " aka "
+              << Name( shortName ).longString()
+              << std::endl;
     err = slowerPub( slower,  shortName,  data , strlen(data)  );
     assert( err == 0 );
 
@@ -87,20 +149,24 @@ int main(int argc, char* argv[]) {
       err = slowerRecvAck( slower, &recvName );
       assert( err == 0 );
       if ( recvName == shortName ) {
-        std::clog << "Got ACK for data" << std::endl;
+        std::clog << "   Got ACK for " << Name( recvName ).longString() << std::endl;
         break;
       }
      }
   }
   else {
     // do subscribe 
+    std::clog << "SUB to "
+              <<  Name( shortName ).shortString() << ":" << mask
+              << " aka "
+              << Name( shortName ).longString()   << ":" << mask
+              << std::endl;
     err = slowerSub( slower,  shortName, mask  );
     assert( err == 0 );
 
     while ( true ) {
       err=slowerWait( slower );
       assert( err == 0 );
-      
       
       char buf[slowerMTU];
       int bufLen=0;
@@ -109,9 +175,9 @@ int main(int argc, char* argv[]) {
       err = slowerRecvPub( slower, &recvName, buf, sizeof(buf), &bufLen );
       assert( err == 0 );
       if ( bufLen > 0 ) {
-        std::clog << "Got data for name="
-                  << std::hex << recvName.part[1] << "-" <<  recvName.part[0] << std::dec 
-                  << " data=" ;
+        std::clog << "Got data for "
+                  << Name( recvName ).longString()
+                  << " " ;
         for ( int i=0; i< bufLen; i++ ) {
           char c = buf[i];
           if (( c >= 32 ) && ( c <= 0x7e ) ) {
