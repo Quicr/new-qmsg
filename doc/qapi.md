@@ -171,7 +171,7 @@ EventType: DeviceInfo
 
 Data:
 * uint32: team
-* uint16: device_id
+* uint32: device_id
 
 # Miscellenous Messages
 
