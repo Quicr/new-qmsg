@@ -1,4 +1,5 @@
 
+#include <algorithm>
 #include <arpa/inet.h>
 #include <cassert>
 #include <cstdint>
@@ -10,8 +11,11 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <algorithm>
-#include <cstdlib>
+#include <vector>
+#include <iomanip>
+
+#include <chrono>
+
 
 #include <slower.h>
 #include <name.h>
@@ -108,9 +112,17 @@ int main(int argc, char* argv[]) {
             << " " <<  Name( shortName ).longString() << std::endl; 
   
     
-  char* data = NULL;
+  std::vector<uint8_t> data;
   if ( argc == 3 ) {
-    data = argv[2];
+    data.resize(6);
+    uint64_t nowMs = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+    uint64_t d=nowMs;
+    for ( int i=5; i >= 0; --i ) {
+      data[i] = ( (uint8_t)( d & 0xFF)  );
+      d >>= 8;
+    }
+         
+    data.insert( data.end(), (uint8_t*)(argv[2]) , ((uint8_t*)(argv[2])) + strlen( argv[2] ) );
   }
 
   
@@ -131,14 +143,14 @@ int main(int argc, char* argv[]) {
   assert( err == 0 );
 
   
-  if ( data ) {
+  if ( data.size() > 0  ) {
     // do publish
     std::clog << "PUB to "
               <<  Name( shortName ).shortString()
               << " aka "
               << Name( shortName ).longString()
               << std::endl;
-    err = slowerPub( slower,  shortName,  data , strlen(data)  );
+    err = slowerPub( slower,  shortName,  (char*)data.data() , data.size()  );
     assert( err == 0 );
 
      while ( true ) {
@@ -178,16 +190,37 @@ int main(int argc, char* argv[]) {
       err = slowerRecvPub( slower, &recvName, buf, sizeof(buf), &bufLen );
       assert( err == 0 );
       if ( bufLen > 0 ) {
+        
+        uint64_t nowMs = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+
+        uint64_t thenMs = 0;
+        if ( bufLen > 6 ) {
+          for ( int i=0; i<6; i++ ) {
+            thenMs <<= 8;
+            thenMs |= (uint8_t)(buf[i]);
+          }
+        }
+
+        std::chrono::milliseconds thenDuration( thenMs ); //  thenMs );
+        std::chrono::time_point<std::chrono::system_clock> thenTimePoint( thenDuration );
+        std::time_t thenCTime = std::chrono::system_clock::to_time_t( thenTimePoint );
+        std::tm thenDateTime = *std::localtime( &thenCTime );
+           
         std::clog << "Got data for "
                   << Name( recvName ).longString()
-                  << " " ;
-        for ( int i=0; i< bufLen; i++ ) {
+          //<< " len=" << bufLen 
+                  << " at " << std::put_time(&thenDateTime, "%T")
+                  << " ";
+        for ( int i=6; i< bufLen; i++ ) {
           char c = buf[i];
           if (( c >= 32 ) && ( c <= 0x7e ) ) {
             std::clog << c;
           }
+          else {
+             std::clog << '~';
+          }
         }
-        std::clog << std::endl;
+        std::clog  << " latency:" << ( nowMs - thenMs )<< std::endl;
         // break;
       }
     }

@@ -1,4 +1,5 @@
-#include <assert.h>
+
+#include <cassert>
 #include <chrono>
 #include <iostream>
 #include <vector>
