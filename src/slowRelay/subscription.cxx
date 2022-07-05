@@ -13,9 +13,9 @@ Subscriptions::Subscriptions() {
 }
   
 void Subscriptions::add(  const ShortName& name, const int mask, const SlowerRemote& remote ) {
-  assert( mask == 16 );
+  assert( mask <= 64 );
   ShortName group = name;
-  group.part[0] &= 0xFFFFffffFFFF0000l;
+  group.part[0] &= (0xFFFFffffFFFFffffl << mask );
 
   //std::clog << "subscribe.cxx: add "
   //          << std::hex << group.part[1] << "-" <<  group.part[0] << std::dec
@@ -39,9 +39,9 @@ void Subscriptions::add(  const ShortName& name, const int mask, const SlowerRem
 }
   
 void Subscriptions::remove(  const ShortName& name, const int mask, const SlowerRemote& remote ) {
-  assert( mask == 16 );
+  assert( mask <= 64 );
   ShortName group = name;
-  group.part[0] &= 0xFFFFffffFFFF0000l;
+  group.part[0] &= (0xFFFFffffFFFFffffl << mask );
 
   auto mapPtr = subscriptions[mask].find( group );
   if ( mapPtr != subscriptions[mask].end() ) {
@@ -53,20 +53,21 @@ void Subscriptions::remove(  const ShortName& name, const int mask, const Slower
 }
   
 std::list<SlowerRemote> Subscriptions::find(  const ShortName& name  ) {
-  const int mask=16; // TODO - work over all levels 
-  ShortName group = name;
-  group.part[0] &= 0xFFFFffffFFFF0000l;
   std::list<SlowerRemote> ret;
-
   //std::clog << "subscribe.cxx: find " << std::hex << group.part[1] << "-" <<  group.part[0] << std::dec << std::endl;
 
-  auto mapPtr = subscriptions[mask].find( group );
-  if ( mapPtr != subscriptions[mask].end() ) {
-    std::set<SlowerRemote>& list = mapPtr->second;
-    for( const SlowerRemote& remote : list ) {
-      SlowerRemote dest = remote;
-      ret.push_back( dest );
-      //std::clog << "subscribe.cxx:     found port=" <<  ntohs( remote.addr.sin_port )<< std::endl;
+  for ( int mask=0; mask < 64 ; mask ++ ) {
+    ShortName group = name;
+    group.part[0] &= (0xFFFFffffFFFFffffl << mask );
+    
+    auto mapPtr = subscriptions[mask].find( group );
+    if ( mapPtr != subscriptions[mask].end() ) {
+      std::set<SlowerRemote>& list = mapPtr->second;
+      for( const SlowerRemote& remote : list ) {
+        SlowerRemote dest = remote;
+        ret.push_back( dest );
+        //std::clog << "subscribe.cxx:     found port=" <<  ntohs( remote.addr.sin_port )<< std::endl;
+      }
     }
   }
   return ret;

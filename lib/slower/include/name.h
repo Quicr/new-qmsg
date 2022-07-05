@@ -20,10 +20,10 @@ public:
   Name(ShortName &n);
   Name(NamePath path, uint32_t org, uint32_t team,
        uint64_t fingerprint); // key package & welcome
-  Name(NamePath path, uint32_t org, uint32_t team, uint32_t epoch,
-       uint32_t rand); // commit-all
-  Name(NamePath path, uint32_t org, uint32_t team, uint32_t device,
-       uint32_t epoch, uint32_t rand); // commit-one
+  //Name(NamePath path, uint32_t org, uint32_t team, uint32_t epoch,
+  //     uint32_t rand); // commit-all
+  //Name(NamePath path, uint32_t org, uint32_t team, uint32_t device,
+  //     uint32_t epoch, uint32_t rand); // commit-one
   Name(NamePath path, uint32_t org, uint32_t team, uint16_t channel,
        uint32_t device, uint32_t msgNum = 0); // msg data
 

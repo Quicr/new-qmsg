@@ -1,8 +1,10 @@
 
 #include <assert.h>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string.h>
+
 
 #include <name.h>
 #include <slower.h>
@@ -13,13 +15,13 @@ Name::Name(NamePath path, uint32_t org, uint32_t team,
            uint64_t fingerprint) { // key package & welcome
 }
 
-Name::Name(NamePath path, uint32_t org, uint32_t team, uint32_t epoch,
-           uint32_t rand) { // commit-all
-}
+//Name::Name(NamePath path, uint32_t org, uint32_t team, uint32_t epoch,
+//           uint32_t rand) { // commit-all
+//}
 
-Name::Name(NamePath path, uint32_t org, uint32_t team, uint32_t device,
-           uint32_t epoch, uint32_t rand) { // commit-one
-}
+//Name::Name(NamePath path, uint32_t org, uint32_t team, uint32_t device,
+//           uint32_t epoch, uint32_t rand) { // commit-one
+//}
 
 Name::Name(NamePath path, uint32_t org, uint32_t team, uint16_t channel,
            uint32_t device, uint32_t msgNum) { // name for message data
@@ -121,10 +123,12 @@ ShortName &Name::shortName() { return name; }
 
 std::string Name::shortString() {
   std::stringstream ss;
-  ss << std::hex << ((name.part[1] >> 32) & 0xFFFFffff) << "-"
-     << ((name.part[1] >> 0) & 0xFFFFffff) << "-"
-     << ((name.part[0] >> 32) & 0xFFFFffff) << "-"
-     << ((name.part[0] >> 0) & 0xFFFFffff) << std::dec;
+  ss << std::hex << std::setfill('0') 
+     << std::setw( 8 ) << ((name.part[1] >> 32) & 0xFFFFffff) << "-"
+     << std::setw( 8 ) << ((name.part[1] >> 0) & 0xFFFFffff) << "-"
+     << std::setw( 8 ) << ((name.part[0] >> 32) & 0xFFFFffff) << "-"
+     << std::setw( 8 ) << ((name.part[0] >> 0) & 0xFFFFffff)
+     << std::dec;
 
   return ss.str();
 }
