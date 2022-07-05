@@ -55,7 +55,8 @@ EventType: Ascii_Message
 Data:
 * uint32: team
 * uint32: channel
-* uint16:  device_id // maps to mls index
+* uint32: device_id // maps to mls index
+* uint32: msg_id
 * opaque value<0..2^32-1> // [4B length + uint8_t bytes]
 
 
