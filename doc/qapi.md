@@ -70,7 +70,7 @@ EventType: Watch_Channel
 
 Data:
 * uint32: team
-* uint32: channel
+* uint32: channel // note that 0 means all channels 
 
 ### Sec -> Net
 EventType: Watch_Devices
