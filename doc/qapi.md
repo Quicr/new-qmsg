@@ -41,9 +41,11 @@ Data:
 EventType: Ascii_Message
 
 Data:
+* uint32:  org 
 * uint32:  team
 * uint32:  channel
-* uint16:  device_id
+* uint32:  device_id
+* uint32:  msg_id
 * opaque value<0..2^32-1>: ciphertext // [4B length + uint8_t bytes]
 
 
