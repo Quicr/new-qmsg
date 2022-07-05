@@ -10,26 +10,50 @@
 #include <unistd.h>
 #include <vector>
 
+//#include <cctype>
+#include <random>
+
 #include "uiApi.h"
 #include "netApi.h"
 
+class NotMLS {
+private:
+  std::mt19937 psuedoRandGen;
+public:
+  NotMLS() : psuedoRandGen() {
+    std::random_device sysRand;
+    psuedoRandGen.seed( sysRand() );
+  };
+
+  uint32_t getRandDevID() {
+    std::uniform_int_distribution<uint32_t> distribution(1, 1*1000*1000) ;
+    return distribution(psuedoRandGen)  ;
+  };
+};
 
 int main( int argc, char* argv[]){
+
+  NotMLS mls;
   
-  int myDeviceID = 1; // TODO
+  
+  int myDeviceID = mls.getRandDevID();
   char *devIdName = getenv( "SLOWR_DEVID" );
   if ( devIdName ) {
     myDeviceID = atoi( devIdName );
   }
 
   std::clog <<   "SEC: Starting secProc devId=" << std::hex << myDeviceID << std::dec << std::endl;
+  assert(   myDeviceID < ( 1<<20 ) );
   
   std::vector<uint16_t> otherDeviceID;
-  otherDeviceID.push_back( 1 );
+  otherDeviceID.push_back( myDeviceID );
+#if 0
+  // TODO - could remove these but for testing with broken subsciptions
+  otherDeviceID.push_back( 1 ); 
   otherDeviceID.push_back( 2 );
   otherDeviceID.push_back( 3 );
-  otherDeviceID.push_back( 4 );
-  otherDeviceID.push_back( 5 );
+#endif
+  otherDeviceID.push_back( 0 ); // subscribe to whole channel 
   
   UiApi uiApi;
   NetApi netApi;
@@ -76,8 +100,7 @@ int main( int argc, char* argv[]){
         std::clog << "SEC: Got AsciiMsg from UIProc: "
           << " team=" <<   message.u.send_ascii_message.team_id
           << " ch=" <<  message.u.send_ascii_message.channel_id
-          << " val: " << std::string(  (char*)message.u.send_ascii_message.message.data,
-                                       message.u.send_ascii_message.message.length )
+          << " len=" << message.u.send_ascii_message.message.length
           << std::endl;
 
         std::vector<uint8_t> asciiText( message.u.send_ascii_message.message.data,
@@ -113,12 +136,11 @@ int main( int argc, char* argv[]){
         {
         std::clog << "SEC: Got AsciiMsg from NetProc: ";
         
-         std::clog << " team=" <<   message.u.receive_ascii_message.team_id
-                  << " device=" <<   message.u.receive_ascii_message.device_id
-          << " ch=" <<  message.u.receive_ascii_message.channel_id
-          << " val: " << std::string(  (char*)message.u.receive_ascii_message.message.data,
-                                       message.u.receive_ascii_message.message.length )
-          << std::endl;
+         std::clog << " team=" << message.u.receive_ascii_message.team_id
+                   << " dev="  << message.u.receive_ascii_message.device_id
+                   << " ch="   << message.u.receive_ascii_message.channel_id
+                   << " len="  << message.u.receive_ascii_message.message.length
+                   << std::endl;
 
          // get a local copy before memory is invalid
          uint8_t* ptr =  message.u.receive_ascii_message.message.data;
