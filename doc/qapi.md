@@ -79,7 +79,7 @@ Data:
 * uint32: team
 * uint32: channel
 * uint16: num_device_id
-* uint16[]: device_id_list
+* uint32[]: device_id_list
 
 ## Unwatch
 Cancels any watches for a given channel
@@ -98,7 +98,7 @@ Data:
 * int32: team
 * int32: channel
 * uint16: num_device_id
-* uint16[]: device_id
+* uint32[]: device_id
 
 
 # MLS Group Management Messages
