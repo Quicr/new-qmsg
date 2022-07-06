@@ -32,7 +32,6 @@ add_subdirectory(lib/slower)
 add_subdirectory(lib/qmsgEncoder)
 
 add_subdirectory(src/uiProc)
-add_subdirectory(src/secProc)
 if(qmsg_ENABLE_QUICR)
     add_subdirectory(src/netProc)
 endif()
