@@ -15,7 +15,7 @@ option(qmsg_INSTALL "Install the QMsg Components" ON)
 # Option to control buildomg components requiring quicr
 # (Ideally, this option should not be here, but it's needed since quicr
 # is not readily available on all platforms)
-option(qmsg_ENABLE_QUICR "Enable quicr components" OFF)
+option(qmsg_ENABLE_QUICR "Enable quicr components" ON)
 
 project(QMsg
         VERSION 1.0.0.0
@@ -32,7 +32,7 @@ add_subdirectory(lib/slower)
 add_subdirectory(lib/qmsgEncoder)
 
 add_subdirectory(src/uiProc)
-#add_subdirectory(src/secProc)
+add_subdirectory(src/secProc)
 if(qmsg_ENABLE_QUICR)
     add_subdirectory(src/netProc)
 endif()
