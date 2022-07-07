@@ -15,7 +15,7 @@ option(qmsg_INSTALL "Install the QMsg Components" ON)
 # Option to control buildomg components requiring quicr
 # (Ideally, this option should not be here, but it's needed since quicr
 # is not readily available on all platforms)
-option(qmsg_ENABLE_QUICR "Enable quicr components" OFF)
+option(qmsg_ENABLE_QUICR "Enable quicr components" ON)
 
 project(QMsg
         VERSION 1.0.0.0
@@ -41,6 +41,7 @@ if (NOT PROJECT_NAME STREQUAL "slow-relay")
 else()
     add_subdirectory(lib/slower)
     add_subdirectory(lib/qmsgEncoder)
+
 endif()
 
 add_subdirectory(src/slowTest)
