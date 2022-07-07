@@ -21,7 +21,7 @@ stop() {
 
 trap_with_arg 'stop' EXIT SIGINT SIGTERM SIGHUP
 
-build/src/netProc/netProc &
+#build/src/netProc/netProc &
 
 build/src/secProc/secProc &
 

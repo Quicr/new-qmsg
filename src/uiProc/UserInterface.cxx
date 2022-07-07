@@ -2,6 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <iostream>
 
 
 UserInterface::UserInterface(const int keyboard_fd,
@@ -11,8 +12,8 @@ UserInterface::UserInterface(const int keyboard_fd,
     selected_fd(0),
     is_running(false)
 {
-    keyboard = new FdReader(keyboard_fd, buffer_size);
-    receiver = new FdReader(sec_to_ui_fd, buffer_size);
+    keyboard = new KeyBoardReader(keyboard_fd, buffer_size);
+    receiver = new KeyBoardReader(sec_to_ui_fd, buffer_size);
     sender = new Sender(ui_to_sec_id);
     parser = new Parser();
 
@@ -35,15 +36,7 @@ UserInterface::~UserInterface()
 void UserInterface::Start()
 {
     PrintMessage("Welcome to Cisco Secure Messaging\n\n");
-    PrintTimestampedMessage("Next steps set your user name by entering /set username <xyz>\n");
-    PrintTimestampedMessage("Connect to your team by entering /connect <team>\n");
-    PrintTimestampedMessage("Once connected you'll be automatically added to all channels\n");
-    PrintTimestampedMessage("Join a chat by entering /join <chat name>\n");
-    PrintTimestampedMessage("Leave a chat by entering /leave <chat name>\n");
-    PrintTimestampedMessage("Access help at any time by entering /help\n");
-    PrintTimestampedMessage("Access info at any time by entering /info\n");
-    PrintTimestampedMessage("Message a user directly by entering /direct <username>\n");
-    PrintTimestampedMessage("Thanks for joining Cisco Secure Messaging\n");
+    DisplayHelpMessage();
     is_running = true;
 }
 
@@ -63,13 +56,30 @@ bool UserInterface::Running()
 
 void UserInterface::Stop()
 {
+    std::cout << bye_str;
     is_running = false;
-    // TODO
-    //  Display the closing message of the UI
 }
 
 void UserInterface::DisplayHelpMessage()
 {
+    for (int index = 0; index < sizeof(help_desc)/sizeof(char*); ++index){
+        PrintTimestampedMessage(help_desc[index]);
+    }
+}
+
+bool UserInterface::isValidChannel(std::string channel_id) {
+    bool channel_exists = false;
+    unsigned int idx = 0;
+    for (unsigned int i = 0; i < all_channels.size(); i++)
+    {
+        if (channel_id == all_channels[i].Name())
+        {
+            channel_exists = true;
+            idx = i;
+            break;
+        }
+    }
+    return channel_exists;
 }
 
 tm *UserInterface::GetCurrentSystemTime()
@@ -84,6 +94,10 @@ tm *UserInterface::GetCurrentSystemTime()
 
 void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
 {
+    // read and parse message from the keyboard
+    // send it to sec
+    // read and parse messages from secProc
+    // act upon it
     if (keyboard->HasMessage(selected_fd, fdSet))
     {
         keyboard->Read();
@@ -103,11 +117,11 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
             if (keyboard->Data()[0] == '/')
             {
 
-                char* command_token = strtok((keyboard->Data()), " ");
+                const char* command_token = strtok((keyboard->Data()), " ");
                 fprintf(stderr, "UI: command received - %s\n", command_token);
+
                 if (strcmp(command_token, commands[Command::help]) == 0)
                 {
-                    // TODO Print help
                     DisplayHelpMessage();
                 }
                 else if (strcmp(command_token, commands[Command::info]) == 0)
@@ -137,13 +151,36 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                 }
                 else if (strcmp(command_token, commands[Command::connect]) == 0)
                 {
-                    // Connect to a team room
+                    char* team_id_str = strtok(NULL, " ");
+                    if (team_id_str == NULL) {
+                        std::cout << "Team id is missing, Try again" <<std::endl;
+                    }
+                    std::cout << "Connect to team " <<team_id_str << std::endl;
+                    if (team_id_str == NULL) {
+                        std::cout << "team id is null, Try again";
+                        return;
+                    }
+
+                    unsigned int team_id = static_cast<unsigned int>(*team_id_str);
+                    char* channel_id_str = strtok(NULL, " ");
+                    std::cout << "Connect to channel " <<channel_id_str << std::endl;
+                    if (channel_id_str == NULL) {
+                            std::cout << "Channel id is missing, Try again" <<std::endl;
+                            return;
+                    }
+                   /* if (!isValidChannel(channel_id_str)) {
+                        std::cout << "Enter a valid channel"<<std::endl;
+                        return;
+                    }*/
+                    unsigned int channel_id = static_cast<unsigned int>(*channel_id_str);
+                    sender->SendWatchMessage(team_id, channel_id);
+
                 }
                 else if (strcmp(command_token, commands[Command::join]) == 0)
                 {
                     // Join a channel
                     std::string join_token(strtok(NULL, " "));
-                    fprintf(stderr, "Connecting to a room %s", join_token);
+                    //fprintf(stderr, "Connecting to a room %s", join_token);
 
                     if (join_token.length() > 0)
                     {
@@ -184,9 +221,15 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                 {
                     // TODO
                 }
+                else if (strcmp(command_token, commands[Command::bye]) == 0)
+                {
+                    Stop();
+                }
+
                 else
                 {
-                    // error
+                    std::cout << "Unknown command. The available commands are: \n";
+                    DisplayHelpMessage();
                 }
 
                 // TODO
@@ -223,7 +266,7 @@ void UserInterface::HandleReceiver(int selected_fd, fd_set fdSet)
             do
             {
                 qmsg_enc_sec_res = QMsgNetDecodeMessage(sec_context,
-                    receiver->Data() + sec_total_consumed,
+                                                        (uint8_t *)receiver->Data() + sec_total_consumed,
                     receiver->BufferLength() - sec_total_consumed,
                     &sec_message,
                     &sec_consumed);

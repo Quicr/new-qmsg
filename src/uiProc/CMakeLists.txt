@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(uiProc)
 
-add_executable(uiProc uiProc.cxx Channel.cxx FdReader.cxx Parser.cxx Sender.cxx Team.cxx UserInterface.cxx)
+add_executable(uiProc uiProc.cxx Channel.cxx KeyBoardReader.cxx Parser.cxx Sender.cxx Team.cxx UserInterface.cxx)
 
 target_link_libraries(uiProc
     PRIVATE

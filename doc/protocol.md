@@ -15,7 +15,7 @@ Devices get a welcome message for any team they can join.
 Names follow the form:
 
 ```
-qmsg://<origin-domain>/v<version>/msg/org-<org>/team-<team>/ch-<channel>/dev-<device>/<msgNum>
+qmsg://msg/org-<org>/team-<team>/ch-<channel>/dev-<device>/<msgNum>
 ```
 
 * origin domain: DNS domain name of origin server
@@ -37,51 +37,49 @@ are in this team.
 
 ### Short Msg Names
 
-* originID: 48 bits.  SHA1 hash of origin-domain
-* appID: 48 bits. low 2 bits of version, 3 bits=001, 11 bit org, 16 bit
-  team, 16 bit channel
-* groupIID: 16 bits. device 
-* objIID: 16 bits. msgNum.
+* originID: 24 bits =TBD .  ITAD for use by this origin 
+* appID: 8 bits =1
+* path: 8 bits = ( 1 for pub, ...)
+* org 18 bits 
+* team 20 bits 
+* channel 10 bits
+* device 20  bits
+* msg 20 bits 
 
-msg ID is 128 bit number formed by concatenating originID, appID,
-groupID, objID
+msg ID is 128 bit number formed by concatenating abote
 
-channel ID is 96 bit number formed by  concatenating originID, appID
+channel ID is  formed by  concatenating above with device set to 0 
+and msg set to 0
 
-Devices publish messages to a short msgID and receive messages by
-subscribing to a channelID. 
+Devices publish messages to  msgID and receive messages by
+subscribing to a channelID with 40 bit wildcard (for device and message)
 
 ## Messages
 
-Each message has a:
-* expiry time 
-* short name
-* MLS encrypted payload 
+Each messages has an envelope data that is authenticated but not
+encrypeted followed by and encryped payload. 
 
-## Payload
+### Envelope Data 
 
-Each payload has:
-* mime message type
-* message data
-* creation time
-* optional reply to device/msg
-* optional replaces device/msg
+* short name (128bit)
+* expiry time (32 bit in ms since unix epoch - this wraps ) 
+* creation time (48 bit in ms since epoch) 
+* epoch used for encryption (low 16 bits of epoch)
+
+### Encryped Payload Data
+
+* option flags 16 bit 
+* optional reply to device/msg 
+* optional replaces device/msg 
 * optional bool updates channel display name 
 * optional bool updates team display name 
+* message data 
 
 To create a threat, the reply to is set to identify the first message of
 the thread. Threads can not be nested.
 
 To edit a message, a new message is sent with a replaces that identifies
 the message being edited.
-
-## mine types
-
-### text/ascii-printable
-
-Allows ASCII characters 0x20 to 0x7E. Note this does not include CR or
-LF so messages meant to display on different lines need to be sent as
-multiple messages.
 
 
 ## MLS
@@ -129,41 +127,85 @@ This requires several new endpoints to publish and subscribe to KP,
 Welcome, and commit messages. 
 
 
-### KP Names
+### Key Package Names
 ```
-qmsg://<origin-domain>/v<version>/mls-key-package/org-<org>/kp-<hKP>
+qmsg://key-package/org-<org>/team-<team>/kp-<hKP>
 ```
 
-short KP Name is:
-* 48 bit hash origin,
-* low 2 bits of version, 3 bits=2, 11 bit org,
-* high 48 bits of hKP,  low 16 bits of hKP
- 
+* originID: 24 bits =TBD .  ITAD for use by this origin 
+* appID: 8 bits =1
+* path: 8 bits = ( 2 for key-package, ...)
+* org 18 bits 
+* team 20 bits 
+* zero pad 2 bits
+* fingerprint 48 bit hash of public signing key
+
 
 ### Welcome Names
 ```
-qmsg://<origin-domain>/v<version>/mls-welcome/org-<org>/team-<team>/kp-<hKP>
+qmsg://welcome/org-<org>/team-<team>/kp-<hKP>
 ```
 
 short KP Name is:
-* 48 bit hash origin,
-* low 2 bits of version, 3 bits=3, 11 bit org, 16 bit team,
-* high 32 bits of hKP,  low 16 bits of hKP
+* originID: 24 bits =TBD .  ITAD for use by this origin 
+* appID: 8 bits =1
+* path: 8 bits = ( 3 ...)
+* org 18 bits 
+* team 20 bits 
+* zero pad 2 bit
+* fingerprint 48 bit hash of public sign key 
+
+data of welcome should have the deviceID to use in the team 
+
  
-### Commit Names
+### Commit All Names
+
+The team gets a single comit with all the info for all the devices
 
 ```
-qmsg://<origin-domain>/v<version>/mls-commit/org-<org>/team-<team>/epock-<epoch>
+qmsg://commit-all/org-<org>/team-<team>/epoch-<epoch>/rand-<rand>
 ```
 
 short KP Name is:
-* 48 bit hash origin,
-* low 2 bits of version, 3 bits=4, 11 bit org, 16 bit team,
-* 32 bits of zero,  low 16 bits of epoch 
- 
+
+* originID: 24 bits =TBD .  ITAD for use by this origin 
+* appID: 8 bits =1
+* path: 8 bits = ( 4 ...)
+* org 18 bits 
+* team 20 bits 
+* epoch - 24 bits
+* rand - 26 bit 
+
+Can adding a random 26 bit at end allow detection of two differnt
+devices doing commit at same time ????
 
 
+### Commit One Names
+
+Each device gets a commit with just the info for that device 
+
+```
+qmsg://commit-one/org-<org>/team-<team>/dev-<device>/epoch-<epoch>/rand-<rand>
+```
+
+short KP Name is:
+
+* originID: 24 bits =TBD .  ITAD for use by this origin 
+* appID: 8 bits =1
+* path: 8 bits = ( 5 )
+* org 18 bits 
+* team 20 bits 
+* device 20  bits 
+* epoch  24 bits
+* rand 6  - random number 
 
 
+## Billing
 
+The originID + appID for the biling identifier. For each billing
+identifier, the  relays keep track of bytes reeceived, bytes transmited,
+and messages stored in bytes times number of seconds. 
+
+Auth works by app sending relay a request to publish to a certain range
+and relays sending up to orgin relay which returns a yes/no permision. 
 

@@ -44,6 +44,7 @@ typedef struct QMsgNetSendASCIIMessage_t
 {
     QMsgTeamID team_id;
     QMsgChannelID channel_id;
+    QMsgDeviceID device_id;
     QMsgOpaque_t message;
 } QMsgNetSendASCIIMessage_t;
 
@@ -79,6 +80,7 @@ typedef struct QMsgNetMLSKeyPackage_t
 {
     QMsgTeamID team_id;
     QMsgOpaque_t key_package;
+    QMsgOpaque_t key_package_hash;
 } QMsgNetMLSKeyPackage_t;
 
 typedef struct QMsgNetMLSAddKeyPackage_t

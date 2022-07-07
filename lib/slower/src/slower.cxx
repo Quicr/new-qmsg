@@ -29,10 +29,8 @@
 static int slowerRecv( SlowerConnection& slower, char buf[], int bufSize, int* bufLen, SlowerRemote* remote );
 static int slowerSend( SlowerConnection& slower, char buf[], int bufLen, SlowerRemote& remote );
 
-bool operator<( const ShortName& a, const ShortName& b )
-{
-  if (a.part[1] > b.part[1] ) return false;
-  return (a.part[0] < b.part[0] );
+float slowerVersion() {
+  return 0.2;
 }
 
 
@@ -43,17 +41,21 @@ bool operator!=( const SlowerRemote& a, const SlowerRemote& b ){
   return false;
 }
 
-
 bool operator<( const SlowerRemote& a, const SlowerRemote& b ){
   if ( a.addr.sin_port > b.addr.sin_port ) return true;
+  if ( a.addr.sin_port < b.addr.sin_port ) return false;
   if ( a.addrLen > b.addrLen ) return true;
+  if ( a.addrLen < b.addrLen ) return false;
   if ( memcmp( &(a.addr.sin_addr), &(b.addr.sin_addr),4 ) > 0)  return true; // TODO broken for v6
   return false;
 }
 
 
-float slowerVersion() {
-  return 0.1;
+bool operator<( const ShortName& a, const ShortName& b )
+{
+  if (a.part[1] > b.part[1] ) return false;
+  if (a.part[1] < b.part[1] ) return true;
+  return (a.part[0] < b.part[0] );
 }
 
 bool operator==( const ShortName& a, const ShortName& b ){
@@ -63,6 +65,7 @@ bool operator==( const ShortName& a, const ShortName& b ){
 bool operator!=( const ShortName& a, const ShortName& b ){
   return ( (a.part[0] != b.part[0]) || (a.part[1] != b.part[1] ) );
 }
+
 
 int slowerSetup( SlowerConnection& slower, uint16_t port) {
   slower.fd=0;
@@ -109,7 +112,7 @@ int slowerSetup( SlowerConnection& slower, uint16_t port) {
   return 0;
 }
 
-int slowerRemote(  SlowerRemote& remote, char* server, uint16_t port ){
+int slowerRemote(  SlowerRemote& remote, const char* server, const uint16_t port ){
   struct addrinfo hints;
   memset(&hints, 0, sizeof(hints));
   hints.ai_flags = AI_ADDRCONFIG | AI_V4MAPPED | AI_ALL;
@@ -183,6 +186,11 @@ static int slowerSend( SlowerConnection& slower, char buf[], int bufLen, SlowerR
 }
 
 
+
+int slowerGetFD( SlowerConnection& slower) {
+  return slower.fd;
+}
+
 int slowerWait( SlowerConnection& slower ){
   fd_set fdSet;
   FD_ZERO( &fdSet );
@@ -236,13 +244,13 @@ static int slowerRecv( SlowerConnection& slower, char buf[], int bufSize, int* b
 }
 
 
-int slowerAddRelay( SlowerConnection& slower, SlowerRemote& remote ){
+int slowerAddRelay( SlowerConnection& slower, const SlowerRemote& remote ){
   slower.relay = remote;
   return 0;
 }
 
   
-int slowerPub( SlowerConnection& slower, ShortName& name, char buf[], int bufLen, SlowerRemote* remote ){
+int slowerPub( SlowerConnection& slower, const ShortName& name, char buf[], int bufLen, SlowerRemote* remote ){
   assert( bufLen < slowerMTU-20 ); 
   assert( slower.fd > 0 );
   assert( bufLen > 0 );
@@ -379,7 +387,7 @@ int slowerRecvPub( SlowerConnection& slower, ShortName* name, char buf[], int bu
 }
 
 
-int slowerAck( SlowerConnection& slower, ShortName& name,  SlowerRemote* remote ){
+int slowerAck( SlowerConnection& slower, const ShortName& name,  SlowerRemote* remote ){
   assert( slower.fd > 0 );
   
   char msg[slowerMTU];
@@ -399,7 +407,7 @@ int slowerAck( SlowerConnection& slower, ShortName& name,  SlowerRemote* remote 
 
 
 
-int slowerSub( SlowerConnection& slower, ShortName& name, int mask , SlowerRemote* remote ){
+int slowerSub( SlowerConnection& slower, const ShortName& name, int mask , SlowerRemote* remote ){
   assert( slower.fd > 0 );
   assert( mask >= 0 );
   assert( mask < 128 ); 
@@ -423,7 +431,7 @@ int slowerSub( SlowerConnection& slower, ShortName& name, int mask , SlowerRemot
 }
 
 
-int slowerUnSub( SlowerConnection& slower, ShortName& name, int mask , SlowerRemote* remote  ) {
+int slowerUnSub( SlowerConnection& slower, const ShortName& name, int mask , SlowerRemote* remote  ) {
   assert( slower.fd > 0 );
   assert( mask >= 0 );
   assert( mask < 128 ); 
@@ -445,7 +453,6 @@ int slowerUnSub( SlowerConnection& slower, ShortName& name, int mask , SlowerRem
   int err = slowerSend( slower, msg, msgLen, remote );
   return err;
 }
-
 
 
 int slowerClose( SlowerConnection& slower ){

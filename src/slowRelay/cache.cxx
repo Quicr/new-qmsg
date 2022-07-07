@@ -42,15 +42,16 @@ bool Cache::exists(  const ShortName& name ) const {
 
 std::list<ShortName> Cache::find(  const ShortName& name, const int mask ) const {
   std::list<ShortName> ret;
-  assert( mask == 16 ); // TODO
+  assert( mask < 64 ); // TODO
 
   ShortName startName = name;
-  startName.part[0] &= 0xFFFFffffFFFF0000l;
+  startName.part[0] &=  (0xFFFFffffFFFFffffl << mask );
+    
   ShortName endName = name;
-  endName.part[0] |= 0xFFFFl;
+  endName.part[0] |= (0x1l << mask )-1;
   
-  std::cerr << "Cache::find lower = " << std::hex << startName.part[1] << "-" <<  startName.part[0] << std::dec << std::endl;
-  std::cerr << "Cache::find upper = " << std::hex << endName.part[1] << "-" <<  endName.part[0] << std::dec << std::endl;
+  //std::clog << "  Cache::find lower = " << std::hex << startName.part[1] << "-" <<  startName.part[0] << std::dec << std::endl;
+  //std::clog << "  Cache::find upper = " << std::hex << endName.part[1] << "-" <<  endName.part[0] << std::dec << std::endl;
     
   auto start = dataCache.lower_bound( startName );
   auto end = dataCache.upper_bound( endName );
