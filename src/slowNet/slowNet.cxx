@@ -47,19 +47,18 @@ public:
 
   int getFD() { return slowerGetFD( slower ); }
   
-  void pub( const ShortName& name, const uint8_t* data, const int len ) {
+  void pub(const MsgShortName& name, const uint8_t* data, const int len ) {
     int err = slowerPub( slower,  name,  (char*) data , len  );
     assert( err == 0 );
   }
 
-  void sub( const ShortName& name, const int mask ) {
+  void sub(const MsgShortName& name, const int mask ) {
     int err = slowerSub( slower,  name, mask  );
-    std::clog << "   sub " << std::hex << name.part[1] << "-" <<  name.part[0] << std::dec << std::endl;
     assert( err == 0 );
   }
 
   void recv( ) {
-    ShortName shortName;
+    MsgShortName shortName;
     char buf[1024];
     int bufSize=sizeof(buf);
     int bufLen=0;

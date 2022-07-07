@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
   }
 
   std::string nameString( argv[1] );
-  ShortName shortName;
+  MsgShortName shortName;
   int mask=16;
   try {
     if ( nameString.find('/') != std::string::npos ) {
@@ -85,7 +85,10 @@ int main(int argc, char* argv[]) {
       
       Name nameObj( NamePath::message, org, team, channel, device , msgID );
       shortName = nameObj.shortName();
-    } else {
+    }
+
+    /* --- Add support for hex names if that's going to be used.
+    else {
       if ( nameString.find(':') != std::string::npos ) {
         mask = std::stoul( nameString.substr( nameString.find(':')+1, std::string::npos ), nullptr, 10);
         nameString.erase( nameString.find(':'), std::string::npos );
@@ -102,7 +105,7 @@ int main(int argc, char* argv[]) {
         shortName.part[0] = std::stoul(low,nullptr,16);
         shortName.part[1] = std::stoul(high,nullptr,16);
       }
-    }
+    } */
   } catch ( ... ) {
     std::clog << "invalid input name: " << nameString <<  std::endl;
     exit (1);
@@ -157,7 +160,7 @@ int main(int argc, char* argv[]) {
       err=slowerWait( slower );
       assert( err == 0 );
 
-      ShortName recvName;
+      MsgShortName recvName;
       err = slowerRecvAck( slower, &recvName );
       assert( err == 0 );
       if ( recvName == shortName ) {
@@ -182,10 +185,10 @@ int main(int argc, char* argv[]) {
     while ( true ) {
       err=slowerWait( slower );
       assert( err == 0 );
-      
+
       char buf[slowerMTU];
       int bufLen=0;
-      ShortName recvName;
+      MsgShortName recvName;
       
       err = slowerRecvPub( slower, &recvName, buf, sizeof(buf), &bufLen );
       assert( err == 0 );

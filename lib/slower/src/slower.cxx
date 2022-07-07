@@ -2,7 +2,6 @@
 #include <arpa/inet.h>
 #include <cassert>
 #include <cstdint>
-#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -16,6 +15,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <poll.h>
 
 #ifdef __linux__
 #include <net/ethernet.h>
@@ -51,21 +51,37 @@ bool operator<( const SlowerRemote& a, const SlowerRemote& b ){
 }
 
 
-bool operator<( const ShortName& a, const ShortName& b )
+bool operator<(const MsgShortName& a, const MsgShortName& b )
 {
-  if (a.part[1] > b.part[1] ) return false;
-  if (a.part[1] < b.part[1] ) return true;
-  return (a.part[0] < b.part[0] );
+  return (std::memcmp(&a.data, &b.data, sizeof(MsgShortName)) < 0 );
 }
 
-bool operator==( const ShortName& a, const ShortName& b ){
-  return ( (a.part[0] == b.part[0]) && (a.part[1] == b.part[1] ) );
+bool operator==(const MsgShortName& a, const MsgShortName& b ) {
+  return (std::memcmp(&a.data, &b.data, sizeof(MsgShortName)) == 0 );
 }
 
-bool operator!=( const ShortName& a, const ShortName& b ){
-  return ( (a.part[0] != b.part[0]) || (a.part[1] != b.part[1] ) );
+bool operator!=(const MsgShortName& a, const MsgShortName& b ){
+  return (std::memcmp(&a.data, &b.data, sizeof(MsgShortName)) == 0 );
 }
 
+void getMaskedMsgShortName(const MsgShortName &src, MsgShortName &dst, const int mask) {
+
+  // Set the data len to the size of bytes to keep at 8 bit boundaries.  The last byte is a wildcard
+  //   that will be added back so that it can be masked.
+  u_char dst_len = mask >= 8 ? MSG_SHORT_NAME_LEN - (mask / 8) : 15;
+  u_char dst_bits = mask % 8;
+
+  bzero(&dst, MSG_SHORT_NAME_LEN);
+
+  std::memcpy(dst.data, src.data, dst_len);   // Copy all bytes to keep as-is on 8bit boundaries
+
+  // Handle the last byte, either mask it, zero it, or keep it as-is
+  if (dst_bits) {
+    dst.data[dst_len] = src.data[dst_len] >> dst_bits << dst_bits;
+  } else {
+    dst.data[dst_len] = mask == 0 ? src.data[dst_len] : 0;
+  }
+}
 
 int slowerSetup( SlowerConnection& slower, uint16_t port) {
   slower.fd=0;
@@ -73,27 +89,28 @@ int slowerSetup( SlowerConnection& slower, uint16_t port) {
   
   int err;
   
-  slower.fd = socket(AF_INET, SOCK_DGRAM, 0);
+  slower.fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
   if (slower.fd < 0) {
-    perror("probelm opening socket");
+    perror("problem opening socket");
     exit(-1);
   }
 
-  int optionValue = 1;
-  err = setsockopt(slower.fd, SOL_SOCKET, SO_REUSEPORT, (const void *)&optionValue,
-                   sizeof(optionValue));
-  if (err != 0) {
-    perror("problem setting socket re-use option");
-    exit(-2);
-  }
-
   if ( port != 0 ) {
+    int optionValue = 1;
+    err = setsockopt(slower.fd, SOL_SOCKET, SO_REUSEPORT, (const void *)&optionValue,
+                     sizeof(optionValue));
+    if (err != 0) {
+        perror("problem setting socket re-use option");
+        exit(-2);
+    }
+
     struct sockaddr_in srvAddr;
     bzero((char *)&srvAddr, sizeof(srvAddr));
     srvAddr.sin_family = AF_INET;
     srvAddr.sin_port = htons(port);
     srvAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    
+
+    std::clog << "Listening on 0.0.0.0:" << port << std::endl;
     err = bind(slower.fd, (struct sockaddr *)&srvAddr, sizeof(srvAddr));
     if (err < 0) {
       perror("problem on binding to port to listen on");
@@ -108,7 +125,7 @@ int slowerSetup( SlowerConnection& slower, uint16_t port) {
   if (serr) {
     std::cerr << "Problem setting timeout on socket" << std::endl;
   }
-  
+
   return 0;
 }
 
@@ -185,29 +202,24 @@ static int slowerSend( SlowerConnection& slower, char buf[], int bufLen, SlowerR
   return 0;
 }
 
-
-
 int slowerGetFD( SlowerConnection& slower) {
   return slower.fd;
 }
 
 int slowerWait( SlowerConnection& slower ){
-  fd_set fdSet;
-  FD_ZERO( &fdSet );
-  int maxFd=0;
+  pollfd pfd;
 
-  FD_SET( slower.fd , &fdSet ); maxFd = (slower.fd>maxFd) ? maxFd = slower.fd : maxFd;
+  pfd.fd = slower.fd;
+  pfd.events = POLLIN | POLLPRI | POLLHUP | POLLERR;
+  pfd.revents = 0;
 
-  struct timeval timeout;
-  timeout.tv_sec = 0;
-  timeout.tv_usec = 500*1000;
-     
-  int err = select( maxFd+1, &fdSet, NULL, NULL, &timeout );
+  int err = poll(&pfd, 1, 50);
+
   if ( err < 0 ) {
     perror("Error on select");
     return -1;
   }
-  
+
   return 0;
 }
 
@@ -250,7 +262,7 @@ int slowerAddRelay( SlowerConnection& slower, const SlowerRemote& remote ){
 }
 
   
-int slowerPub( SlowerConnection& slower, const ShortName& name, char buf[], int bufLen, SlowerRemote* remote ){
+int slowerPub(SlowerConnection& slower, const MsgShortName& name, char buf[], int bufLen, SlowerRemote* remote ){
   assert( bufLen < slowerMTU-20 ); 
   assert( slower.fd > 0 );
   assert( bufLen > 0 );
@@ -258,25 +270,30 @@ int slowerPub( SlowerConnection& slower, const ShortName& name, char buf[], int 
   char msg[slowerMTU];
   int msgLen=0;
 
-  int8_t type = SlowerMsgPub;
-  memcpy( msg+msgLen, &type, sizeof(type) ) ; msgLen += sizeof(type);
+  MsgHeader mhdr;
+  mhdr.type = SlowerMsgPub;
+  mhdr.name = name;
 
-  memcpy( msg+msgLen, &name.part[0], sizeof(name.part[0]) ) ; msgLen += sizeof(name.part[0]);
-  memcpy( msg+msgLen, &name.part[1], sizeof(name.part[1]) ) ; msgLen += sizeof(name.part[1]);
+  memcpy(msg+msgLen, &mhdr, sizeof(mhdr)); msgLen += sizeof(mhdr);
 
-  int16_t dataLen =  bufLen;
-  memcpy( msg+msgLen, &dataLen, sizeof(dataLen) ) ; msgLen += sizeof(dataLen);
+  MsgPubHeader mpub_hdr;
+  mpub_hdr.dataLen = bufLen;
+
+  assert( sizeof(msg) - msgLen >= sizeof(mpub_hdr));
+
+  memcpy(msg+msgLen, &mpub_hdr, sizeof(mpub_hdr)); msgLen += sizeof(mpub_hdr);
 
   assert( msgLen + bufLen < sizeof(msg) );
+
   memcpy( msg+msgLen, buf, bufLen ) ; msgLen += bufLen;
   assert( msgLen < sizeof( msg ) );
-  
+
   int err = slowerSend( slower, msg, msgLen, remote );
   return err;
 }
 
 
-int slowerRecvMulti( SlowerConnection& slower, ShortName* name, SlowerMsgType* msgType,  SlowerRemote* remote, int* mask, char buf[], int bufSize, int* bufLen ){
+int slowerRecvMulti(SlowerConnection& slower, MsgShortName* name, SlowerMsgType* msgType, SlowerRemote* remote, int* mask, char buf[], int bufSize, int* bufLen ){
   assert( name );
   assert( msgType );
   assert( remote );
@@ -288,8 +305,8 @@ int slowerRecvMulti( SlowerConnection& slower, ShortName* name, SlowerMsgType* m
   *msgType = SlowerMsgInvalid;
   *mask=0;
   *bufLen=0;
-  bzero( name, sizeof( *name ) );
-   
+  bzero( name->data, sizeof( name->data ) );
+
   char msg[slowerMTU];
   int msgLen=0; // total length of data received 
   int msgLoc=0; // position of current decode of messages
@@ -301,38 +318,64 @@ int slowerRecvMulti( SlowerConnection& slower, ShortName* name, SlowerMsgType* m
   if ( msgLen == 0 ) {
     return 0;
   }
-  
-  int8_t type;
-  assert( msgLen >= msgLoc + sizeof( type ) ); memcpy( &type, msg+msgLoc, sizeof(type) ); msgLoc += sizeof(type);
-  *msgType = (SlowerMsgType)type;
+
+  MsgHeader mhdr;
+  memcpy(&mhdr, msg, sizeof(mhdr));
+
+  memcpy(name->data, &mhdr.name, sizeof(mhdr.name.data));
+
+  msgLoc += sizeof(mhdr);
+
+  *msgType = (SlowerMsgType)mhdr.type;
   assert( *msgType != SlowerMsgInvalid );
 
-  assert( msgLen >= msgLoc + sizeof( name->part[0] ) ); memcpy( &(name->part[0]), msg+msgLoc, sizeof(name->part[0]) ); msgLoc += sizeof(name->part[0]);
-  assert( msgLen >= msgLoc + sizeof( name->part[1] ) ); memcpy( &(name->part[1]), msg+msgLoc, sizeof(name->part[1]) ); msgLoc += sizeof(name->part[1]);
+  std::clog << "MSG HDR:" << std::endl
+      << " Type       : " << SlowerMsgType(mhdr.type) << std::endl
+      << " MsgShortName  : " << std::endl
+      << " -------------------------------" << std::endl
+      << "   Origin   : " << mhdr.name.spec.origin_id << std::endl
+      << "   App ID   : " << (int) mhdr.name.spec.app_id << std::endl
+      << "   Path     : " << (int) mhdr.name.spec.path << std::endl
+      << "   Org      : " << mhdr.name.spec.org << std::endl
+      << "   Team     : " << mhdr.name.spec.team << std::endl
+      << "   Channel  : " << mhdr.name.spec.channel << std::endl
+      << "   Device   : " << mhdr.name.spec.device << std::endl
+      << "   Msg ID   : " << mhdr.name.spec.msg_id << std::endl;
 
   switch (*msgType) {
   case SlowerMsgPub:
-    int16_t dataLen;
-    assert( msgLen > msgLoc + sizeof( dataLen ) ); memcpy( &dataLen, msg+msgLoc, sizeof(dataLen) ); msgLoc += sizeof(dataLen);
+    MsgPubHeader mpub_hdr;
 
-    assert( dataLen < bufSize );
-    assert( msgLen >= msgLoc + dataLen ); memcpy( buf, msg+msgLoc, dataLen ); msgLoc += dataLen;
-    *bufLen = dataLen;
+    assert ( bufSize - msgLoc >= sizeof(mpub_hdr));
+    memcpy(&mpub_hdr, msg+msgLoc, sizeof(mpub_hdr)); msgLoc += sizeof(mpub_hdr);
+
+
+
+    assert( bufSize - msgLoc >= mpub_hdr.dataLen );
+    memcpy( buf, msg+msgLoc, mpub_hdr.dataLen ); msgLoc += mpub_hdr.dataLen;
+    *bufLen = mpub_hdr.dataLen;
 
     assert( msgLoc == msgLen );
     break;
+
   case SlowerMsgSub:
-    int8_t maskData;
-    assert( msgLen >= msgLoc + sizeof( maskData ) ); memcpy( &maskData, msg+msgLoc, sizeof(maskData) ); msgLoc += sizeof(maskData);
-    *mask = maskData;
+    MsgSubHeader msub_hdr;
+
+    assert ( bufSize - msgLoc >= sizeof(msub_hdr));
+    memcpy(&msub_hdr, msg+msgLoc, sizeof(msub_hdr)); msgLoc += sizeof(msub_hdr);
+
+    *mask = msub_hdr.mask;
     assert( msgLoc == msgLen );
     break;
+
   case SlowerMsgUnSub:
     assert( msgLoc == msgLen );
     break;
+
   case SlowerMsgAck:
     assert( msgLoc == msgLen );
     break;
+
   default:
     return -1;
   }
@@ -340,7 +383,7 @@ int slowerRecvMulti( SlowerConnection& slower, ShortName* name, SlowerMsgType* m
   return 0;
 }
 
-int slowerRecvAck( SlowerConnection& slower, ShortName* name ){
+int slowerRecvAck(SlowerConnection& slower, MsgShortName* name ){
   assert( name );
   
   SlowerMsgType type;
@@ -364,7 +407,7 @@ int slowerRecvAck( SlowerConnection& slower, ShortName* name ){
 }
 
 
-int slowerRecvPub( SlowerConnection& slower, ShortName* name, char buf[], int bufSize, int* bufLen ){
+int slowerRecvPub(SlowerConnection& slower, MsgShortName* name, char buf[], int bufSize, int* bufLen ){
   assert( name );
   assert( bufLen );
   assert( bufSize > 0 );
@@ -387,17 +430,46 @@ int slowerRecvPub( SlowerConnection& slower, ShortName* name, char buf[], int bu
 }
 
 
-int slowerAck( SlowerConnection& slower, const ShortName& name,  SlowerRemote* remote ){
+int slowerAck(SlowerConnection& slower, const MsgShortName& name, SlowerRemote* remote ){
   assert( slower.fd > 0 );
   
   char msg[slowerMTU];
   int msgLen=0;
 
-  int8_t type = SlowerMsgAck;
-  memcpy( msg+msgLen, &type, sizeof(type) ) ; msgLen += sizeof(type);
+  MsgHeader mhdr;
+  mhdr.type = SlowerMsgAck;
+  mhdr.name = name;
 
-  memcpy( msg+msgLen, &name.part[0], sizeof(name.part[0]) ) ; msgLen += sizeof(name.part[0]);
-  memcpy( msg+msgLen, &name.part[1], sizeof(name.part[1]) ) ; msgLen += sizeof(name.part[1]);
+  memcpy( msg+msgLen, &mhdr, sizeof(mhdr) ) ; msgLen += sizeof(mhdr);
+
+  assert( msgLen < sizeof( msg ) );
+          
+  int err = slowerSend( slower, msg, msgLen, remote );
+  return err;
+}
+
+int slowerSub(SlowerConnection& slower, const MsgShortName& name, int mask , SlowerRemote* remote ){
+  assert( slower.fd > 0 );
+  assert( mask >= 0 );
+  assert( mask < 128 ); 
+  
+  char msg[slowerMTU];
+  int msgLen=0;
+
+  MsgHeader mhdr;
+  mhdr.type = SlowerMsgSub;
+  mhdr.name = name;
+
+  memcpy( msg+msgLen, &mhdr, sizeof(mhdr) ) ; msgLen += sizeof(mhdr);
+
+  assert( msgLen < sizeof( msg ) );
+
+  MsgSubHeader msub_hdr;
+  msub_hdr.mask = mask;
+
+  assert(msgLen + sizeof(msub_hdr) < sizeof (msg));
+
+  memcpy( msg+msgLen, &msub_hdr, sizeof(msub_hdr) ) ; msgLen += sizeof(msub_hdr);
 
   assert( msgLen < sizeof( msg ) );
           
@@ -406,8 +478,7 @@ int slowerAck( SlowerConnection& slower, const ShortName& name,  SlowerRemote* r
 }
 
 
-
-int slowerSub( SlowerConnection& slower, const ShortName& name, int mask , SlowerRemote* remote ){
+int slowerUnSub(SlowerConnection& slower, const MsgShortName& name, int mask , SlowerRemote* remote  ) {
   assert( slower.fd > 0 );
   assert( mask >= 0 );
   assert( mask < 128 ); 
@@ -415,41 +486,24 @@ int slowerSub( SlowerConnection& slower, const ShortName& name, int mask , Slowe
   char msg[slowerMTU];
   int msgLen=0;
 
-  int8_t type = SlowerMsgSub;
-  memcpy( msg+msgLen, &type, sizeof(type) ) ; msgLen += sizeof(type);
+  MsgHeader mhdr;
+  mhdr.type = SlowerMsgUnSub;
+  mhdr.name = name;
 
-  memcpy( msg+msgLen, &name.part[0], sizeof(name.part[0]) ) ; msgLen += sizeof(name.part[0]);
-  memcpy( msg+msgLen, &name.part[1], sizeof(name.part[1]) ) ; msgLen += sizeof(name.part[1]);
-
-  int8_t maskData = mask;
-  memcpy( msg+msgLen, &maskData, sizeof(maskData) ) ; msgLen += sizeof(maskData);
+  memcpy( msg+msgLen, &mhdr, sizeof(mhdr) ) ; msgLen += sizeof(mhdr);
 
   assert( msgLen < sizeof( msg ) );
-          
-  int err = slowerSend( slower, msg, msgLen, remote );
-  return err;
-}
 
+  MsgSubHeader msub_hdr;
+  msub_hdr.mask = mask;
 
-int slowerUnSub( SlowerConnection& slower, const ShortName& name, int mask , SlowerRemote* remote  ) {
-  assert( slower.fd > 0 );
-  assert( mask >= 0 );
-  assert( mask < 128 ); 
-  
-  char msg[slowerMTU];
-  int msgLen=0;
+  assert(sizeof(msg) < msgLen + sizeof(msub_hdr));
 
-  int8_t type = SlowerMsgUnSub;
-  memcpy( msg+msgLen, &type, sizeof(type) ) ; msgLen += sizeof(type);
-
-  memcpy( msg+msgLen, &name.part[0], sizeof(name.part[0]) ) ; msgLen += sizeof(name.part[0]);
-  memcpy( msg+msgLen, &name.part[1], sizeof(name.part[1]) ) ; msgLen += sizeof(name.part[1]);
-
-  int8_t maskData = mask;
-  memcpy( msg+msgLen, &maskData, sizeof(maskData) ) ; msgLen += sizeof(maskData);
+  memcpy( msg+msgLen, &msub_hdr, sizeof(msub_hdr) ) ; msgLen += sizeof(msub_hdr);
 
   assert( msgLen < sizeof( msg ) );
-          
+
+
   int err = slowerSend( slower, msg, msgLen, remote );
   return err;
 }

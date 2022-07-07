@@ -13,14 +13,15 @@ public:
 
   Subscriptions();
   
-  void add(  const ShortName& name, const int mask, const SlowerRemote& remote );
+  void add(const MsgShortName& name, const int mask, const SlowerRemote& remote );
   
-  void remove(  const ShortName& name, const int mask, const SlowerRemote& remote );  
+  void remove(const MsgShortName& name, const int mask, const SlowerRemote& remote );
   
-  std::list<SlowerRemote> find(  const ShortName& name  ) ;
+  std::list<SlowerRemote> find(  const MsgShortName& name  ) ;
     
  private:
-  std::vector< std::map<ShortName,std::set<SlowerRemote>> > subscriptions;
+  std::vector< std::map<MsgShortName,std::set<SlowerRemote>> > subscriptions;
+
 };
 
 

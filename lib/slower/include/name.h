@@ -12,12 +12,12 @@ enum class NamePath : uint8_t {
 
 class Name {
 private:
-  ShortName name;
+  MsgShortName name;
   const uint32_t itad = 0x000088; // number from IANA TRIP ITAD registry TODO
   const uint8_t qmsgAppID = 0x88; // app ID for QMsg stuff in this ITAD
 
 public:
-  Name(ShortName &n);
+  Name(MsgShortName &n);
   Name(NamePath path, uint32_t org, uint32_t team,
        uint64_t fingerprint); // key package & welcome
   //Name(NamePath path, uint32_t org, uint32_t team, uint32_t epoch,
@@ -39,7 +39,7 @@ public:
   uint32_t epoch();
   uint32_t rand();
 
-  ShortName &shortName();
+  MsgShortName &shortName();
 
   std::string shortString();
 

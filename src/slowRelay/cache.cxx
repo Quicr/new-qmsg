@@ -5,19 +5,19 @@
 #include "cache.h"
 
 
-void Cache::put( const ShortName& name,  const std::vector<uint8_t>& data ) {
+void Cache::put(const MsgShortName& name, const std::vector<uint8_t>& data ) {
   assert( data.size() > 0 );
 
   std::vector<uint8_t>* vec = new std::vector<uint8_t>( data );
 
-  std::pair<ShortName, std::vector<uint8_t>* > pair;
+  std::pair<MsgShortName, std::vector<uint8_t>* > pair;
   pair = make_pair( name, vec );
 
   dataCache.insert( pair );
 }
 
 
-const std::vector<uint8_t>* Cache::get( const ShortName& name ) const {
+const std::vector<uint8_t>* Cache::get( const MsgShortName& name ) const {
   auto mapPtr = dataCache.find( name );
   if ( mapPtr == dataCache.end() ) {
     return &emptyVec;
@@ -31,7 +31,7 @@ const std::vector<uint8_t>* Cache::get( const ShortName& name ) const {
 }
 
 
-bool Cache::exists(  const ShortName& name ) const {
+bool Cache::exists(  const MsgShortName& name ) const {
   auto mapPtr = dataCache.find( name );
   if ( mapPtr == dataCache.end() ) {
     return false;
@@ -40,24 +40,24 @@ bool Cache::exists(  const ShortName& name ) const {
 }
 
 
-std::list<ShortName> Cache::find(  const ShortName& name, const int mask ) const {
-  std::list<ShortName> ret;
-  assert( mask < 64 ); // TODO
+std::list<MsgShortName> Cache::find(const MsgShortName& name, const int mask ) const {
+  std::list<MsgShortName> ret;
+  assert( mask <= 70 ); // TODO
 
-  ShortName startName = name;
-  startName.part[0] &=  (0xFFFFffffFFFFffffl << mask );
-    
-  ShortName endName = name;
-  endName.part[0] |= (0x1l << mask )-1;
-  
+  MsgShortName startName = name;
+  getMaskedMsgShortName(name, startName, mask);
+
   //std::clog << "  Cache::find lower = " << std::hex << startName.part[1] << "-" <<  startName.part[0] << std::dec << std::endl;
   //std::clog << "  Cache::find upper = " << std::hex << endName.part[1] << "-" <<  endName.part[0] << std::dec << std::endl;
-    
+  MsgShortName endName =  startName;
+  std::memset(endName.data + MSG_SHORT_NAME_LEN - (mask / 8), 0xff, (mask / 8));
+
   auto start = dataCache.lower_bound( startName );
+
   auto end = dataCache.upper_bound( endName );
   
   for ( auto it = start; it != end; it++ ) {
-    ShortName dataName = it->first;
+    MsgShortName dataName = it->first;
 
     //std::cerr << "   Cache::find adding " << std::hex << dataName.part[1] << "-" <<  dataName.part[0] << std::dec << " to results" << std::endl;
 

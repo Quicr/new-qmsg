@@ -24,10 +24,16 @@
 int main(int argc, char* argv[]) {
   std::clog << "Starting slowerReal (slower version " << slowerVersion() << ")" << std::endl;
   SlowerConnection slower;
-  int err = slowerSetup( slower, slowerDefaultPort  );
+
+  int port = slowerDefaultPort;
+  char* portVar = getenv( "SLOWR_PORT" );
+  if ( portVar ) {
+      port = atoi( portVar );
+  }
+
+  int err = slowerSetup( slower, port );
   assert( err == 0 );
 
-  
   // ========  Setup up upstream and relay mesh =========
   std::list<SlowerRemote>  relays;
   for ( int i=1; i< argc; i++ ) {
@@ -54,7 +60,7 @@ int main(int argc, char* argv[]) {
     
     for ( auto r : relayNames ) {
       SlowerRemote relay;
-      err = slowerRemote( relay , (char*)r.c_str() );
+      err = slowerRemote( relay , (char*)r.c_str(), port );
       if ( err ) {
         std::cerr << "Could not lookup IP address for relay: " << r  << std::endl;
       } else {
@@ -78,7 +84,7 @@ int main(int argc, char* argv[]) {
     char buf[slowerMTU];
     int bufLen=0;
     SlowerRemote remote;
-    ShortName name;
+    MsgShortName name;
     SlowerMsgType type;
     int mask;
     
@@ -133,7 +139,7 @@ int main(int argc, char* argv[]) {
         }
          
         // send to anyone subscribed
-        std::list<SlowerRemote> list =  subscribeList.find( name );
+        std::list<SlowerRemote> list = subscribeList.find( name );
         for ( SlowerRemote dest: list ) {
           if ( dest != remote ) {
             std::clog << "  Sent to subscriber " << inet_ntoa( dest.addr.sin_addr) << ":" << ntohs( dest.addr.sin_port ) << std::endl;
@@ -152,7 +158,7 @@ int main(int argc, char* argv[]) {
                 << std::endl;
       subscribeList.add( name, mask, remote );
       
-      std::list<ShortName> names = cache.find( name, mask );
+      std::list<MsgShortName> names = cache.find(name, mask );
       names.reverse(); // send the highest (and likely most recent) first 
 
       for ( auto n : names ) {
@@ -169,7 +175,7 @@ int main(int argc, char* argv[]) {
   
     }
 
-    // ============== Un SUBSSCRIBE ===========
+    // ============== Un SUBSCRIBE ===========
     if ( type == SlowerMsgUnSub  ) {
        std::clog << "Got UnSUB" 
                  << " for " <<  Name(name).longString() << "*" << mask
