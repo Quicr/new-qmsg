@@ -2,8 +2,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <iostream>
-
 
 UserInterface::UserInterface(const int keyboard_fd,
                              const int sec_to_ui_fd,
@@ -12,14 +10,19 @@ UserInterface::UserInterface(const int keyboard_fd,
     selected_fd(0),
     is_running(false)
 {
-    keyboard = new KeyBoardReader(keyboard_fd, buffer_size);
-    receiver = new KeyBoardReader(sec_to_ui_fd, buffer_size);
+    keyboard = new FdReader(keyboard_fd, buffer_size);
+    receiver = new FdReader(sec_to_ui_fd, buffer_size);
     sender = new Sender(ui_to_sec_id);
     parser = new Parser();
+
+    // HACK this pin will be saved in the EEPROM so we may never actually do this
+    // as it may be handled way before this point
+    profile = new Profile("1234");
 
     if (QMsgEncoderInit(&sec_context))
     {
         // TODO Log and error out.
+        fprintf(stderr, "Error - Failed to initialize encoder");
     }
 }
 
@@ -29,15 +32,8 @@ UserInterface::~UserInterface()
     delete receiver;
     delete sender;
     delete parser;
-    delete username;
+    delete profile;
     delete sec_context;
-}
-
-void UserInterface::Start()
-{
-    PrintMessage("Welcome to Cisco Secure Messaging\n\n");
-    DisplayHelpMessage();
-    is_running = true;
 }
 
 void UserInterface::Process(int selected_fd, fd_set fdSet)
@@ -54,9 +50,17 @@ bool UserInterface::Running()
     return is_running;
 }
 
+void UserInterface::Start()
+{
+    PrintMessage("Welcome to Cisco Secure Messaging\n\n");
+    DisplayHelpMessage();
+    PrintMessage("Please enter your pin\n");
+    is_running = true;
+}
+
 void UserInterface::Stop()
 {
-    std::cout << bye_str;
+    PrintMessage(bye_str.c_str());
     is_running = false;
 }
 
@@ -67,7 +71,18 @@ void UserInterface::DisplayHelpMessage()
     }
 }
 
-bool UserInterface::isValidChannel(std::string channel_id) {
+void UserInterface::GetUserPin()
+{
+    // PrintMessage("Please enter your pin");
+
+    // std::string in_pin;
+    // do
+    // {
+    //     if keyboard->HasMessage
+    // } while (!profile->ComparePin());
+}
+
+bool UserInterface::IsValidChannel(std::string channel_id) {
     bool channel_exists = false;
     unsigned int idx = 0;
     for (unsigned int i = 0; i < all_channels.size(); i++)
@@ -94,21 +109,31 @@ tm *UserInterface::GetCurrentSystemTime()
 
 void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
 {
-    // read and parse message from the keyboard
-    // send it to sec
-    // read and parse messages from secProc
-    // act upon it
+    // Read messages from the keyboard, parse, and send it.
     if (keyboard->HasMessage(selected_fd, fdSet))
     {
         keyboard->Read();
         if (keyboard->BufferLength() > 0)
         {
-            Command command;
-
             // TODO remove
             fprintf(stderr, "UI: Read %d bytes from keyboard: ", keyboard->BufferLength());
             fwrite(keyboard->Data(), 1, keyboard->BufferLength(), stderr);
             fprintf(stderr, "\n");
+
+            // If we haven't received the user's pin yet, then wait here.
+            if (!profile->PinAccepted())
+            {
+                if (profile->ComparePin(keyboard->Data()))
+                {
+                    fprintf(stderr, "Pin accepted\n");
+                }
+                else
+                {
+                    fprintf(stderr, "Pin incorrect\n");
+                }
+
+                return;
+            }
 
             // Parse the input for a command such as help
             // bool res = parser->Parse(keyboard->Data(), keyboard->BufferLength(), command);
@@ -136,6 +161,7 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                         char* argument_token = strtok(NULL, " ");
                         if (argument_token)
                         {
+                            // TODO actually set it.
                             fprintf(stderr, "Username has been set to %s",
                                 argument_token);
                         }
@@ -153,28 +179,28 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                 {
                     char* team_id_str = strtok(NULL, " ");
                     if (team_id_str == NULL) {
-                        std::cout << "Team id is missing, Try again" <<std::endl;
+                        printf("Team id is missing, Try again");
                     }
-                    std::cout << "Connect to team " <<team_id_str << std::endl;
+
+                    printf("Connect to team %s", team_id_str);
                     if (team_id_str == NULL) {
-                        std::cout << "team id is null, Try again";
+                        printf("Error - team id is null, try again");
                         return;
                     }
 
                     unsigned int team_id = static_cast<unsigned int>(*team_id_str);
                     char* channel_id_str = strtok(NULL, " ");
-                    std::cout << "Connect to channel " <<channel_id_str << std::endl;
+                    printf("Connect to channel %s", channel_id_str);
                     if (channel_id_str == NULL) {
-                            std::cout << "Channel id is missing, Try again" <<std::endl;
+                            printf("Error - Channel id is missing, Try again");
                             return;
                     }
-                   /* if (!isValidChannel(channel_id_str)) {
-                        std::cout << "Enter a valid channel"<<std::endl;
-                        return;
-                    }*/
+                    // if (!isValidChannel(channel_id_str)) {
+                    //     printf("Enter a valid channel");
+                    //     return;
+                    // }
                     unsigned int channel_id = static_cast<unsigned int>(*channel_id_str);
                     sender->SendWatchMessage(team_id, channel_id);
-
                 }
                 else if (strcmp(command_token, commands[Command::join]) == 0)
                 {
@@ -202,7 +228,7 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                             // TODO clean this up..
                             char channel_name[all_channels[idx].Name().length()];
                             strcpy(channel_name, all_channels[idx].Name().c_str());
-                            sender->SendMessage(channel_name, join_token.length());
+                            sender->SendPlainMessage(channel_name, join_token.length());
 
                             // Keep track of the channels we've joined
                             joined_channels.push_back(all_channels[idx]);
@@ -228,7 +254,7 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
 
                 else
                 {
-                    std::cout << "Unknown command. The available commands are: \n";
+                    printf("Unknown command. The available commands are: \n");
                     DisplayHelpMessage();
                 }
 
@@ -247,7 +273,7 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
 
 
                 // Send to secure process
-                sender->SendMessage(keyboard->Data(), keyboard->BufferLength());
+                sender->SendPlainMessage(keyboard->Data(), keyboard->BufferLength());
             }
         }
     }
@@ -257,7 +283,7 @@ void UserInterface::HandleReceiver(int selected_fd, fd_set fdSet)
 {
     if (receiver->HasMessage(selected_fd, fdSet))
     {
-        receiver->Read(sec_fragment_size);
+        // receiver->Read(sec_fragment_size);
         if (receiver->BufferLength() > 0)
         {
             sec_fragment_size = 0;
@@ -277,7 +303,7 @@ void UserInterface::HandleReceiver(int selected_fd, fd_set fdSet)
                 {
                     // TODO
                     // We got a message yay.
-                    fprintf(stderr, "encoder got %s", sec_message.u.receive_ascii_message);
+                    fprintf(stderr, "encoder got %s", sec_message.u.receive_ascii_message.message.data);
                 }
 
                 if ((qmsg_enc_sec_res == QMsgEncoderInvalidMessage) ||

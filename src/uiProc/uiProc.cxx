@@ -6,13 +6,7 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
-
-#include "qmsg/encoder.h"
-
 #include "UserInterface.hh"
-#include "Parser.hh"
-#include "Sender.hh"
-#include "KeyBoardReader.hh"
 
 constexpr int Buffer_Size = 1024;
 
@@ -25,14 +19,18 @@ int main(int argc, char *argv[])
     int keyboard_fd = 0;
 
     // Setup the security to ui file descriptor
-    int sec_to_ui_fd = open("/tmp/pipe-s2u", O_RDONLY, O_NONBLOCK);
-    assert(sec_to_ui_fd >= 0);
+    // int sec_to_ui_fd = open("/tmp/pipe-s2u", O_RDONLY, O_NONBLOCK);
+    // assert(sec_to_ui_fd >= 0);
     fprintf(stderr, "UI: Got pipe from secProc\n");
 
     // Setup the ui to security file descriptor
-    int ui_to_sec_fd = open("/tmp/pipe-u2s", O_WRONLY, O_NONBLOCK);
-    assert(ui_to_sec_fd >= 0);
+    // int ui_to_sec_fd = open("/tmp/pipe-u2s", O_WRONLY, O_NONBLOCK);
+    // assert(ui_to_sec_fd >= 0);
     fprintf(stderr, "UI: Got pipe to secProc\n");
+
+    // TODO remove
+    int sec_to_ui_fd = 1;
+    int ui_to_sec_fd = 1;
 
     struct timeval timeout;
     timeout.tv_sec = 1;

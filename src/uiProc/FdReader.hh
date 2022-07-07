@@ -3,13 +3,14 @@
 #include <stdio.h>
 #include <sys/uio.h>
 #include <unistd.h>
+#include <sys/select.h>
 
 // Read and parse input from keybaord or similar user entry system
-class KeyBoardReader
+class FdReader
 {
 public:
-    KeyBoardReader(int fd, unsigned long buffer_size);
-    ~KeyBoardReader();
+    FdReader(int fd, unsigned long buffer_size);
+    ~FdReader();
 
     bool HasMessage(const int selected_fd, fd_set &fdSet);
     char* Read(unsigned long offset = 0);
@@ -20,9 +21,6 @@ public:
 
     void Flush();
 private:
-    // read and parse messages
-    void message_loop();
-
     int fd;
     unsigned long buffer_size;
     unsigned long buffer_length;

@@ -5,12 +5,14 @@
 #include <vector>
 #include <string>
 
-#include "KeyBoardReader.hh"
-#include "Sender.hh"
-#include "Channel.hh"
-#include "Parser.hh"
-#include "Team.hh"
 #include "qmsg/encoder.h"
+
+#include "Channel.hh"
+#include "FdReader.hh"
+#include "Parser.hh"
+#include "Profile.hh"
+#include "Sender.hh"
+#include "Team.hh"
 
 enum Command
 {
@@ -34,21 +36,23 @@ public:
 
     ~UserInterface();
 
-    void Start();
     void Process(int selected_fd, fd_set fdSet);
     bool Running();
+    void Start();
     void Stop();
 
-    void DisplayHelpMessage();
-    bool isValidChannel(std::string channelExists);
 private:
+    void DisplayHelpMessage();
+    void GetUserPin();
     tm* GetCurrentSystemTime();
     void HandleKeyboard(int selected_fd, fd_set fdSet);
     void HandleReceiver(int selected_fd, fd_set fdSet);
+    bool IsValidChannel(std::string channelExists);
+    void JoinTeam(const std::string team);
     void Parse();
     void PrintMessage(const char* msg);
     void PrintTimestampedMessage(const char* msg);
-    void JoinTeam(const std::string team);
+
 
     const char* commands[8] =
     {
@@ -76,16 +80,16 @@ private:
 
     const std::string bye_str = "Thanks for joining Cisco Secure Messaging\n";
 
-    KeyBoardReader* keyboard;
-    KeyBoardReader* receiver;
+    FdReader* keyboard;
+    FdReader* receiver;
     Sender* sender;
     Parser* parser;
+    Profile* profile;
     std::vector<Channel> joined_channels;
     std::vector<Channel> all_channels;
 
     int selected_fd;
     bool is_running;
-    char* username;
 
     // TODO move into a new a new class from keyboard (sender)
 
