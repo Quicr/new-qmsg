@@ -4,6 +4,7 @@
 #include <sys/time.h>
 #include <vector>
 #include <string>
+#include <queue>
 
 #include "qmsg/encoder.h"
 
@@ -13,7 +14,9 @@
 #include "Profile.hh"
 #include "Sender.hh"
 #include "Team.hh"
-
+#include <stdio.h>
+#include <iostream>
+#include <string>
 enum Command
 {
     help = 0,
@@ -43,16 +46,19 @@ public:
 
 private:
     void DisplayHelpMessage();
+    void Draw();
     void GetUserPin();
     tm* GetCurrentSystemTime();
     void HandleKeyboard(int selected_fd, fd_set fdSet);
     void HandleReceiver(int selected_fd, fd_set fdSet);
+    void HandleUserInput();
     bool IsValidChannel(std::string channelExists);
     void JoinTeam(const std::string team);
     void Parse();
     void PrintMessage(const char* msg);
     void PrintTimestampedMessage(const char* msg);
 
+    void ConstructMessageMatrix();
 
     const char* commands[8] =
     {
@@ -100,4 +106,17 @@ private:
     unsigned long sec_fragment_size = 0;
     unsigned long sec_total_consumed = 0;
     unsigned long sec_consumed = 0;
+
+
+    struct FdMessage
+    {
+        size_t length;
+        char* data;
+    };
+    std::queue<FdMessage> outgoing_queue;
+    std::queue<FdMessage> incoming_queue;
+
+    bool update_draw = true;
+
+    std::vector<std::string> draw_matrix;
 };

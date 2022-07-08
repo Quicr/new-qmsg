@@ -1,5 +1,5 @@
 #include "Sender.hh"
-#include <iostream>
+#include <stdint.h>
 #include <cstring>
 
 Sender::Sender(int ui_to_sec_fd) : ui_to_sec_fd(ui_to_sec_fd)
@@ -20,7 +20,7 @@ void Sender::SendPlainMessage(char *buffer, const unsigned long buffer_length)
     msg.u.send_ascii_message.team_id = 0x01020304;
     msg.u.send_ascii_message.channel_id = 0x05060708;
     msg.u.send_ascii_message.message.length = buffer_length;
-    msg.u.send_ascii_message.message.data = reinterpret_cast<std::uint8_t *>(buffer);
+    msg.u.send_ascii_message.message.data = reinterpret_cast<uint8_t *>(buffer);
 
     SendEncoded(msg);
 }
@@ -37,7 +37,7 @@ void Sender::SendWatchMessage(unsigned int team_id, unsigned int channel_id)
 
 void Sender::SendEncoded(QMsgUIMessage msg)
 {
-    std::uint8_t send_buffer[1024]; // FIX this probably shouldn't be hard coded?
+    uint8_t send_buffer[1024]; // FIX this probably shouldn't be hard coded?
     std::size_t encoded_length;
     QMsgEncoderResult res = QMsgUIEncodeMessage(context,
                                                 &msg,

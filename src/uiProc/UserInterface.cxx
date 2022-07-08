@@ -40,6 +40,7 @@ void UserInterface::Process(int selected_fd, fd_set fdSet)
 {
     if (is_running)
     {
+        Draw();
         HandleKeyboard(selected_fd, fdSet);
         HandleReceiver(selected_fd, fdSet);
     }
@@ -55,6 +56,9 @@ void UserInterface::Start()
     PrintMessage("Welcome to Cisco Secure Messaging\n\n");
     DisplayHelpMessage();
     PrintMessage("Please enter your pin\n");
+
+    // HACK remove this, just for testing.
+    ConstructMessageMatrix();
     is_running = true;
 }
 
@@ -62,6 +66,20 @@ void UserInterface::Stop()
 {
     PrintMessage(bye_str.c_str());
     is_running = false;
+}
+
+void UserInterface::Draw()
+{
+    if (update_draw)
+    {
+        printf("\e[1;1H\e[2J");
+        for (int i = 0; i < draw_matrix.size(); i++)
+        {
+            fprintf(stderr, draw_matrix[i].c_str());
+        }
+
+        update_draw = false;
+    }
 }
 
 void UserInterface::DisplayHelpMessage()
@@ -109,17 +127,19 @@ tm *UserInterface::GetCurrentSystemTime()
 
 void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
 {
+    // TODO consider moving the data from the keyboard into a buffer until handled or into a buffer queue so that it can get handled as needed?
     // Read messages from the keyboard, parse, and send it.
     if (keyboard->HasMessage(selected_fd, fdSet))
     {
         keyboard->Read();
         if (keyboard->BufferLength() > 0)
         {
-            // TODO remove
-            fprintf(stderr, "UI: Read %d bytes from keyboard: ", keyboard->BufferLength());
-            fwrite(keyboard->Data(), 1, keyboard->BufferLength(), stderr);
-            fprintf(stderr, "\n");
-
+            // Put message into the queue
+            FdMessage msg;
+            msg.length = keyboard->BufferLength();
+            msg.data = keyboard->Data();
+            outgoing_queue.push(msg);
+            return;
             // If we haven't received the user's pin yet, then wait here.
             if (!profile->PinAccepted())
             {
@@ -134,6 +154,11 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
 
                 return;
             }
+
+            // TODO remove
+            fprintf(stderr, "UI: Read %d bytes from keyboard: ", keyboard->BufferLength());
+            fwrite(keyboard->Data(), 1, keyboard->BufferLength(), stderr);
+            fprintf(stderr, "\n");
 
             // Parse the input for a command such as help
             // bool res = parser->Parse(keyboard->Data(), keyboard->BufferLength(), command);
@@ -281,6 +306,8 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
 
 void UserInterface::HandleReceiver(int selected_fd, fd_set fdSet)
 {
+    if (!profile->PinAccepted()) return;
+
     if (receiver->HasMessage(selected_fd, fdSet))
     {
         // receiver->Read(sec_fragment_size);
@@ -338,4 +365,162 @@ void UserInterface::PrintTimestampedMessage(const char *msg)
 {
     tm *current_time = GetCurrentSystemTime();
     printf("%d:%d -!- %s", current_time->tm_hour, current_time->tm_min, msg);
+}
+
+
+void UserInterface::ConstructMessageMatrix()
+{
+    // HACK this is only the concept currently
+    // TODO calculate the number of lines high the console is?
+    int32_t lines = 40;
+
+    std::string team = "CTO Team";
+    std::string current_channel = "Watercooler";
+
+    std::vector<std::string> channels = {
+        "Watercooler",
+        "Watercooler",
+        "General",
+        "Hype project"
+    };
+
+    // TODO messages should be parsed here
+    std::vector<std::string> messages = {
+        "Message1",
+        "message2",
+        "message3"
+    };
+
+    std::vector<std::string> users = {
+        "brett",
+        "tomas"
+    };
+
+    // HACK these should be calculated based on the window size
+    const int num_channel_spaces = 24;
+    const int num_messages_spaces = 100;
+    const int num_user_spaces = 24;
+    std::string append_str = "";
+
+    draw_matrix.clear();
+    draw_matrix.push_back("Welcome to Cisco Secure Messaging\n");
+
+    uint32_t total_spaces = num_channel_spaces + num_messages_spaces + num_user_spaces;
+    for (uint16_t i = 0; i < total_spaces; i++ )
+    {
+        append_str += "-";
+    }
+    append_str += "\n";
+    draw_matrix.push_back(append_str);
+
+    // TODO calculate the spaces for this too.
+    draw_matrix.push_back(team + "                | #" + current_channel + "                                                                                      | Users         \n");
+
+    int num_removed_spaces;
+    for (int i = 0; i < lines; i++)
+    {
+        append_str = "";
+        num_removed_spaces = 0;
+        if (channels.size() > i)
+        {
+            if (channels[i].length() > num_channel_spaces)
+                return; // TODO this is a problem
+
+            // There are channels to print
+            append_str += "#" + channels[i];
+
+            // Calculate how many spaces we need instead before the separator
+            num_removed_spaces = channels[i].length() + 1;
+        }
+
+        for (int j = 0; j < num_channel_spaces - num_removed_spaces; j++)
+        {
+            // Starting at j = 1 to account for the #
+            append_str += " ";
+        }
+
+        // Append a bar after the channels
+        append_str += "|";
+
+        num_removed_spaces = 0;
+        if (messages.size() > i)
+        {
+            // Messages to print
+            // TODO Parse messages and break them up based on how many
+            // indices the message takes up
+            append_str += " " + messages[i];
+
+            // TODO this will be affected by how the break in the word
+            // if its too long.
+            num_removed_spaces = messages[i].length() + 1;
+        }
+
+        // Append spaces to the message.
+        for (int j = 1; j < num_messages_spaces - num_removed_spaces; j++)
+        {
+            append_str += " ";
+        }
+
+        append_str += "|";
+
+        num_removed_spaces = 0;
+        if (users.size() > i)
+        {
+            append_str += " @" + users[i];
+
+            num_removed_spaces = messages[i].length();
+        }
+
+        for (int j = 1; j < num_user_spaces - num_removed_spaces; j++)
+        {
+            append_str += " ";
+        }
+
+        append_str += "\n";
+
+        draw_matrix.push_back(append_str);
+    }
+
+    for (uint16_t i = 0; i < total_spaces; i++ )
+    {
+        append_str += "-";
+    }
+    append_str += "\n";
+    draw_matrix.push_back(append_str);
+    draw_matrix.push_back("> ");
+
+    // NOTE Should look something like this.
+    // draw_matrix =
+    // {
+    //     "Welcome to Cisco Secure Messaging\n",
+    //     "-------------------------------------------------------------------------------------------------\n",
+    //     "Lorem Channel           | #Some current channel                                  | Users         \n",
+    //     "#channel_name           | some message                                           | Brett         \n",
+    //     "#channel_name2          | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "                        | some message                                           |               \n",
+    //     "------------------------|--------------------------------------------------------|---------------\n",
+    //     ">"
+    // };
+
+// TODO consider this instead of keyboard fd...
+// https://stackoverflow.com/questions/54637681/change-user-console-input-as-they-type-in-c
 }
