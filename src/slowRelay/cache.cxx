@@ -1,6 +1,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <cstring>
 
 #include "cache.h"
 

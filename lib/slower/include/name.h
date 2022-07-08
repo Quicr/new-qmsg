@@ -2,14 +2,6 @@
 
 #include <slower.h>
 
-enum class NamePath : uint8_t {
-  message = 1,
-  keyPackage = 2,
-  welcome = 3,
-  commitAll = 4,
-  commitOne = 5
-};
-
 class Name {
 private:
   MsgShortName name;

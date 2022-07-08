@@ -23,7 +23,7 @@ COPY ./contrib ./contrib
 COPY ./CMakeLists.txt .
 
 #RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DPROJECT_NAME=slow-relay \
+RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DPROJECT_NAME=slow-relay -Dqmsg_ENABLE_QUICR=OFF \
     && cmake --build build
 
 RUN cp  build/src/slowRelay/slowRelay  /usr/local/bin/. \

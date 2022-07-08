@@ -84,81 +84,74 @@ int main(int argc, char* argv[]) {
     char buf[slowerMTU];
     int bufLen=0;
     SlowerRemote remote;
-    MsgShortName name;
-    SlowerMsgType type;
+    MsgHeader mhdr = {0};
+    MsgHeaderMetrics metrics = {0};
     int mask;
     
-    err=slowerRecvMulti(  slower, &name, &type, &remote, &mask,  buf, sizeof(buf), &bufLen );
+    err=slowerRecvMulti(  slower, &mhdr, &remote, &mask,  buf, sizeof(buf), &bufLen, &metrics );
     assert( err == 0 );
 
     // =========  PUBLISH ===================
-    if ( ( type == SlowerMsgPub ) && ( bufLen > 0 ) ) {
-      bool duplicate = cache.exists( name );
+    if ( ( mhdr.type == SlowerMsgPub ) && ( bufLen > 0 ) ) {
+      bool duplicate = cache.exists( mhdr.name );
       
       std::clog << "Got "
                 << ( duplicate ? "dup " : "" )
-                << "PUB " << Name(name).longString()
+                << "PUB " << Name(mhdr.name).longString()
                 << " from " << inet_ntoa( remote.addr.sin_addr)
                 << ":" << ntohs( remote.addr.sin_port )
                 << std::endl;
 
-      err = slowerAck( slower, name, &remote );
+      err = slowerAck( slower, mhdr.name, &remote );
       assert( err == 0 );
         
       if ( !duplicate ) {
         // add to local cache 
-        std::vector<uint8_t> data( buf, buf+bufLen );
-        cache.put( name,  data );
+        std::vector<uint8_t> data(buf, buf + bufLen);
+        cache.put(mhdr.name, data);
 
         // report metrics for QMsg
-        if ( true ) {
-          Name qmsgName( name );
-          if ( ( qmsgName.orginID() == 0x88 )
-               && ( qmsgName.appID() == 0x88 )
-               && ( qmsgName.path() == NamePath::message )
-               && ( data.size() >= 6 ) ) {
-            uint64_t nowMs = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+        if (mhdr.flags.metrics) {
+          Name qmsgName(mhdr.name);
+          metrics.relay_millis = std::chrono::duration_cast<std::chrono::milliseconds>(
+              std::chrono::system_clock::now().time_since_epoch()).count();
 
-            uint64_t thenMs = 0;
-            for ( int i=0; i<6; i++ ) {
-              thenMs <<= 8;
-              thenMs |= data[i];
-            }
-
-            std::clog << "    " << qmsgName.longString() << " latency:" << ( nowMs - thenMs ) << std::endl;
-          }
+          std::clog << "    " << qmsgName.longString() << " pub latency: " << (metrics.relay_millis - metrics.pub_millis)
+                    << std::endl;
         }
-        
+
         // send to other relays
-        for ( SlowerRemote dest: relays ) {
-            if ( dest != remote ) {
-            std::clog << "  Sent to relay " << inet_ntoa( dest.addr.sin_addr) << ":" << ntohs( dest.addr.sin_port ) << std::endl;
-            err = slowerPub( slower, name, buf, bufLen, &dest );
-            assert( err == 0 );
+        for (SlowerRemote dest: relays) {
+          if (dest != remote) {
+            std::clog << "  Sent to relay " << inet_ntoa(dest.addr.sin_addr) << ":" << ntohs(dest.addr.sin_port)
+                      << std::endl;
+            err = slowerPub(slower, mhdr.name, buf, bufLen, &dest, mhdr.flags.metrics ? &metrics : NULL);
+            assert(err == 0);
           }
         }
-         
+
         // send to anyone subscribed
-        std::list<SlowerRemote> list = subscribeList.find( name );
-        for ( SlowerRemote dest: list ) {
-          if ( dest != remote ) {
-            std::clog << "  Sent to subscriber " << inet_ntoa( dest.addr.sin_addr) << ":" << ntohs( dest.addr.sin_port ) << std::endl;
-            err = slowerPub( slower, name, buf, bufLen, &dest );
-            assert( err == 0 );
+        std::list<SlowerRemote> list = subscribeList.find(mhdr.name);
+        for (SlowerRemote dest: list) {
+          if (dest != remote) {
+            std::clog << "  Sent to subscriber " << inet_ntoa(dest.addr.sin_addr) << ":" << ntohs(dest.addr.sin_port)
+                      << std::endl;
+            err = slowerPub(slower, mhdr.name, buf, bufLen, &dest, mhdr.flags.metrics ? &metrics : NULL);
+            assert(err == 0);
           }
         }
       }
     }
 
     // ============ SUBSCRIBE ==================
-    if ( type == SlowerMsgSub  ) {
+    if ( mhdr.type == SlowerMsgSub  ) {
       std::clog << "Got SUB" 
-                << " for " << Name(name).longString() << "*" << mask
+                << " for " << Name(mhdr.name).longString() << "*" << mask
                 << " from " << inet_ntoa( remote.addr.sin_addr) << ":" <<  ntohs( remote.addr.sin_port )
                 << std::endl;
-      subscribeList.add( name, mask, remote );
+      subscribeList.add( mhdr.name, mask, remote );
       
-      std::list<MsgShortName> names = cache.find(name, mask );
+      std::list<MsgShortName> names = cache.find(mhdr.name, mask );
       names.reverse(); // send the highest (and likely most recent) first 
 
       for ( auto n : names ) {
@@ -176,12 +169,12 @@ int main(int argc, char* argv[]) {
     }
 
     // ============== Un SUBSCRIBE ===========
-    if ( type == SlowerMsgUnSub  ) {
+    if ( mhdr.type == SlowerMsgUnSub  ) {
        std::clog << "Got UnSUB" 
-                 << " for " <<  Name(name).longString() << "*" << mask
+                 << " for " <<  Name(mhdr.name).longString() << "*" << mask
                  << " from " << inet_ntoa( remote.addr.sin_addr) << ":" <<  ntohs( remote.addr.sin_port )
                  << std::endl;
-       subscribeList.remove( name, mask, remote );
+       subscribeList.remove( mhdr.name, mask, remote );
     }  
   }
 

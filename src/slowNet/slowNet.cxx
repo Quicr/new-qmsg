@@ -58,21 +58,21 @@ public:
   }
 
   void recv( ) {
-    MsgShortName shortName;
+    MsgHeader mhdr = {0};
     char buf[1024];
     int bufSize=sizeof(buf);
     int bufLen=0;
-    int err = slowerRecvPub( slower, &shortName, buf, bufSize, &bufLen );
+    int err = slowerRecvPub( slower, &mhdr, buf, bufSize, &bufLen );
     assert( err == 0 );
-    Name name( shortName );
-    
+    Name name( mhdr.name );
+
     if ( bufLen > 0 ) {
       std::clog << "NET: Recv PUB "
                 << name.longString() 
                 << " len=" << bufLen 
                 << std::endl;
       
-      secApi.recvAsciiMsg( name.team(), name.device(), name.channel(),
+      secApi.recvAsciiMsg( mhdr.name.spec.team, mhdr.name.spec.device, mhdr.name.spec.channel,
                            (uint8_t*)buf, bufLen );
     }
   }

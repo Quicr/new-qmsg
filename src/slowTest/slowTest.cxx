@@ -16,7 +16,6 @@
 
 #include <chrono>
 
-
 #include <slower.h>
 #include <name.h>
 
@@ -117,14 +116,6 @@ int main(int argc, char* argv[]) {
     
   std::vector<uint8_t> data;
   if ( argc == 3 ) {
-    data.resize(6);
-    uint64_t nowMs = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
-    uint64_t d=nowMs;
-    for ( int i=5; i >= 0; --i ) {
-      data[i] = ( (uint8_t)( d & 0xFF)  );
-      d >>= 8;
-    }
-         
     data.insert( data.end(), (uint8_t*)(argv[2]) , ((uint8_t*)(argv[2])) + strlen( argv[2] ) );
   }
 
@@ -153,7 +144,12 @@ int main(int argc, char* argv[]) {
               << " aka "
               << Name( shortName ).longString()
               << std::endl;
-    err = slowerPub( slower,  shortName,  (char*)data.data() , data.size()  );
+    MsgHeaderMetrics metrics = {0};
+
+    metrics.pub_millis = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+
+
+    err = slowerPub( slower,  shortName,  (char*)data.data() , data.size(), NULL, &metrics);
     assert( err == 0 );
 
      while ( true ) {
@@ -188,33 +184,28 @@ int main(int argc, char* argv[]) {
 
       char buf[slowerMTU];
       int bufLen=0;
-      MsgShortName recvName;
+      MsgHeader mhdr;
+      MsgHeaderMetrics metrics = {0};
       
-      err = slowerRecvPub( slower, &recvName, buf, sizeof(buf), &bufLen );
-      assert( err == 0 );
-      if ( bufLen > 0 ) {
-        
-        uint64_t nowMs = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+      err = slowerRecvPub( slower, &mhdr, buf, sizeof(buf), &bufLen, &metrics);
+      uint64_t nowMs = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
 
-        uint64_t thenMs = 0;
-        if ( bufLen > 6 ) {
-          for ( int i=0; i<6; i++ ) {
-            thenMs <<= 8;
-            thenMs |= (uint8_t)(buf[i]);
-          }
+      assert( err == 0 );
+
+      if (bufLen > 0) {
+        std::clog << "Got data for "
+                  << Name( mhdr.name ).longString() << " ";
+          //<< " len=" << bufLen
+
+        if (metrics.pub_millis and metrics.relay_millis) {
+          std::clog << std::endl
+                    << "  pub age ms       : " << (nowMs - metrics.pub_millis) << std::endl
+                    << "  relay latency ms : " << (nowMs - metrics.relay_millis) << std::endl;
         }
 
-        std::chrono::milliseconds thenDuration( thenMs ); //  thenMs );
-        std::chrono::time_point<std::chrono::system_clock> thenTimePoint( thenDuration );
-        std::time_t thenCTime = std::chrono::system_clock::to_time_t( thenTimePoint );
-        std::tm thenDateTime = *std::localtime( &thenCTime );
-           
-        std::clog << "Got data for "
-                  << Name( recvName ).longString()
-          //<< " len=" << bufLen 
-                  << " at " << std::put_time(&thenDateTime, "%T")
-                  << " ";
-        for ( int i=6; i< bufLen; i++ ) {
+        std::clog << "  data --> " ;
+
+        for ( int i=0; i< bufLen; i++ ) {
           char c = buf[i];
           if (( c >= 32 ) && ( c <= 0x7e ) ) {
             std::clog << c;
@@ -223,7 +214,8 @@ int main(int argc, char* argv[]) {
              std::clog << '~';
           }
         }
-        std::clog  << " latency:" << ( nowMs - thenMs )<< std::endl;
+
+        std::clog  << std::endl;
         // break;
       }
     }

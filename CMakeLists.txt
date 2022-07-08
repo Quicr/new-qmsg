@@ -5,6 +5,7 @@ if (DEFINED PROJECT_NAME)
     # Option to control building tests
     option(qmsg_BUILD_TESTS "Build Tests for QMsg" OFF)
 else()
+    set(PROJECT_NAME QMsg)
     # Option to control building tests
     option(qmsg_BUILD_TESTS "Build Tests QMsg" ON)
 endif()
@@ -12,12 +13,12 @@ endif()
 # Option to control component installation
 option(qmsg_INSTALL "Install the QMsg Components" ON)
 
-# Option to control buildomg components requiring quicr
+# Option to control build components requiring quicr
 # (Ideally, this option should not be here, but it's needed since quicr
 # is not readily available on all platforms)
 option(qmsg_ENABLE_QUICR "Enable quicr components" ON)
 
-project(QMsg
+project(${PROJECT_NAME}
         VERSION 1.0.0.0
         DESCRIPTION "Qmsg"
         LANGUAGES CXX)

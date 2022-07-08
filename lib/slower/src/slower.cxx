@@ -262,7 +262,8 @@ int slowerAddRelay( SlowerConnection& slower, const SlowerRemote& remote ){
 }
 
   
-int slowerPub(SlowerConnection& slower, const MsgShortName& name, char buf[], int bufLen, SlowerRemote* remote ){
+int slowerPub(SlowerConnection& slower, const MsgShortName& name, char buf[], int bufLen,
+              SlowerRemote* remote, MsgHeaderMetrics *metrics) {
   assert( bufLen < slowerMTU-20 ); 
   assert( slower.fd > 0 );
   assert( bufLen > 0 );
@@ -270,19 +271,22 @@ int slowerPub(SlowerConnection& slower, const MsgShortName& name, char buf[], in
   char msg[slowerMTU];
   int msgLen=0;
 
-  MsgHeader mhdr;
+  MsgHeader mhdr = {0};
   mhdr.type = SlowerMsgPub;
+  mhdr.flags.metrics = metrics == NULL ? 0 : 1;
   mhdr.name = name;
 
   memcpy(msg+msgLen, &mhdr, sizeof(mhdr)); msgLen += sizeof(mhdr);
 
+  if (mhdr.flags.metrics) {
+    memcpy(msg + msgLen, metrics, sizeof(MsgHeaderMetrics)); msgLen += sizeof(MsgHeaderMetrics);
+    assert( msgLen + bufLen < sizeof(msg) );
+  }
+
   MsgPubHeader mpub_hdr;
   mpub_hdr.dataLen = bufLen;
-
   assert( sizeof(msg) - msgLen >= sizeof(mpub_hdr));
-
   memcpy(msg+msgLen, &mpub_hdr, sizeof(mpub_hdr)); msgLen += sizeof(mpub_hdr);
-
   assert( msgLen + bufLen < sizeof(msg) );
 
   memcpy( msg+msgLen, buf, bufLen ) ; msgLen += bufLen;
@@ -293,19 +297,20 @@ int slowerPub(SlowerConnection& slower, const MsgShortName& name, char buf[], in
 }
 
 
-int slowerRecvMulti(SlowerConnection& slower, MsgShortName* name, SlowerMsgType* msgType, SlowerRemote* remote, int* mask, char buf[], int bufSize, int* bufLen ){
-  assert( name );
-  assert( msgType );
+int slowerRecvMulti(SlowerConnection& slower, MsgHeader *msgHeader, SlowerRemote* remote,
+                    int* mask, char buf[], int bufSize, int* bufLen, MsgHeaderMetrics *metrics ){
+
+  assert (msgHeader);
   assert( remote );
   assert( mask );
   assert( buf );
   assert( bufLen );
   assert( bufSize > 0 );
 
-  *msgType = SlowerMsgInvalid;
+  msgHeader->type = SlowerMsgInvalid;
   *mask=0;
   *bufLen=0;
-  bzero( name->data, sizeof( name->data ) );
+  bzero( msgHeader->name.data, sizeof( msgHeader->name.data ) );
 
   char msg[slowerMTU];
   int msgLen=0; // total length of data received 
@@ -319,37 +324,37 @@ int slowerRecvMulti(SlowerConnection& slower, MsgShortName* name, SlowerMsgType*
     return 0;
   }
 
-  MsgHeader mhdr;
-  memcpy(&mhdr, msg, sizeof(mhdr));
+  memcpy(msgHeader, msg, sizeof(MsgHeader));
+  msgLoc += sizeof(MsgHeader);
 
-  memcpy(name->data, &mhdr.name, sizeof(mhdr.name.data));
+  if (msgHeader->flags.metrics) {
+    if (metrics != NULL)
+      memcpy(metrics, msg+msgLoc, sizeof(MsgHeaderMetrics));
 
-  msgLoc += sizeof(mhdr);
+    msgLoc += sizeof(MsgHeaderMetrics);
+  }
 
-  *msgType = (SlowerMsgType)mhdr.type;
-  assert( *msgType != SlowerMsgInvalid );
+  assert( msgHeader->type != SlowerMsgInvalid );
 
-  std::clog << "MSG HDR:" << std::endl
-      << " Type       : " << SlowerMsgType(mhdr.type) << std::endl
-      << " MsgShortName  : " << std::endl
-      << " -------------------------------" << std::endl
-      << "   Origin   : " << mhdr.name.spec.origin_id << std::endl
-      << "   App ID   : " << (int) mhdr.name.spec.app_id << std::endl
-      << "   Path     : " << (int) mhdr.name.spec.path << std::endl
-      << "   Org      : " << mhdr.name.spec.org << std::endl
-      << "   Team     : " << mhdr.name.spec.team << std::endl
-      << "   Channel  : " << mhdr.name.spec.channel << std::endl
-      << "   Device   : " << mhdr.name.spec.device << std::endl
-      << "   Msg ID   : " << mhdr.name.spec.msg_id << std::endl;
+//  std::clog << "MSG HDR:" << std::endl
+//      << " Type       : " << SlowerMsgType(mhdr.type) << std::endl
+//      << " MsgShortName  : " << std::endl
+//      << " -------------------------------" << std::endl
+//      << "   Origin   : " << mhdr.name.spec.origin_id << std::endl
+//      << "   App ID   : " << (int) mhdr.name.spec.app_id << std::endl
+//      << "   Path     : " << (int) mhdr.name.spec.path << std::endl
+//      << "   Org      : " << mhdr.name.spec.org << std::endl
+//      << "   Team     : " << mhdr.name.spec.team << std::endl
+//      << "   Channel  : " << mhdr.name.spec.channel << std::endl
+//      << "   Device   : " << mhdr.name.spec.device << std::endl
+//      << "   Msg ID   : " << mhdr.name.spec.msg_id << std::endl;
 
-  switch (*msgType) {
+  switch (msgHeader->type) {
   case SlowerMsgPub:
     MsgPubHeader mpub_hdr;
 
     assert ( bufSize - msgLoc >= sizeof(mpub_hdr));
     memcpy(&mpub_hdr, msg+msgLoc, sizeof(mpub_hdr)); msgLoc += sizeof(mpub_hdr);
-
-
 
     assert( bufSize - msgLoc >= mpub_hdr.dataLen );
     memcpy( buf, msg+msgLoc, mpub_hdr.dataLen ); msgLoc += mpub_hdr.dataLen;
@@ -385,20 +390,23 @@ int slowerRecvMulti(SlowerConnection& slower, MsgShortName* name, SlowerMsgType*
 
 int slowerRecvAck(SlowerConnection& slower, MsgShortName* name ){
   assert( name );
-  
-  SlowerMsgType type;
+
+  MsgHeader mhdr = {0};
   SlowerRemote remote;
   int mask;
 
   char buf[slowerMTU];
   int bufSize=sizeof(buf);
   int bufLen=0;
-    
-  int err = slowerRecvMulti( slower,name, &type, &remote, &mask, buf, bufSize, &bufLen );
+
+  int err = slowerRecvMulti( slower, &mhdr, &remote, &mask, buf, bufSize, &bufLen );
   if ( err != 0 ) {
     return err;
   }
-  if ( type != SlowerMsgAck ) {
+
+  memcpy(name->data, mhdr.name.data, MSG_SHORT_NAME_LEN);
+
+  if ( mhdr.type != SlowerMsgAck ) {
     bzero( name, sizeof( *name ) );
     return 0;
   }
@@ -407,21 +415,20 @@ int slowerRecvAck(SlowerConnection& slower, MsgShortName* name ){
 }
 
 
-int slowerRecvPub(SlowerConnection& slower, MsgShortName* name, char buf[], int bufSize, int* bufLen ){
-  assert( name );
+int slowerRecvPub(SlowerConnection& slower, MsgHeader* msgHeader, char buf[], int bufSize, int* bufLen, MsgHeaderMetrics *metrics ){
+  assert( msgHeader );
   assert( bufLen );
   assert( bufSize > 0 );
   
-  SlowerMsgType type;
   SlowerRemote remote;
   int mask;
   
-  int err = slowerRecvMulti( slower,name, &type, &remote, &mask, buf, bufSize, bufLen );
+  int err = slowerRecvMulti( slower,msgHeader, &remote, &mask, buf, bufSize, bufLen, metrics );
   if ( err != 0 ) {
     return err;
   }
-  if ( type != SlowerMsgPub ) {
-    bzero( name, sizeof( *name ) );
+
+  if ( msgHeader->type != SlowerMsgPub ) {
     *bufLen = 0;
     return 0;
   }
@@ -436,7 +443,7 @@ int slowerAck(SlowerConnection& slower, const MsgShortName& name, SlowerRemote* 
   char msg[slowerMTU];
   int msgLen=0;
 
-  MsgHeader mhdr;
+  MsgHeader mhdr = {0};
   mhdr.type = SlowerMsgAck;
   mhdr.name = name;
 
@@ -456,7 +463,7 @@ int slowerSub(SlowerConnection& slower, const MsgShortName& name, int mask , Slo
   char msg[slowerMTU];
   int msgLen=0;
 
-  MsgHeader mhdr;
+  MsgHeader mhdr = {0};
   mhdr.type = SlowerMsgSub;
   mhdr.name = name;
 
@@ -486,7 +493,7 @@ int slowerUnSub(SlowerConnection& slower, const MsgShortName& name, int mask , S
   char msg[slowerMTU];
   int msgLen=0;
 
-  MsgHeader mhdr;
+  MsgHeader mhdr = {0};
   mhdr.type = SlowerMsgUnSub;
   mhdr.name = name;
 
