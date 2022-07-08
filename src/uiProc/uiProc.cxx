@@ -1,4 +1,3 @@
-
 #include <assert.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -8,68 +7,58 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
+#include "qmsg/encoder.h"
 
-int main( int argc, char* argv[]){
+#include "UserInterface.hh"
+#include "Parser.hh"
+#include "Sender.hh"
+#include "KeyBoardReader.hh"
 
-  fprintf(stderr, "UI: Starting\n");
-     
-  int keyboardFD = 0;
+constexpr int Buffer_Size = 1024;
 
-  int sec2uiFD = open( "/tmp/pipe-s2u" , O_RDONLY, O_NONBLOCK );
-  assert( sec2uiFD >= 0 );
-  fprintf(stderr, "UI: Got pipe from secProc\n");
+int main(int argc, char *argv[])
+{
 
-  int ui2secFD = open( "/tmp/pipe-u2s" , O_WRONLY, O_NONBLOCK );
-  assert( ui2secFD >= 0 );
-  fprintf(stderr, "UI: Got pipe to secProc\n");
-  
-  const int bufSize=128;
-  char secBuf[bufSize];
-  char keyboardBuf[bufSize];
- 
-  while( true ) {
-    //fprintf(stderr, "UI: Loop\n");
+    fprintf(stderr, "UI: Starting\n");
 
-    //waitForInput
-     struct timeval timeout;
-     timeout.tv_sec = 1;
-     timeout.tv_usec = 0;
-     fd_set fdSet;
-     int maxFD=0;
-     FD_ZERO(&fdSet);
-     FD_SET(keyboardFD, &fdSet); maxFD = (keyboardFD>maxFD) ? keyboardFD : maxFD;
-     FD_SET(sec2uiFD, &fdSet); maxFD = (sec2uiFD>maxFD) ? sec2uiFD : maxFD;
-     int numSelectFD = select( maxFD+1 , &fdSet , NULL, NULL, &timeout );
-     assert( numSelectFD >= 0 );
-     //fprintf(stderr, "UI: Running\n");
-      
-    //processKeyboard
-     if ( (numSelectFD > 0) && ( FD_ISSET(keyboardFD, &fdSet) ) ) {
-       //fprintf(stderr, "UI: Reading Keyboard\n");
-       ssize_t num = read( keyboardFD, keyboardBuf, bufSize );
-       if ( num > 0 ) {
-         fprintf( stderr, "UI: Read %d bytes from keyboard: ", (int)num );
-         fwrite( keyboardBuf, 1 , num , stderr );
-         fprintf( stderr, "\n");
+    // keyboard file descriptor
+    int keyboard_fd = 0;
 
-         // send to secure processor
-         const char* sending ="sending: ";
-         write( ui2secFD, sending, strlen( sending ) );
-         write( ui2secFD, keyboardBuf, num );
-       }
-     }
-     
-    //processSecureProc
-     if ( (numSelectFD > 0) && ( FD_ISSET(sec2uiFD, &fdSet) ) ) {
-       //fprintf(stderr, "UI: Reding Sec Proc\n");
-       ssize_t num = read( sec2uiFD, secBuf, bufSize );
-       if ( num > 0 ) {
-         fprintf( stderr, "UI: Read %d bytes from SecProc: ", (int)num );
-         fwrite( secBuf, 1 , num , stderr );
-         fprintf( stderr, "\n");
-       }
-     }
-  }
-  
-  return 0;
+    // Setup the security to ui file descriptor
+    int sec_to_ui_fd = open("/tmp/pipe-s2u", O_RDONLY, O_NONBLOCK);
+    assert(sec_to_ui_fd >= 0);
+    fprintf(stderr, "UI: Got pipe from secProc\n");
+
+    // Setup the ui to security file descriptor
+    int ui_to_sec_fd = open("/tmp/pipe-u2s", O_WRONLY, O_NONBLOCK);
+    assert(ui_to_sec_fd >= 0);
+    fprintf(stderr, "UI: Got pipe to secProc\n");
+
+    struct timeval timeout;
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+
+    fd_set fdSet;
+    int maxFD = 0;
+
+    int selected_fd = 0;
+
+    UserInterface user_interface(
+        keyboard_fd, sec_to_ui_fd, ui_to_sec_fd, Buffer_Size);
+    user_interface.Start();
+    while (user_interface.Running())
+    {
+        FD_ZERO(&fdSet);
+        FD_SET(keyboard_fd, &fdSet);
+        maxFD = (keyboard_fd > maxFD) ? keyboard_fd : maxFD;
+        FD_SET(sec_to_ui_fd, &fdSet);
+        maxFD = (sec_to_ui_fd > maxFD) ? sec_to_ui_fd : maxFD;
+        selected_fd = select(maxFD+1, &fdSet, NULL, NULL, &timeout);
+        assert(selected_fd >= 0);
+
+        // Process the user interface
+        user_interface.Process(selected_fd, fdSet);
+    }
+
+    return 0;
 }

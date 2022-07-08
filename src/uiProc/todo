@@ -1,0 +1,26 @@
+
+
+- Command class with call backs
+
+- Make a receiver class, which has a fdReader in it.
+
+- Make the sender class have a fdReader in it.
+
+- When start up occurs, the user needs to broadcast their id so they can get
+their immediate subscriptions
+
+- Sort messages in a channel by timestamp
+
+- Initial handshake (to get the keys for the team)
+
+- Get all channels
+
+- Get all previous messages
+
+- Get keys when they change - should be handled in the receiver.
+
+- Send a watch (channels) (integer)
+
++ Send a message
+
++ Receive a message
