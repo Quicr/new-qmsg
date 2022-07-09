@@ -11,11 +11,12 @@
 Subscriptions::Subscriptions() {
   subscriptions.resize(128);
 }
-  
-void Subscriptions::add(  const ShortName& name, const int mask, const SlowerRemote& remote ) {
-  assert( mask <= 64 );
-  ShortName group = name;
-  group.part[0] &= (0xFFFFffffFFFFffffl << mask );
+
+void Subscriptions::add(const MsgShortName& name, const int mask, const SlowerRemote& remote ) {
+  assert( mask <= 70 ); // Mask to org
+
+  MsgShortName group;
+  getMaskedMsgShortName(name, group, mask);
 
   //std::clog << "subscribe.cxx: add "
   //          << std::hex << group.part[1] << "-" <<  group.part[0] << std::dec
@@ -26,7 +27,7 @@ void Subscriptions::add(  const ShortName& name, const int mask, const SlowerRem
   if ( mapPtr == subscriptions[mask].end() ) {
     std::set<SlowerRemote> list;
     list.insert( remote );
-    std::pair<ShortName,std::set<SlowerRemote>> pair;
+    std::pair<MsgShortName,std::set<SlowerRemote>> pair;
     pair = make_pair( group , list );
     subscriptions[mask].insert( pair );
   }
@@ -38,10 +39,10 @@ void Subscriptions::add(  const ShortName& name, const int mask, const SlowerRem
   }
 }
   
-void Subscriptions::remove(  const ShortName& name, const int mask, const SlowerRemote& remote ) {
+void Subscriptions::remove(const MsgShortName& name, const int mask, const SlowerRemote& remote ) {
   assert( mask <= 64 );
-  ShortName group = name;
-  group.part[0] &= (0xFFFFffffFFFFffffl << mask );
+  MsgShortName group;
+  getMaskedMsgShortName(name, group, mask);
 
   auto mapPtr = subscriptions[mask].find( group );
   if ( mapPtr != subscriptions[mask].end() ) {
@@ -52,14 +53,15 @@ void Subscriptions::remove(  const ShortName& name, const int mask, const Slower
   }
 }
   
-std::list<SlowerRemote> Subscriptions::find(  const ShortName& name  ) {
+std::list<SlowerRemote> Subscriptions::find(  const MsgShortName& name  ) {
   std::list<SlowerRemote> ret;
   //std::clog << "subscribe.cxx: find " << std::hex << group.part[1] << "-" <<  group.part[0] << std::dec << std::endl;
+  MsgShortName group;
 
-  for ( int mask=0; mask < 64 ; mask ++ ) {
-    ShortName group = name;
-    group.part[0] &= (0xFFFFffffFFFFffffl << mask );
-    
+  // TODO: Fix this to not have to iterate for each mask bit
+  for ( int mask=0; mask <=70 ; mask ++ ) {
+    getMaskedMsgShortName(name, group, mask);
+
     auto mapPtr = subscriptions[mask].find( group );
     if ( mapPtr != subscriptions[mask].end() ) {
       std::set<SlowerRemote>& list = mapPtr->second;

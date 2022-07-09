@@ -11,17 +11,17 @@ class Cache {
 public:
   Cache() {};
 
-  void put( const ShortName& name,  const std::vector<uint8_t>& data );
+  void put(const MsgShortName& name, const std::vector<uint8_t>& data );
 
-  const std::vector<uint8_t>* get( const ShortName& name ) const;
+  const std::vector<uint8_t>* get( const MsgShortName& name ) const;
 
-  bool exists(  const ShortName& name ) const;
+  bool exists(  const MsgShortName& name ) const;
 
-  std::list<ShortName> find(  const ShortName& name, const int mask ) const;
+  std::list<MsgShortName> find(const MsgShortName& name, const int mask ) const;
 
   ~Cache();
   
 private:
-  std::map< ShortName, std::vector<uint8_t>* > dataCache;
+  std::map< MsgShortName, std::vector<uint8_t>* > dataCache;
   const std::vector<uint8_t> emptyVec;
 };

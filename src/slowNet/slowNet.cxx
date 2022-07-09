@@ -47,33 +47,32 @@ public:
 
   int getFD() { return slowerGetFD( slower ); }
   
-  void pub( const ShortName& name, const uint8_t* data, const int len ) {
+  void pub(const MsgShortName& name, const uint8_t* data, const int len ) {
     int err = slowerPub( slower,  name,  (char*) data , len  );
     assert( err == 0 );
   }
 
-  void sub( const ShortName& name, const int mask ) {
+  void sub(const MsgShortName& name, const int mask ) {
     int err = slowerSub( slower,  name, mask  );
-    std::clog << "   sub " << std::hex << name.part[1] << "-" <<  name.part[0] << std::dec << std::endl;
     assert( err == 0 );
   }
 
   void recv( ) {
-    ShortName shortName;
+    MsgHeader mhdr = {0};
     char buf[1024];
     int bufSize=sizeof(buf);
     int bufLen=0;
-    int err = slowerRecvPub( slower, &shortName, buf, bufSize, &bufLen );
+    int err = slowerRecvPub( slower, &mhdr, buf, bufSize, &bufLen );
     assert( err == 0 );
-    Name name( shortName );
-    
+    Name name( mhdr.name );
+
     if ( bufLen > 0 ) {
       std::clog << "NET: Recv PUB "
                 << name.longString() 
                 << " len=" << bufLen 
                 << std::endl;
       
-      secApi.recvAsciiMsg( name.team(), name.device(), name.channel(),
+      secApi.recvAsciiMsg( mhdr.name.spec.team, mhdr.name.spec.device, mhdr.name.spec.channel,
                            (uint8_t*)buf, bufLen );
     }
   }
