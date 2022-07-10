@@ -22,20 +22,24 @@ extern "C"
 {
 #endif
 
-typedef uint32_t QMsgTeamID;
-typedef uint32_t QMsgChannelID;
-typedef uint16_t QMsgDeviceID;
-typedef uint32_t QMsgPin;
+typedef uint32_t QMsgMessageType;               // Message type (wire encoding)
+typedef uint32_t QMsgLength;                    // Size of length fields
+typedef uint32_t QMsgOrgID;                     // Organization ID
+typedef uint32_t QMsgTeamID;                    // Team ID
+typedef uint32_t QMsgChannelID;                 // Channel ID
+typedef uint32_t QMsgDeviceID;                  // Device ID
+typedef uint32_t QMsgMessageID;                 // Message ID
+typedef uint32_t QMsgPin;                       // PIN value
 
-typedef struct QMsgOpaque_t
+typedef struct QMsgOpaque_t                     // Opaque type
 {
-    uint32_t length;
+    QMsgLength length;
     uint8_t *data;
 } QMsgOpaque_t;
 
-typedef struct QMsgDeviceList_t
+typedef struct QMsgDeviceList_t                 // Device list type
 {
-    uint32_t num_devices;
+    size_t num_devices;
     QMsgDeviceID *device_list;
 } QMsgDeviceList_t;
 

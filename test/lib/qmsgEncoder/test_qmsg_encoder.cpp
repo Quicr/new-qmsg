@@ -172,16 +172,25 @@ namespace {
         std::uint8_t expected[] =
         {
             // Message length
-            0x00, 0x00, 0x00, 0x1d,
+            0x00, 0x00, 0x00, 0x29,
 
             // Message type
             0x00, 0x00, 0x00, 0x01,
+
+            // Org ID
+            0x11, 0x12, 0x13, 0x14,
 
             // Team ID
             0x01, 0x02, 0x03, 0x04,
 
             // Channel ID
             0x05, 0x06, 0x07, 0x08,
+
+            // Device ID
+            0x21, 0x22, 0x23, 0x24,
+
+            // Message ID
+            0xa1, 0xa2, 0xa3, 0xa4,
 
             // Opaque data length
             0x00, 0x00, 0x00, 0x0d,
@@ -196,8 +205,11 @@ namespace {
         std::uint32_t string_length = strlen(text);
 
         message.type = QMsgNetSendASCIIMessage;
+        message.u.send_ascii_message.org_id = 0x11121314;
         message.u.send_ascii_message.team_id = 0x01020304;
         message.u.send_ascii_message.channel_id = 0x05060708;
+        message.u.send_ascii_message.device_id = 0x21222324;
+        message.u.send_ascii_message.message_id = 0xa1a2a3a4;
         message.u.send_ascii_message.message.length = string_length;
         message.u.send_ascii_message.message.data =
                                     reinterpret_cast<std::uint8_t *>(text);
@@ -220,16 +232,25 @@ namespace {
         std::uint8_t buffer[] =
         {
             // Message length
-            0x00, 0x00, 0x00, 0x1d,
+            0x00, 0x00, 0x00, 0x29,
 
             // Message type
             0x00, 0x00, 0x00, 0x01,
+
+            // Org ID
+            0x11, 0x12, 0x13, 0x14,
 
             // Team ID
             0x01, 0x02, 0x03, 0x04,
 
             // Channel ID
             0x05, 0x06, 0x07, 0x08,
+
+            // Device ID
+            0x21, 0x22, 0x23, 0x24,
+
+            // Message ID
+            0xa1, 0xa2, 0xa3, 0xa4,
 
             // Opaque data length
             0x00, 0x00, 0x00, 0x0d,
@@ -252,10 +273,16 @@ namespace {
 
         ASSERT_EQ(sizeof(buffer), octets_consumed);
         ASSERT_EQ(QMsgUISendASCIIMessage, message.type);
+        ASSERT_EQ(std::uint32_t(0x11121314),
+                  message.u.send_ascii_message.org_id);
         ASSERT_EQ(std::uint32_t(0x01020304),
                   message.u.send_ascii_message.team_id);
         ASSERT_EQ(std::uint32_t(0x05060708),
                   message.u.send_ascii_message.channel_id);
+        ASSERT_EQ(std::uint32_t(0x21222324),
+                  message.u.send_ascii_message.device_id);
+        ASSERT_EQ(std::uint32_t(0xa1a2a3a4),
+                  message.u.send_ascii_message.message_id);
         ASSERT_EQ(strlen(text), message.u.send_ascii_message.message.length);
         ASSERT_EQ(0,
                   std::memcmp(message.u.send_ascii_message.message.data,
@@ -269,7 +296,7 @@ namespace {
         std::uint8_t expected[] =
         {
             // Message length
-            0x00, 0x00, 0x00, 0x16,
+            0x00, 0x00, 0x00, 0x1c,
 
             // Message type
             0x00, 0x00, 0x00, 0x03,
@@ -281,10 +308,12 @@ namespace {
             0x05, 0x06, 0x07, 0x08,
 
             // Device list length (in octets)
-            0x00, 0x00, 0x00, 0x06,
+            0x00, 0x00, 0x00, 0x0c,
 
             // Device list
-            0x00, 0x01, 0x00, 0x02, 0x00, 0x03
+            0x00, 0x00, 0x00, 0x01,
+            0x00, 0x00, 0x00, 0x02,
+            0x00, 0x00, 0x00, 0x03
         };
 
         QMsgNetMessage message{};
@@ -314,7 +343,7 @@ namespace {
         std::uint8_t buffer[] =
         {
             // Message length
-            0x00, 0x00, 0x00, 0x16,
+            0x00, 0x00, 0x00, 0x1c,
 
             // Message type
             0x00, 0x00, 0x00, 0x03,
@@ -326,10 +355,12 @@ namespace {
             0x05, 0x06, 0x07, 0x08,
 
             // Device list length (in octets)
-            0x00, 0x00, 0x00, 0x06,
+            0x00, 0x00, 0x00, 0x0c,
 
             // Device list
-            0x00, 0x01, 0x00, 0x02, 0x00, 0x03
+            0x00, 0x00, 0x00, 0x01,
+            0x00, 0x00, 0x00, 0x02,
+            0x00, 0x00, 0x00, 0x03
         };
 
         QMsgNetMessage message{};
@@ -355,23 +386,32 @@ namespace {
         ASSERT_EQ(3, message.u.watch_devices.device_list.device_list[2]);
     };
 
-    TEST_F(QMsgEncoderTest, Deserialize_MultipleMessageExample)
+    TEST_F(QMsgEncoderTest, Deserialize_MultipleNetMessageExample)
     {
         std::uint8_t buffer[] =
         {
             // MESSAGE #1
 
             // Message length
-            0x00, 0x00, 0x00, 0x1d,
+            0x00, 0x00, 0x00, 0x29,
 
             // Message type
             0x00, 0x00, 0x00, 0x01,
+
+            // Org ID
+            0x11, 0x12, 0x13, 0x14,
 
             // Team ID
             0x01, 0x02, 0x03, 0x04,
 
             // Channel ID
             0x05, 0x06, 0x07, 0x08,
+
+            // Device ID
+            0x21, 0x22, 0x23, 0x24,
+
+            // Message ID
+            0xa1, 0xa2, 0xa3, 0xa4,
 
             // Opaque data length
             0x00, 0x00, 0x00, 0x0d,
@@ -383,7 +423,7 @@ namespace {
             // MESSAGE #2
 
             // Message length
-            0x00, 0x00, 0x00, 0x16,
+            0x00, 0x00, 0x00, 0x1c,
 
             // Message type
             0x00, 0x00, 0x00, 0x03,
@@ -395,24 +435,35 @@ namespace {
             0x05, 0x06, 0x07, 0x08,
 
             // Device list length (in octets)
-            0x00, 0x00, 0x00, 0x06,
+            0x00, 0x00, 0x00, 0x0c,
 
             // Device list
-            0x00, 0x01, 0x00, 0x02, 0x00, 0x03,
+            0x00, 0x00, 0x00, 0x01,
+            0x00, 0x00, 0x00, 0x02,
+            0x00, 0x00, 0x00, 0x03,
 
             // MESSAGE #3
 
             // Message length
-            0x00, 0x00, 0x00, 0x1d,
+            0x00, 0x00, 0x00, 0x29,
 
             // Message type
             0x00, 0x00, 0x00, 0x01,
+
+            // Org ID
+            0x11, 0x12, 0x13, 0x14,
 
             // Team ID
             0x01, 0x02, 0x03, 0x04,
 
             // Channel ID
             0x05, 0x06, 0x07, 0x08,
+
+            // Device ID
+            0x21, 0x22, 0x23, 0x24,
+
+            // Message ID
+            0xa1, 0xa2, 0xa3, 0xa4,
 
             // Opaque data length
             0x00, 0x00, 0x00, 0x0d,

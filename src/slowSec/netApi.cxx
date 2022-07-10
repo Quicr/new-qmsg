@@ -21,7 +21,7 @@ void NetApi::send(const QMsgNetMessage &message) {
                              sizeof(encodeBuffer), &encodeLen);
   assert(err == QMsgEncoderSuccess);
 
-  uint32_t sendLen = encodeLen;
+  QMsgLength sendLen = encodeLen;
   ssize_t n = write(sec2netFD, &sendLen, sizeof(sendLen));
   assert(n == sizeof(sendLen));
   n = write(sec2netFD, encodeBuffer, sendLen);
@@ -48,11 +48,11 @@ NetApi::~NetApi() {
   context = nullptr;
 };
 
-void NetApi::watch(int team, std::vector<uint16_t> &deviceList, int ch) {
+void NetApi::watch(int team, std::vector<QMsgDeviceID> &deviceList, int ch) {
   QMsgNetMessage message{};
 
   assert(sizeof(*(message.u.watch_devices.device_list.device_list)) ==
-         sizeof(uint16_t));
+         sizeof(QMsgDeviceID));
 
   message.type = QMsgNetWatchDevices;
   message.u.watch_devices.team_id = team;
@@ -85,7 +85,7 @@ void NetApi::readMsg(QMsgNetMessage *message) {
   const int bufSize = 128;
   uint8_t uiBuf[bufSize];
 
-  uint32_t msgLen = 0;
+  QMsgLength msgLen = 0;
   ssize_t num = read(net2secFD, &msgLen, sizeof(msgLen));
   if ( num == 0 ) {
     message->type = QMsgNetInvalid;

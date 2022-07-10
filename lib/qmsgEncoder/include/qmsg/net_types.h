@@ -42,17 +42,21 @@ typedef enum QMsgNetMessageType
 // Define the various Net<=>Sec Message types
 typedef struct QMsgNetSendASCIIMessage_t
 {
+    QMsgOrgID org_id;
     QMsgTeamID team_id;
     QMsgChannelID channel_id;
     QMsgDeviceID device_id;
+    QMsgMessageID message_id;
     QMsgOpaque_t message;
 } QMsgNetSendASCIIMessage_t;
 
 typedef struct QMsgNetReceiveASCIIMessage_t
 {
+    QMsgOrgID org_id;
     QMsgTeamID team_id;
     QMsgChannelID channel_id;
     QMsgDeviceID device_id;
+    QMsgMessageID message_id;
     QMsgOpaque_t message;
 } QMsgNetReceiveASCIIMessage_t;
 
