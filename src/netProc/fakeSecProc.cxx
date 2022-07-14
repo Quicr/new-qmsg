@@ -11,6 +11,7 @@
 #include <future>
 #include <thread>
 #include <chrono>
+#include <cstring>
 
 #include "message_loop.h"
 

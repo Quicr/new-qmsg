@@ -4,6 +4,4 @@ if(qmsg_BUILD_TESTS)
 endif()
 
 # quicr
-if(qmsg_ENABLE_QUICR)
-    add_subdirectory(quicr)
-endif()
+add_subdirectory(quicr)
