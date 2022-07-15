@@ -35,6 +35,12 @@ struct QuicrDelegate: public quicr::QuicRClient::Delegate {
         // trigger a resubscribe
     }
 
+    virtual void on_object_published(const std::string& name,
+                                     uint64_t group_id,
+                                     uint64_t object_id) override
+    {
+    }
+
     virtual void log(quicr::LogLevel level, const std::string& message) override {
         std::clog <<  message << std::endl;
     }

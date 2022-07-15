@@ -2,9 +2,11 @@
 include(FetchContent)
 
 # Try find GoogleTest on the system
-find_package(GTest)
+find_package(GTest QUIET)
 
-if(NOT GTest_FOUND)
+if(GTest_FOUND)
+    message(STATUS "Using GTest installed on the system")
+else()
     message(STATUS "Fetching GTest since it was not available on the system")
 
     # Fetch GTest for library's use
