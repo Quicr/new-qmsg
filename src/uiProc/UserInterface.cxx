@@ -2,13 +2,15 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <iostream>
 
 UserInterface::UserInterface(const int keyboard_fd,
                              const int sec_to_ui_fd,
                              const int ui_to_sec_id,
                              const unsigned int buffer_size) :
     selected_fd(0),
-    is_running(false)
+    is_running(false),
+    update_draw(false)
 {
     keyboard = new FdReader(keyboard_fd, buffer_size);
     receiver = new FdReader(sec_to_ui_fd, buffer_size);
@@ -58,7 +60,7 @@ void UserInterface::Start()
     PrintMessage("Please enter your pin\n");
 
     // HACK remove this, just for testing.
-    ConstructMessageMatrix();
+    // BuildMessageUIMatrix();
     is_running = true;
 }
 
@@ -72,7 +74,9 @@ void UserInterface::Draw()
 {
     if (update_draw)
     {
-        printf("\e[1;1H\e[2J");
+        // HACK This is not very portable.. and may be different for the embedded
+        // devices. However, at the moment it doesn't matter
+        system("clear");
         for (int i = 0; i < draw_matrix.size(); i++)
         {
             fprintf(stderr, draw_matrix[i].c_str());
@@ -134,18 +138,15 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
         keyboard->Read();
         if (keyboard->BufferLength() > 0)
         {
-            // Put message into the queue
-            FdMessage msg;
-            msg.length = keyboard->BufferLength();
-            msg.data = keyboard->Data();
-            outgoing_queue.push(msg);
-            return;
             // If we haven't received the user's pin yet, then wait here.
             if (!profile->PinAccepted())
             {
                 if (profile->ComparePin(keyboard->Data()))
                 {
                     fprintf(stderr, "Pin accepted\n");
+
+                    BuildMessageUIMatrix();
+                    update_draw = true;
                 }
                 else
                 {
@@ -186,9 +187,9 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                         char* argument_token = strtok(NULL, " ");
                         if (argument_token)
                         {
-                            // TODO actually set it.
-                            fprintf(stderr, "Username has been set to %s",
+                            fprintf(stderr, "Username has been set to %s\n",
                                 argument_token);
+                            profile->SetUsername(argument_token);
                         }
                         else
                         {
@@ -283,8 +284,6 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                     DisplayHelpMessage();
                 }
 
-                // TODO
-                // keyboard->Flush();
                 return;
             }
             else
@@ -296,6 +295,19 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                     // and note we are not in a channel
                 }
 
+                // Put message into the queue
+                std::string msg = keyboard->Data();
+
+                // Push the message into the messages vector
+                std::vector<std::string> sub_messages = BuildMessage(profile->GetUsername(), msg);
+
+                for (int i = 0; i < sub_messages.size(); i++)
+                {
+                    messages.push_back(sub_messages[i]);
+                }
+
+                BuildMessageUIMatrix();
+                update_draw = true;
 
                 // Send to secure process
                 sender->SendPlainMessage(keyboard->Data(), keyboard->BufferLength());
@@ -368,7 +380,7 @@ void UserInterface::PrintTimestampedMessage(const char *msg)
 }
 
 
-void UserInterface::ConstructMessageMatrix()
+void UserInterface::BuildMessageUIMatrix()
 {
     // HACK this is only the concept currently
     // TODO calculate the number of lines high the console is?
@@ -384,22 +396,11 @@ void UserInterface::ConstructMessageMatrix()
         "Hype project"
     };
 
-    // TODO messages should be parsed here
-    std::vector<std::string> messages = {
-        "Message1",
-        "message2",
-        "message3"
-    };
-
     std::vector<std::string> users = {
         "brett",
         "tomas"
     };
 
-    // HACK these should be calculated based on the window size
-    const int num_channel_spaces = 24;
-    const int num_messages_spaces = 100;
-    const int num_user_spaces = 24;
     std::string append_str = "";
 
     draw_matrix.clear();
@@ -445,13 +446,12 @@ void UserInterface::ConstructMessageMatrix()
         num_removed_spaces = 0;
         if (messages.size() > i)
         {
-            // Messages to print
-            // TODO Parse messages and break them up based on how many
-            // indices the message takes up
+            // Messages to print these should be pre-parsed into individual lines prior to this
+            // point because the splitting of the messages will completely mess with the
+            // calculation on how to display the users section.
             append_str += " " + messages[i];
 
-            // TODO this will be affected by how the break in the word
-            // if its too long.
+            // Get how long the message is.
             num_removed_spaces = messages[i].length() + 1;
         }
 
@@ -468,7 +468,7 @@ void UserInterface::ConstructMessageMatrix()
         {
             append_str += " @" + users[i];
 
-            num_removed_spaces = messages[i].length();
+            num_removed_spaces = users[i].length();
         }
 
         for (int j = 1; j < num_user_spaces - num_removed_spaces; j++)
@@ -488,39 +488,62 @@ void UserInterface::ConstructMessageMatrix()
     append_str += "\n";
     draw_matrix.push_back(append_str);
     draw_matrix.push_back("> ");
+}
 
-    // NOTE Should look something like this.
-    // draw_matrix =
-    // {
-    //     "Welcome to Cisco Secure Messaging\n",
-    //     "-------------------------------------------------------------------------------------------------\n",
-    //     "Lorem Channel           | #Some current channel                                  | Users         \n",
-    //     "#channel_name           | some message                                           | Brett         \n",
-    //     "#channel_name2          | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "                        | some message                                           |               \n",
-    //     "------------------------|--------------------------------------------------------|---------------\n",
-    //     ">"
-    // };
+std::vector<std::string> UserInterface::BuildMessage(std::string user_name, std::string message)
+{
+    // TODO add timestamps
 
-// TODO consider this instead of keyboard fd...
-// https://stackoverflow.com/questions/54637681/change-user-console-input-as-they-type-in-c
+    std::vector<std::string> sub_messages;
+    std::string sub_msg = "";
+    std::string split_msg = "<" + user_name + "> " + message;
+    std::uint16_t num_sub_msgs = 0;
+
+    // this if may not be needed
+    if (split_msg.length() > num_messages_spaces)
+    {
+        std::cout << "here1" << std::endl;
+        // This will not put the final bit of string onto the vector, that will
+        // be handled at the end
+        while (split_msg.length() > num_messages_spaces)
+        {
+            std::cout << "here2" << std::endl;
+            bool delimiter_found = false;
+            // Scan starting from the limit for the next delimiter
+            // HACK minus 2 for cases where the start would be a space
+            // and the word was already overflowing the spacing
+            for (int i = num_messages_spaces - 2; i >= 0; i--)
+            {
+                // TODO add more delimiters
+                if (split_msg[i] == ' ')
+                {
+
+                    std::cout << i << std::endl;
+                    // If we have multiple sub messages append
+                    // some spaces to the front
+                    // if (num_sub_msgs > 1)
+                    //     sub_msg += "  ";
+
+                    sub_msg = split_msg.substr(0, i);
+
+                    // Push onto the vector
+                    sub_messages.push_back(sub_msg);
+
+                    // Shift the window over
+                    split_msg = "  " + split_msg.substr(i, split_msg.length() - i);
+                    delimiter_found = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    sub_messages.push_back(split_msg);
+
+    for (int i = 0; i < sub_messages.size(); i++)
+    {
+        std::cout << sub_messages[i] << std::endl;
+    }
+
+    return sub_messages;
 }

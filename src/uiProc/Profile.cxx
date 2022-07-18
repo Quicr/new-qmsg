@@ -29,7 +29,7 @@ bool Profile::PinAccepted()
 
 std::string Profile::GetUsername()
 {
-
+    return username;
 }
 
 void Profile::SetPin(std::string pin)

@@ -58,7 +58,15 @@ private:
     void PrintMessage(const char* msg);
     void PrintTimestampedMessage(const char* msg);
 
-    void ConstructMessageMatrix();
+    void BuildMessageUIMatrix();
+    std::vector<std::string> BuildMessage(std::string user_name, std::string message);
+
+    // HACK these should be calculated based on the window size
+    // Assumed to be full screened window on a 1920x1080 screen.
+    const int num_channel_spaces = 24;
+    // const int num_messages_spaces = 100;
+    const int num_messages_spaces = 100;
+    const int num_user_spaces = 24;
 
     const char* commands[8] =
     {
@@ -115,8 +123,9 @@ private:
     };
     std::queue<FdMessage> outgoing_queue;
     std::queue<FdMessage> incoming_queue;
+    std::vector<std::string> messages;
 
-    bool update_draw = true;
+    bool update_draw;
 
     std::vector<std::string> draw_matrix;
 };
