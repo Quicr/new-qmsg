@@ -5,6 +5,11 @@ Profile::Profile(std::string pin) : pin(pin)
 {
 
 }
+Profile::Profile(std::string pin, std::string username) :
+    pin(pin), username(username)
+{
+
+}
 
 Profile::~Profile()
 {}

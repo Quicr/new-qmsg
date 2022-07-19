@@ -7,6 +7,7 @@ class Profile
 {
 public:
     Profile(std::string pin);
+    Profile(std::string pin, std::string username);
     ~Profile();
 
     bool ComparePin(std::string pin);
