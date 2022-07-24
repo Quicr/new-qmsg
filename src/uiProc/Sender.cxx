@@ -37,7 +37,9 @@ void Sender::SendWatchMessage(unsigned int team_id, unsigned int channel_id)
 
 void Sender::SendEncoded(QMsgUIMessage msg)
 {
-    uint8_t send_buffer[1024]; // FIX this probably shouldn't be hard coded?
+    // FIX this probably shouldn't be hard coded? Although it should be made
+    // into a constant.
+    uint8_t send_buffer[1024];
     std::size_t encoded_length;
     QMsgEncoderResult res = QMsgUIEncodeMessage(context,
                                                 &msg,
@@ -51,14 +53,7 @@ void Sender::SendEncoded(QMsgUIMessage msg)
         return;
     }
 
-    // TODO remove, just debugging stuff
-    fprintf(stderr, "Sending: %d bytes \n", encoded_length);
-    for (int i = 0; i < encoded_length; i++)
-    {
-        fprintf(stderr, "%02X ", i, send_buffer[i]);
-    }
-
     // Write the buffer to the fd
-    // write(ui_to_sec_fd, send_buffer, encoded_length);
+    write(ui_to_sec_fd, send_buffer, encoded_length);
     fprintf(stderr, "\n");
 }

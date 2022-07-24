@@ -172,20 +172,20 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                 {
                     char* team_id_str = strtok(NULL, " ");
                     if (team_id_str == NULL) {
-                        printf("Team id is missing, Try again");
+                        fprintf(stderr, "Team id is missing, try again");
                     }
 
-                    printf("Connect to team %s", team_id_str);
+                    fprintf(stderr, "Connect to team %s", team_id_str);
                     if (team_id_str == NULL) {
-                        printf("Error - team id is null, try again");
+                        fprintf(stderr, "Error - team id is null, try again");
                         return;
                     }
 
                     unsigned int team_id = static_cast<unsigned int>(*team_id_str);
                     char* channel_id_str = strtok(NULL, " ");
-                    printf("Connect to channel %s", channel_id_str);
+                    fprintf(stderr, "Connect to channel %s", channel_id_str);
                     if (channel_id_str == NULL) {
-                            printf("Error - Channel id is missing, Try again");
+                            fprintf(stderr, "Error - Channel id is missing, Try again");
                             return;
                     }
                     // if (!isValidChannel(channel_id_str)) {
@@ -291,7 +291,7 @@ void UserInterface::HandleReceiver(int selected_fd, fd_set fdSet)
 
     if (receiver->HasMessage(selected_fd, fdSet))
     {
-        // receiver->Read(sec_fragment_size);
+        receiver->Read(sec_fragment_size);
         if (receiver->BufferLength() > 0)
         {
             sec_fragment_size = 0;
@@ -330,9 +330,9 @@ void UserInterface::HandleReceiver(int selected_fd, fd_set fdSet)
                 sec_fragment_size = receiver->BufferLength() - sec_total_consumed;
             }
 
-            fprintf(stderr, "UI: Read %d bytes from SecProc: ", receiver->BufferLength());
-            fwrite(receiver->Data(), 1, receiver->BufferLength(), stderr);
-            fprintf(stderr, "\n");
+            // fprintf(stderr, "UI: Read %d bytes from SecProc: ", receiver->BufferLength());
+            // fwrite(receiver->Data(), 1, receiver->BufferLength(), stderr);
+            // fprintf(stderr, "\n");
 
             // TODO parse the input and apply it to the UI
         }
