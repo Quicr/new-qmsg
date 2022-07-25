@@ -48,7 +48,7 @@ namespace qmsg
  */
 std::size_t QMsgDeserializer::DeserializeMessageLength(
                                                 DataBuffer &data_buffer,
-                                                std::uint32_t &message_length)
+                                                QMsgLength &message_length)
 {
     // Free previous memory allocations
     FreeAllocations();
@@ -82,22 +82,22 @@ std::size_t QMsgDeserializer::DeserializeMessageLength(
 std::size_t QMsgDeserializer::Deserialize(DataBuffer &data_buffer,
                                           QMsgUIMessageType &type)
 {
-    std::uint32_t word;
+    QMsgMessageType message_type;
 
     // Extract the message type
-    data_buffer.ReadValue(word);
+    data_buffer.ReadValue(message_type);
 
     // If the type invalid?
-    if (word >= QMsgUI_RESERVED_RANGE)
+    if (message_type >= QMsgUI_RESERVED_RANGE)
     {
         type = QMsgUIInvalid;
     }
     else
     {
-        type = static_cast<QMsgUIMessageType>(word);
+        type = static_cast<QMsgUIMessageType>(message_type);
     }
 
-    return sizeof(std::uint32_t);
+    return sizeof(QMsgMessageType);
 }
 
 /*
@@ -166,6 +166,7 @@ std::size_t QMsgDeserializer::Deserialize(DataBuffer &data_buffer,
     Deserialize(data_buffer, message.team_id);
     Deserialize(data_buffer, message.channel_id);
     Deserialize(data_buffer, message.device_id);
+    Deserialize(data_buffer, message.message_id);
     Deserialize(data_buffer, message.message);
 
     return data_buffer.GetReadLength() - initial_read_position;
@@ -363,22 +364,22 @@ std::size_t QMsgDeserializer::Deserialize(DataBuffer &data_buffer,
 std::size_t QMsgDeserializer::Deserialize(DataBuffer &data_buffer,
                                           QMsgNetMessageType &type)
 {
-    std::uint32_t word;
+    QMsgMessageType message_type;
 
     // Extract the message type
-    data_buffer.ReadValue(word);
+    data_buffer.ReadValue(message_type);
 
     // If the type invalid?
-    if (word >= QMsgNet_RESERVED_RANGE)
+    if (message_type >= QMsgNet_RESERVED_RANGE)
     {
         type = QMsgNetInvalid;
     }
     else
     {
-        type = static_cast<QMsgNetMessageType>(word);
+        type = static_cast<QMsgNetMessageType>(message_type);
     }
 
-    return sizeof(std::uint32_t);
+    return sizeof(QMsgMessageType);
 }
 
 /*
@@ -409,9 +410,11 @@ std::size_t QMsgDeserializer::Deserialize(DataBuffer &data_buffer,
 {
     std::size_t initial_read_position = data_buffer.GetReadLength();
 
+    Deserialize(data_buffer, message.org_id);
     Deserialize(data_buffer, message.team_id);
     Deserialize(data_buffer, message.channel_id);
     Deserialize(data_buffer, message.device_id);
+    Deserialize(data_buffer, message.message_id);
     Deserialize(data_buffer, message.message);
 
     return data_buffer.GetReadLength() - initial_read_position;
@@ -445,9 +448,11 @@ std::size_t QMsgDeserializer::Deserialize(DataBuffer &data_buffer,
 {
     std::size_t initial_read_position = data_buffer.GetReadLength();
 
+    Deserialize(data_buffer, message.org_id);
     Deserialize(data_buffer, message.team_id);
     Deserialize(data_buffer, message.channel_id);
     Deserialize(data_buffer, message.device_id);
+    Deserialize(data_buffer, message.message_id);
     Deserialize(data_buffer, message.message);
 
     return data_buffer.GetReadLength() - initial_read_position;
@@ -889,7 +894,7 @@ std::size_t QMsgDeserializer::Deserialize(DataBuffer &data_buffer,
     std::size_t initial_read_position = data_buffer.GetReadLength();
 
     // The wire encoding holds an octet count, not a device count
-    std::uint32_t octets;
+    QMsgLength octets;
     data_buffer.ReadValue(octets);
 
     // Ensure there is an integral number of devices

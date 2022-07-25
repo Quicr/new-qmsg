@@ -85,7 +85,7 @@ int main( int argc, char* argv[]){
 
   Relay relay( secApi, getenv("SLOWR_RELAY") );
 
-  const uint32_t org=1; // TODO load from config 
+  const QMsgOrgID org=1; // TODO load from config 
   
   //  const int mask = 16;
   int msgNum=1; // TODO - make msgnum per team/device/ch
@@ -130,9 +130,9 @@ int main( int argc, char* argv[]){
                   << " ch= " <<   message.u.watch_devices.channel_id
               << std::endl;
            // get a local copy before memory is invalid
-         uint16_t* ptr =  message.u.watch_devices.device_list.device_list;
-         uint32_t len =   message.u.watch_devices.device_list.num_devices;
-         std::vector<uint16_t> devList( ptr, ptr+len );
+         QMsgDeviceID* ptr =  message.u.watch_devices.device_list.device_list;
+         QMsgLength len =   message.u.watch_devices.device_list.num_devices;
+         std::vector<QMsgDeviceID> devList( ptr, ptr+len );
          std::clog << "   dev: ";
          for ( const auto& dev : devList ) {  std::clog << dev << " "; }
          std::clog << std::endl;

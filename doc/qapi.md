@@ -27,9 +27,11 @@ Data:
 EventType: Ascii_Message
 
 Data:
-* uint32:  team
+* uint32:  org 
+* uint32:  team 
 * uint32:  channel
-* uint16:  device_id // maps to mls index
+* uint32:  device_id // maps to mls index
+* uint32:  msg_id
 * opaque value<0..2^32-1>: ciphertext // [4B length + uint8_t bytes]
 
 
@@ -39,9 +41,11 @@ Data:
 EventType: Ascii_Message
 
 Data:
+* uint32:  org 
 * uint32:  team
 * uint32:  channel
-* uint16:  device_id
+* uint32:  device_id
+* uint32:  msg_id
 * opaque value<0..2^32-1>: ciphertext // [4B length + uint8_t bytes]
 
 
@@ -51,7 +55,8 @@ EventType: Ascii_Message
 Data:
 * uint32: team
 * uint32: channel
-* uint16:  device_id // maps to mls index
+* uint32: device_id // maps to mls index
+* uint32: msg_id
 * opaque value<0..2^32-1> // [4B length + uint8_t bytes]
 
 
@@ -65,7 +70,7 @@ EventType: Watch_Channel
 
 Data:
 * uint32: team
-* uint32: channel
+* uint32: channel // note that 0 means all channels 
 
 ### Sec -> Net
 EventType: Watch_Devices
@@ -74,7 +79,7 @@ Data:
 * uint32: team
 * uint32: channel
 * uint16: num_device_id
-* uint16[]: device_id_list
+* uint32[]: device_id_list
 
 ## Unwatch
 Cancels any watches for a given channel
@@ -93,7 +98,7 @@ Data:
 * int32: team
 * int32: channel
 * uint16: num_device_id
-* uint16[]: device_id
+* uint32[]: device_id
 
 
 # MLS Group Management Messages
@@ -166,7 +171,7 @@ EventType: DeviceInfo
 
 Data:
 * uint32: team
-* uint16: device_id
+* uint32: device_id
 
 # Miscellenous Messages
 

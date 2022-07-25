@@ -48,17 +48,17 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
     // Compute the encoded message length
     message_length +=
                 Serialize(null_buffer,
-                          static_cast<std::uint32_t>(QMsgUISendASCIIMessage));
+                          static_cast<QMsgMessageType>(QMsgUISendASCIIMessage));
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.channel_id);
     message_length += Serialize(null_buffer, message.message);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length +=
                 Serialize(data_buffer,
-                          static_cast<std::uint32_t>(QMsgUISendASCIIMessage));
+                          static_cast<QMsgMessageType>(QMsgUISendASCIIMessage));
     total_length += Serialize(data_buffer, message.team_id);
     total_length += Serialize(data_buffer, message.channel_id);
     total_length += Serialize(data_buffer, message.message);
@@ -96,21 +96,23 @@ std::size_t QMsgSerializer::Serialize(
     // Compute the encoded message length
     message_length +=
             Serialize(null_buffer,
-                      static_cast<std::uint32_t>(QMsgUIReceiveASCIIMessage));
+                      static_cast<QMsgMessageType>(QMsgUIReceiveASCIIMessage));
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.channel_id);
     message_length += Serialize(null_buffer, message.device_id);
+    message_length += Serialize(null_buffer, message.message_id);
     message_length += Serialize(null_buffer, message.message);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length +=
             Serialize(data_buffer,
-                        static_cast<std::uint32_t>(QMsgUIReceiveASCIIMessage));
+                      static_cast<QMsgMessageType>(QMsgUIReceiveASCIIMessage));
     total_length += Serialize(data_buffer, message.team_id);
     total_length += Serialize(data_buffer, message.channel_id);
     total_length += Serialize(data_buffer, message.device_id);
+    total_length += Serialize(data_buffer, message.message_id);
     total_length += Serialize(data_buffer, message.message);
 
     return total_length;
@@ -144,17 +146,18 @@ std::size_t QMsgSerializer::Serialize(
     std::size_t total_length = 0;
 
     // Compute the encoded message length
-    message_length += Serialize(null_buffer,
-                                static_cast<std::uint32_t>(QMsgUIWatchChannel));
+    message_length +=
+                Serialize(null_buffer,
+                        static_cast<QMsgMessageType>(QMsgUIWatchChannel));
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.channel_id);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length +=
-            Serialize(data_buffer,
-                      static_cast<std::uint32_t>(QMsgUIWatchChannel));
+                Serialize(data_buffer,
+                        static_cast<QMsgMessageType>(QMsgUIWatchChannel));
     total_length += Serialize(data_buffer, message.team_id);
     total_length += Serialize(data_buffer, message.channel_id);
 
@@ -191,16 +194,16 @@ std::size_t QMsgSerializer::Serialize(
     // Compute the encoded message length
     message_length +=
                 Serialize(null_buffer,
-                          static_cast<std::uint32_t>(QMsgUIUnwatchChannel));
+                          static_cast<QMsgMessageType>(QMsgUIUnwatchChannel));
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.channel_id);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length +=
                 Serialize(data_buffer,
-                          static_cast<std::uint32_t>(QMsgUIUnwatchChannel));
+                          static_cast<QMsgMessageType>(QMsgUIUnwatchChannel));
     total_length += Serialize(data_buffer, message.team_id);
     total_length += Serialize(data_buffer, message.channel_id);
 
@@ -236,14 +239,14 @@ std::size_t QMsgSerializer::Serialize(
 
     // Compute the encoded message length
     message_length += Serialize(null_buffer,
-                                static_cast<std::uint32_t>(QMsgUIUnlock));
+                                static_cast<QMsgMessageType>(QMsgUIUnlock));
     message_length += Serialize(null_buffer, message.pin);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(QMsgUIUnlock));
+                              static_cast<QMsgMessageType>(QMsgUIUnlock));
     total_length += Serialize(data_buffer, message.pin);
 
     return total_length;
@@ -278,13 +281,13 @@ std::size_t QMsgSerializer::Serialize(
 
     // Compute the encoded message length
     message_length += Serialize(null_buffer,
-                                static_cast<std::uint32_t>(QMsgUIIsLocked));
+                                static_cast<QMsgMessageType>(QMsgUIIsLocked));
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(QMsgUIIsLocked));
+                              static_cast<QMsgMessageType>(QMsgUIIsLocked));
 
     return total_length;
 }
@@ -319,16 +322,16 @@ std::size_t QMsgSerializer::Serialize(
     // Compute the encoded message length
     message_length +=
                 Serialize(null_buffer,
-                          static_cast<std::uint32_t>(QMsgUIMLSSignatureHash));
+                          static_cast<QMsgMessageType>(QMsgUIMLSSignatureHash));
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.hash);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length +=
             Serialize(data_buffer,
-                      static_cast<std::uint32_t>(QMsgUIMLSSignatureHash));
+                      static_cast<QMsgMessageType>(QMsgUIMLSSignatureHash));
     message_length += Serialize(data_buffer, message.team_id);
     message_length += Serialize(data_buffer, message.hash);
 
@@ -363,22 +366,26 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
 
     // Compute the encoded message length
     message_length +=
-                Serialize(null_buffer,
-                          static_cast<std::uint32_t>(QMsgNetSendASCIIMessage));
+            Serialize(null_buffer,
+                        static_cast<QMsgMessageType>(QMsgNetSendASCIIMessage));
+    message_length += Serialize(null_buffer, message.org_id);
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.channel_id);
     message_length += Serialize(null_buffer, message.device_id);
+    message_length += Serialize(null_buffer, message.message_id);
     message_length += Serialize(null_buffer, message.message);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length +=
-                Serialize(data_buffer,
-                          static_cast<std::uint32_t>(QMsgNetSendASCIIMessage));
+            Serialize(data_buffer,
+                        static_cast<QMsgMessageType>(QMsgNetSendASCIIMessage));
+    total_length += Serialize(data_buffer, message.org_id);
     total_length += Serialize(data_buffer, message.team_id);
     total_length += Serialize(data_buffer, message.channel_id);
     total_length += Serialize(data_buffer, message.device_id);
+    total_length += Serialize(data_buffer, message.message_id);
     total_length += Serialize(data_buffer, message.message);
 
     return total_length;
@@ -414,21 +421,25 @@ std::size_t QMsgSerializer::Serialize(
     // Compute the encoded message length
     message_length +=
             Serialize(null_buffer,
-                      static_cast<std::uint32_t>(QMsgNetReceiveASCIIMessage));
+                      static_cast<QMsgMessageType>(QMsgNetReceiveASCIIMessage));
+    message_length += Serialize(null_buffer, message.org_id);
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.channel_id);
     message_length += Serialize(null_buffer, message.device_id);
+    message_length += Serialize(null_buffer, message.message_id);
     message_length += Serialize(null_buffer, message.message);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length +=
             Serialize(data_buffer,
-                      static_cast<std::uint32_t>(QMsgNetReceiveASCIIMessage));
+                      static_cast<QMsgMessageType>(QMsgNetReceiveASCIIMessage));
+    total_length += Serialize(data_buffer, message.org_id);
     total_length += Serialize(data_buffer, message.team_id);
     total_length += Serialize(data_buffer, message.channel_id);
     total_length += Serialize(data_buffer, message.device_id);
+    total_length += Serialize(data_buffer, message.message_id);
     total_length += Serialize(data_buffer, message.message);
 
     return total_length;
@@ -464,17 +475,17 @@ std::size_t QMsgSerializer::Serialize(
     // Compute the encoded message length
     message_length +=
                 Serialize(null_buffer,
-                          static_cast<std::uint32_t>(QMsgNetWatchDevices));
+                          static_cast<QMsgMessageType>(QMsgNetWatchDevices));
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.channel_id);
     message_length += Serialize(null_buffer, message.device_list);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length +=
                 Serialize(data_buffer,
-                          static_cast<std::uint32_t>(QMsgNetWatchDevices));
+                          static_cast<QMsgMessageType>(QMsgNetWatchDevices));
     total_length += Serialize(data_buffer, message.team_id);
     total_length += Serialize(data_buffer, message.channel_id);
     total_length += Serialize(data_buffer, message.device_list);
@@ -512,17 +523,17 @@ std::size_t QMsgSerializer::Serialize(
     // Compute the encoded message length
     message_length +=
                 Serialize(null_buffer,
-                          static_cast<std::uint32_t>(QMsgNetUnwatchDevices));
+                          static_cast<QMsgMessageType>(QMsgNetUnwatchDevices));
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.channel_id);
     message_length += Serialize(null_buffer, message.device_list);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length +=
                 Serialize(data_buffer,
-                          static_cast<std::uint32_t>(QMsgNetUnwatchDevices));
+                          static_cast<QMsgMessageType>(QMsgNetUnwatchDevices));
     total_length += Serialize(data_buffer, message.team_id);
     total_length += Serialize(data_buffer, message.channel_id);
     total_length += Serialize(data_buffer, message.device_list);
@@ -559,17 +570,17 @@ std::size_t QMsgSerializer::Serialize(
 
     // Compute the encoded message length
     message_length +=
-                Serialize(null_buffer,
-                          static_cast<std::uint32_t>(QMsgNetMLSSignatureHash));
+            Serialize(null_buffer,
+                        static_cast<QMsgMessageType>(QMsgNetMLSSignatureHash));
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.hash);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length +=
-                Serialize(data_buffer,
-                          static_cast<std::uint32_t>(QMsgNetMLSSignatureHash));
+            Serialize(data_buffer,
+                        static_cast<QMsgMessageType>(QMsgNetMLSSignatureHash));
     total_length += Serialize(data_buffer, message.team_id);
     total_length += Serialize(data_buffer, message.hash);
 
@@ -606,17 +617,17 @@ std::size_t QMsgSerializer::Serialize(
     // Compute the encoded message length
     message_length +=
                 Serialize(null_buffer,
-                          static_cast<std::uint32_t>(QMsgNetMLSKeyPackage));
+                          static_cast<QMsgMessageType>(QMsgNetMLSKeyPackage));
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.key_package);
     message_length += Serialize(null_buffer, message.key_package_hash);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length +=
                 Serialize(data_buffer,
-                          static_cast<std::uint32_t>(QMsgNetMLSKeyPackage));
+                          static_cast<QMsgMessageType>(QMsgNetMLSKeyPackage));
     total_length += Serialize(data_buffer, message.team_id);
     total_length += Serialize(data_buffer, message.key_package);
     total_length += Serialize(data_buffer, message.key_package_hash);
@@ -653,17 +664,17 @@ std::size_t QMsgSerializer::Serialize(
 
     // Compute the encoded message length
     message_length +=
-                Serialize(null_buffer,
-                          static_cast<std::uint32_t>(QMsgNetMLSAddKeyPackage));
+            Serialize(null_buffer,
+                        static_cast<QMsgMessageType>(QMsgNetMLSAddKeyPackage));
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.key_package);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length +=
-                Serialize(data_buffer,
-                          static_cast<std::uint32_t>(QMsgNetMLSAddKeyPackage));
+            Serialize(data_buffer,
+                        static_cast<QMsgMessageType>(QMsgNetMLSAddKeyPackage));
     total_length += Serialize(data_buffer, message.team_id);
     total_length += Serialize(data_buffer, message.key_package);
 
@@ -700,16 +711,16 @@ std::size_t QMsgSerializer::Serialize(
     // Compute the encoded message length
     message_length +=
                 Serialize(null_buffer,
-                          static_cast<std::uint32_t>(QMsgNetMLSWelcome));
+                          static_cast<QMsgMessageType>(QMsgNetMLSWelcome));
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.welcome);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length +=
                 Serialize(data_buffer,
-                          static_cast<std::uint32_t>(QMsgNetMLSWelcome));
+                          static_cast<QMsgMessageType>(QMsgNetMLSWelcome));
     total_length += Serialize(data_buffer, message.team_id);
     total_length += Serialize(data_buffer, message.welcome);
 
@@ -746,16 +757,16 @@ std::size_t QMsgSerializer::Serialize(
     // Compute the encoded message length
     message_length +=
                 Serialize(null_buffer,
-                          static_cast<std::uint32_t>(QMsgNetMLSCommit));
+                          static_cast<QMsgMessageType>(QMsgNetMLSCommit));
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.commit);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length +=
                 Serialize(data_buffer,
-                          static_cast<std::uint32_t>(QMsgNetMLSCommit));
+                          static_cast<QMsgMessageType>(QMsgNetMLSCommit));
     total_length += Serialize(data_buffer, message.team_id);
     total_length += Serialize(data_buffer, message.commit);
 
@@ -792,16 +803,16 @@ std::size_t QMsgSerializer::Serialize(
     // Compute the encoded message length
     message_length +=
                 Serialize(null_buffer,
-                          static_cast<std::uint32_t>(QMsgNetDeviceInfo));
+                          static_cast<QMsgMessageType>(QMsgNetDeviceInfo));
     message_length += Serialize(null_buffer, message.team_id);
     message_length += Serialize(null_buffer, message.device_id);
 
     // Now serialize the data in LTV form
     total_length += Serialize(data_buffer,
-                              static_cast<std::uint32_t>(message_length));
+                              static_cast<QMsgLength>(message_length));
     total_length +=
                 Serialize(data_buffer,
-                          static_cast<std::uint32_t>(QMsgNetDeviceInfo));
+                          static_cast<QMsgMessageType>(QMsgNetDeviceInfo));
     total_length += Serialize(data_buffer, message.team_id);
     total_length += Serialize(data_buffer, message.device_id);
 
@@ -969,7 +980,7 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
     if (data_buffer.GetBufferSize())
     {
         // Write out octet count, not a device count
-        std::uint32_t octets = value.num_devices * sizeof(QMsgDeviceID);
+        QMsgLength octets = value.num_devices * sizeof(QMsgDeviceID);
         data_buffer.AppendValue(octets);
         for(std::size_t i = 0; i < value.num_devices; i++)
         {
@@ -977,8 +988,7 @@ std::size_t QMsgSerializer::Serialize(DataBuffer &data_buffer,
         }
     }
 
-    return sizeof(value.num_devices) +
-           (value.num_devices * sizeof(QMsgDeviceID));
+    return sizeof(QMsgLength) + (value.num_devices * sizeof(QMsgDeviceID));
 }
 
 } // namespace qmsg

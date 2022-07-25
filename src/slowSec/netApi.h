@@ -23,7 +23,7 @@ public:
 
   int getReadFD();
 
-  void watch(int team, std::vector<uint16_t> &deviceList, int ch);
+  void watch(int team, std::vector<QMsgDeviceID> &deviceList, int ch);
   void sendAsciiMsg(int team, int device, int ch, uint8_t *msg, int msgLen);
   void readMsg(QMsgNetMessage *message);
 };

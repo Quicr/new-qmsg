@@ -49,6 +49,7 @@ typedef struct QMsgUIReceiveASCIIMessage_t
     QMsgTeamID team_id;
     QMsgChannelID channel_id;
     QMsgDeviceID device_id;
+    QMsgMessageID message_id;
     QMsgOpaque_t message;
 } QMsgUIReceiveASCIIMessage_t;
 

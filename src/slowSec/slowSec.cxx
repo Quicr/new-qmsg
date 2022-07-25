@@ -25,8 +25,8 @@ public:
     psuedoRandGen.seed( sysRand() );
   };
 
-  uint32_t getRandDevID() {
-    std::uniform_int_distribution<uint32_t> distribution(1, 1*1000*1000) ;
+  QMsgDeviceID getRandDevID() {
+    std::uniform_int_distribution<QMsgDeviceID> distribution(1, 1*1000*1000) ;
     return distribution(psuedoRandGen)  ;
   };
 };
@@ -36,7 +36,7 @@ int main( int argc, char* argv[]){
   NotMLS mls;
   
   
-  int myDeviceID = mls.getRandDevID();
+  QMsgDeviceID myDeviceID = mls.getRandDevID();
   char *devIdName = getenv( "SLOWR_DEVID" );
   if ( devIdName ) {
     myDeviceID = atoi( devIdName );
@@ -45,7 +45,7 @@ int main( int argc, char* argv[]){
   std::clog <<   "SEC: Starting secProc devId=" << std::hex << myDeviceID << std::dec << std::endl;
   assert(   myDeviceID < ( 1<<20 ) );
   
-  std::vector<uint16_t> otherDeviceID;
+  std::vector<QMsgDeviceID> otherDeviceID;
   otherDeviceID.push_back( myDeviceID );
 #if 0
   // TODO - could remove these but for testing with broken subsciptions
@@ -78,7 +78,7 @@ int main( int argc, char* argv[]){
     int numSelectFD = select( maxFD+1 , &fdSet , NULL, NULL, &timeout );
     assert( numSelectFD >= 0 );
     
-    // processs uiProc
+    // process uiProc
     if ( (numSelectFD > 0) && ( FD_ISSET( uiApi.getReadFD(), &fdSet) ) ) {
       //std::clog <<   "SEC: Reading Sec Proc" << std::endl;
     
@@ -144,7 +144,7 @@ int main( int argc, char* argv[]){
 
          // get a local copy before memory is invalid
          uint8_t* ptr =  message.u.receive_ascii_message.message.data;
-         uint32_t len =   message.u.receive_ascii_message.message.length;
+         QMsgLength len =   message.u.receive_ascii_message.message.length;
          std::vector<uint8_t> msg( ptr, ptr+len );
 
            uiApi.recvAsciiMsg(  message.u.receive_ascii_message.team_id,
