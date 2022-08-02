@@ -1,5 +1,5 @@
 #include "Sender.hh"
-#include <iostream>
+#include <stdint.h>
 #include <cstring>
 
 Sender::Sender(int ui_to_sec_fd) : ui_to_sec_fd(ui_to_sec_fd)
@@ -12,51 +12,48 @@ Sender::~Sender()
     QMsgEncoderDeinit(context);
 }
 
-void Sender::SendMessage(char *buffer, const unsigned long buffer_length)
+void Sender::SendPlainMessage(char *buffer, const unsigned long buffer_length)
 {
     // Encode the message
-    QMsgUIMessage message{};
-    message.type = QMsgUISendASCIIMessage;
-    message.u.send_ascii_message.team_id = 0x01020304;
-    message.u.send_ascii_message.channel_id = 0x05060708;
-    message.u.send_ascii_message.message.length = buffer_length;
-    message.u.send_ascii_message.message.data = reinterpret_cast<std::uint8_t *>(buffer);
+    QMsgUIMessage msg;
+    msg.type = QMsgUISendASCIIMessage;
+    msg.u.send_ascii_message.team_id = 0x01020304;
+    msg.u.send_ascii_message.channel_id = 0x05060708;
+    msg.u.send_ascii_message.message.length = buffer_length;
+    msg.u.send_ascii_message.message.data = reinterpret_cast<uint8_t *>(buffer);
 
+    SendEncoded(msg);
+}
+
+void Sender::SendWatchMessage(unsigned int team_id, unsigned int channel_id)
+{
+    QMsgUIMessage msg;
+    msg.type = QMsgUIWatchChannel;
+    msg.u.watch_channel.team_id = team_id;
+    msg.u.watch_channel.channel_id = channel_id;
+
+    SendEncoded(msg);
+}
+
+void Sender::SendEncoded(QMsgUIMessage msg)
+{
+    // FIX this probably shouldn't be hard coded? Although it should be made
+    // into a constant.
+    uint8_t send_buffer[1024];
     std::size_t encoded_length;
-
     QMsgEncoderResult res = QMsgUIEncodeMessage(context,
-                                                &message,
-                                                (uint8_t *)buffer,
-                                                buffer_length,
+                                                &msg,
+                                                send_buffer,
+                                                sizeof(send_buffer),
                                                 &encoded_length);
 
+    if (res != QMsgEncoderSuccess)
+    {
+        fprintf(stderr, "Error - Failed to send a ascii message");
+        return;
+    }
+
     // Write the buffer to the fd
-    fprintf(stderr, "Sending: %d", buffer_length);
-    write(ui_to_sec_fd, buffer, buffer_length);
+    write(ui_to_sec_fd, send_buffer, encoded_length);
     fprintf(stderr, "\n");
 }
-
-void Sender::EncodeMessage(char *buffer, const unsigned int buffer_length)
-{
-}
- void Sender::SendWatchMessage(unsigned int team_id, unsigned int channel_id) {
-     QMsgUIMessage message{};
-     message.type = QMsgUIWatchChannel;
-     message.u.watch_channel.team_id = team_id;
-     message.u.watch_channel.channel_id = channel_id;
-
-     std::size_t encoded_length;
-     uint8_t buffer[1024];
-     QMsgEncoderResult res = QMsgUIEncodeMessage(context,
-                                                 &message,
-                                                 (uint8_t *)buffer,
-                                                 1024,
-                                                 &encoded_length);
-     if(res != QMsgEncoderSuccess) {
-         fprintf(stderr, "SendWatcHMessage: encode error %d", res);
-         return;
-     }
-     fprintf(stderr, "Sending: %d",encoded_length);
-     write(ui_to_sec_fd, buffer, encoded_length);
-     fprintf(stderr, "\n");
- }

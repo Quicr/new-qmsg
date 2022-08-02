@@ -1,25 +1,25 @@
-#include "KeyBoardReader.hh"
+#include "FdReader.hh"
 
 #include <stdlib.h>
 #include <string.h>
 
-KeyBoardReader::KeyBoardReader(int fd_in, unsigned long buffer_size_in) :
-    fd(fd_in), buffer_size(buffer_size_in), buffer_length(0)
+FdReader::FdReader(int fd, unsigned long buffer_size) :
+    fd(fd), buffer_size(buffer_size), buffer_length(0)
 {
     buffer_data = new char[buffer_size];
 }
 
-KeyBoardReader::~KeyBoardReader()
+FdReader::~FdReader()
 {
     delete [] buffer_data;
 }
 
-bool KeyBoardReader::HasMessage(const int selected_fd, fd_set &fdSet)
+bool FdReader::HasMessage(const int selected_fd, fd_set &fdSet)
 {
     return (selected_fd > 0) && (FD_ISSET(fd, &fdSet));
 }
 
-char* KeyBoardReader::Read(unsigned long offset)
+char* FdReader::Read(unsigned long offset)
 {
     buffer_length = read(fd,
                          buffer_data + offset,
@@ -30,27 +30,27 @@ char* KeyBoardReader::Read(unsigned long offset)
     return buffer_data;
 }
 
-void KeyBoardReader::SlideBuffer(unsigned long offset)
+void FdReader::SlideBuffer(unsigned long offset)
 {
     memmove(buffer_data, buffer_data + offset, buffer_length - offset);
 }
 
-char* KeyBoardReader::Data()
+char* FdReader::Data()
 {
     return buffer_data;
 }
 
-unsigned int KeyBoardReader::BufferLength()
+unsigned int FdReader::BufferLength()
 {
     return buffer_length;
 }
 
-unsigned int KeyBoardReader::BufferSize()
+unsigned int FdReader::BufferSize()
 {
     return buffer_size;
 }
 
-void KeyBoardReader::Flush()
+void FdReader::Flush()
 {
     buffer_length = 0;
 }

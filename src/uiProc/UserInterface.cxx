@@ -4,22 +4,26 @@
 #include <stdio.h>
 #include <iostream>
 
-
 UserInterface::UserInterface(const int keyboard_fd,
                              const int sec_to_ui_fd,
                              const int ui_to_sec_id,
                              const unsigned int buffer_size) :
     selected_fd(0),
-    is_running(false)
+    is_running(false),
+    update_draw(false)
 {
-    keyboard = new KeyBoardReader(keyboard_fd, buffer_size);
-    receiver = new KeyBoardReader(sec_to_ui_fd, buffer_size);
+    keyboard = new FdReader(keyboard_fd, buffer_size);
+    receiver = new FdReader(sec_to_ui_fd, buffer_size);
     sender = new Sender(ui_to_sec_id);
     parser = new Parser();
 
+    // HACK the defaults should be stored on the device
+    // in the EEPROM and should be loaded at startup
+    profile = new Profile("1234", "brett");
+
     if (QMsgEncoderInit(&sec_context))
     {
-        // TODO Log and error out.
+        fprintf(stderr, "Error - Failed to initialize encoder");
     }
 }
 
@@ -29,21 +33,15 @@ UserInterface::~UserInterface()
     delete receiver;
     delete sender;
     delete parser;
-    delete username;
+    delete profile;
     delete sec_context;
-}
-
-void UserInterface::Start()
-{
-    PrintMessage("Welcome to Cisco Secure Messaging\n\n");
-    DisplayHelpMessage();
-    is_running = true;
 }
 
 void UserInterface::Process(int selected_fd, fd_set fdSet)
 {
     if (is_running)
     {
+        Draw();
         HandleKeyboard(selected_fd, fdSet);
         HandleReceiver(selected_fd, fdSet);
     }
@@ -54,32 +52,57 @@ bool UserInterface::Running()
     return is_running;
 }
 
+void UserInterface::Start()
+{
+    AppendToUIMatrix(TimeStampMessage(welcome_str));
+    DisplayHelpMessage();
+    AppendToUIMatrix(TimeStampMessage(request_pin_str));
+    AppendToUIMatrix("> ");
+
+    is_running = true;
+}
+
 void UserInterface::Stop()
 {
-    std::cout << bye_str;
+    PrintMessage(bye_str.c_str());
     is_running = false;
 }
 
 void UserInterface::DisplayHelpMessage()
 {
     for (int index = 0; index < sizeof(help_desc)/sizeof(char*); ++index){
-        PrintTimestampedMessage(help_desc[index]);
+        AppendToUIMatrix(TimeStampMessage(help_desc[index]));
     }
 }
 
-bool UserInterface::isValidChannel(std::string channel_id) {
-    bool channel_exists = false;
-    unsigned int idx = 0;
-    for (unsigned int i = 0; i < all_channels.size(); i++)
+void UserInterface::Draw()
+{
+    if (update_draw)
     {
-        if (channel_id == all_channels[i].Name())
+        // HACK This is not very portable.. and may be different for the embedded
+        // devices. However, at the moment it doesn't matter
+        system("clear");
+        for (int i = 0; i < draw_matrix.size(); i++)
         {
-            channel_exists = true;
-            idx = i;
-            break;
+            fprintf(stderr, draw_matrix[i].c_str());
         }
+
+        update_draw = false;
     }
-    return channel_exists;
+}
+
+void UserInterface::GetUserPin(std::string pin)
+{
+    if (profile->ComparePin(pin))
+    {
+        BuildMessageUI();
+    }
+    else
+    {
+        AppendToUIMatrix(pin + "\n");
+        AppendToUIMatrix(TimeStampMessage(incorrect_pin_str));
+        AppendToUIMatrix("> ");
+    }
 }
 
 tm *UserInterface::GetCurrentSystemTime()
@@ -94,29 +117,24 @@ tm *UserInterface::GetCurrentSystemTime()
 
 void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
 {
-    // read and parse message from the keyboard
-    // send it to sec
-    // read and parse messages from secProc
-    // act upon it
+    // TODO consider moving the data from the keyboard into a buffer until handled or into a buffer queue so that it can get handled as needed?
+    // Read messages from the keyboard, parse, and send it.
     if (keyboard->HasMessage(selected_fd, fdSet))
     {
         keyboard->Read();
         if (keyboard->BufferLength() > 0)
         {
-            Command command;
+            std::string data = keyboard->Data();
+            // If we haven't received the user's pin yet, then wait here.
+            if (!profile->PinAccepted())
+            {
+                GetUserPin(data);
+                return;
+            }
 
-            // TODO remove
-            fprintf(stderr, "UI: Read %d bytes from keyboard: ", keyboard->BufferLength());
-            fwrite(keyboard->Data(), 1, keyboard->BufferLength(), stderr);
-            fprintf(stderr, "\n");
-
-            // Parse the input for a command such as help
-            // bool res = parser->Parse(keyboard->Data(), keyboard->BufferLength(), command);
-
-            // parse the input for commands
+            // Parse the input for commands
             if (keyboard->Data()[0] == '/')
             {
-
                 const char* command_token = strtok((keyboard->Data()), " ");
                 fprintf(stderr, "UI: command received - %s\n", command_token);
 
@@ -136,8 +154,9 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                         char* argument_token = strtok(NULL, " ");
                         if (argument_token)
                         {
-                            fprintf(stderr, "Username has been set to %s",
+                            fprintf(stderr, "Username has been set to %s\n",
                                 argument_token);
+                            profile->SetUsername(argument_token);
                         }
                         else
                         {
@@ -153,28 +172,28 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                 {
                     char* team_id_str = strtok(NULL, " ");
                     if (team_id_str == NULL) {
-                        std::cout << "Team id is missing, Try again" <<std::endl;
+                        fprintf(stderr, "Team id is missing, try again");
                     }
-                    std::cout << "Connect to team " <<team_id_str << std::endl;
+
+                    fprintf(stderr, "Connect to team %s", team_id_str);
                     if (team_id_str == NULL) {
-                        std::cout << "team id is null, Try again";
+                        fprintf(stderr, "Error - team id is null, try again");
                         return;
                     }
 
                     unsigned int team_id = static_cast<unsigned int>(*team_id_str);
                     char* channel_id_str = strtok(NULL, " ");
-                    std::cout << "Connect to channel " <<channel_id_str << std::endl;
+                    fprintf(stderr, "Connect to channel %s", channel_id_str);
                     if (channel_id_str == NULL) {
-                            std::cout << "Channel id is missing, Try again" <<std::endl;
+                            fprintf(stderr, "Error - Channel id is missing, Try again");
                             return;
                     }
-                   /* if (!isValidChannel(channel_id_str)) {
-                        std::cout << "Enter a valid channel"<<std::endl;
-                        return;
-                    }*/
+                    // if (!isValidChannel(channel_id_str)) {
+                    //     printf("Enter a valid channel");
+                    //     return;
+                    // }
                     unsigned int channel_id = static_cast<unsigned int>(*channel_id_str);
                     sender->SendWatchMessage(team_id, channel_id);
-
                 }
                 else if (strcmp(command_token, commands[Command::join]) == 0)
                 {
@@ -202,7 +221,7 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                             // TODO clean this up..
                             char channel_name[all_channels[idx].Name().length()];
                             strcpy(channel_name, all_channels[idx].Name().c_str());
-                            sender->SendMessage(channel_name, join_token.length());
+                            sender->SendPlainMessage(channel_name, join_token.length());
 
                             // Keep track of the channels we've joined
                             joined_channels.push_back(all_channels[idx]);
@@ -228,12 +247,10 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
 
                 else
                 {
-                    std::cout << "Unknown command. The available commands are: \n";
+                    printf("Unknown command. The available commands are: \n");
                     DisplayHelpMessage();
                 }
 
-                // TODO
-                // keyboard->Flush();
                 return;
             }
             else
@@ -243,11 +260,26 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
                     // TODO if we are not in a chat room then
                     // normal messages do nothing.
                     // and note we are not in a channel
+                    return;
                 }
 
+                // TODO put timestamp onto the message.
+
+                // Put message into the queue
+                std::string msg = keyboard->Data();
+
+                // Push the message into the messages vector
+                std::vector<std::string> sub_messages = BuildMessage(profile->GetUsername(), msg);
+
+                for (int i = 0; i < sub_messages.size(); i++)
+                {
+                    messages.push_back(sub_messages[i]);
+                }
+
+                BuildMessageUI();
 
                 // Send to secure process
-                sender->SendMessage(keyboard->Data(), keyboard->BufferLength());
+                sender->SendPlainMessage(keyboard->Data(), keyboard->BufferLength());
             }
         }
     }
@@ -255,6 +287,8 @@ void UserInterface::HandleKeyboard(int selected_fd, fd_set fdSet)
 
 void UserInterface::HandleReceiver(int selected_fd, fd_set fdSet)
 {
+    if (!profile->PinAccepted()) return;
+
     if (receiver->HasMessage(selected_fd, fdSet))
     {
         receiver->Read(sec_fragment_size);
@@ -277,7 +311,7 @@ void UserInterface::HandleReceiver(int selected_fd, fd_set fdSet)
                 {
                     // TODO
                     // We got a message yay.
-                    fprintf(stderr, "encoder got %s", sec_message.u.receive_ascii_message);
+                    fprintf(stderr, "encoder got %s", sec_message.u.receive_ascii_message.message.data);
                 }
 
                 if ((qmsg_enc_sec_res == QMsgEncoderInvalidMessage) ||
@@ -296,20 +330,251 @@ void UserInterface::HandleReceiver(int selected_fd, fd_set fdSet)
                 sec_fragment_size = receiver->BufferLength() - sec_total_consumed;
             }
 
-            fprintf(stderr, "UI: Read %d bytes from SecProc: ", receiver->BufferLength());
-            fwrite(receiver->Data(), 1, receiver->BufferLength(), stderr);
-            fprintf(stderr, "\n");
+            // fprintf(stderr, "UI: Read %d bytes from SecProc: ", receiver->BufferLength());
+            // fwrite(receiver->Data(), 1, receiver->BufferLength(), stderr);
+            // fprintf(stderr, "\n");
+
+            // TODO parse the input and apply it to the UI
         }
     }
 }
 
+bool UserInterface::IsValidChannel(std::string channel_id) {
+    bool channel_exists = false;
+    unsigned int idx = 0;
+    for (unsigned int i = 0; i < all_channels.size(); i++)
+    {
+        if (channel_id == all_channels[i].Name())
+        {
+            channel_exists = true;
+            idx = i;
+            break;
+        }
+    }
+    return channel_exists;
+}
+
 void UserInterface::PrintMessage(const char *msg)
 {
-    printf(msg);
+    fprintf(stderr, msg);
 }
 
 void UserInterface::PrintTimestampedMessage(const char *msg)
 {
     tm *current_time = GetCurrentSystemTime();
     printf("%d:%d -!- %s", current_time->tm_hour, current_time->tm_min, msg);
+}
+
+void UserInterface::TimeStampMessage(std::string &msg)
+{
+    tm *current_time = GetCurrentSystemTime();
+    msg = std::to_string(current_time->tm_hour) + ":" +
+          std::to_string(current_time->tm_min) + " -!- " +
+          msg;
+}
+
+std::string UserInterface::TimeStampMessage(const std::string msg)
+{
+    tm *current_time = GetCurrentSystemTime();
+    return std::to_string(current_time->tm_hour) + ":" +
+           std::to_string(current_time->tm_min) + " -!- " +
+           msg;
+}
+
+void UserInterface::BuildMessageUI()
+{
+    // HACK this is only the concept currently
+    // TODO calculate the number of lines high the console is?
+    int32_t lines = 40;
+
+    std::string team = "CTO Team";
+    std::string current_channel = "Watercooler";
+
+    std::vector<std::string> channels = {
+        "Watercooler",
+        "Watercooler",
+        "General",
+        "Hype project"
+    };
+
+    std::vector<std::string> users = {
+        "brett",
+        "tomas"
+    };
+
+    std::string append_str = "";
+
+    std::vector<std::string> message_matrix;
+    message_matrix.push_back("Welcome to Cisco Secure Messaging\n");
+
+    uint32_t total_spaces = num_channel_spaces + num_messages_spaces + num_user_spaces;
+    for (uint16_t i = 0; i < total_spaces; i++ )
+    {
+        append_str += "-";
+    }
+    append_str += "\n";
+    message_matrix.push_back(append_str);
+
+    // TODO calculate the spaces for this too.
+    message_matrix.push_back(team + "                | #" + current_channel + "                                                                                      | Users         \n");
+
+    int num_removed_spaces;
+    for (int i = 0; i < lines; i++)
+    {
+        append_str = "";
+        num_removed_spaces = 0;
+        if (channels.size() > i)
+        {
+            if (channels[i].length() > num_channel_spaces)
+                return; // TODO this is a problem
+
+            // There are channels to print
+            append_str += "#" + channels[i];
+
+            // Calculate how many spaces we need instead before the separator
+            num_removed_spaces = channels[i].length() + 1;
+        }
+
+        for (int j = 0; j < num_channel_spaces - num_removed_spaces; j++)
+        {
+            // Starting at j = 1 to account for the #
+            append_str += " ";
+        }
+
+        // Append a bar after the channels
+        append_str += "|";
+
+        num_removed_spaces = 0;
+        if (messages.size() > i)
+        {
+            // Messages to print these should be pre-parsed into individual lines prior to this
+            // point because the splitting of the messages will completely mess with the
+            // calculation on how to display the users section.
+            append_str += " " + messages[i];
+
+            // Get how long the message is.
+            num_removed_spaces = messages[i].length() + 1;
+        }
+
+        // Append spaces to the message.
+        for (int j = 1; j < num_messages_spaces - num_removed_spaces; j++)
+        {
+            append_str += " ";
+        }
+
+        append_str += "|";
+
+        num_removed_spaces = 0;
+        if (users.size() > i)
+        {
+            append_str += " @" + users[i];
+
+            num_removed_spaces = users[i].length();
+        }
+
+        for (int j = 1; j < num_user_spaces - num_removed_spaces; j++)
+        {
+            append_str += " ";
+        }
+
+        append_str += "\n";
+
+        message_matrix.push_back(append_str);
+    }
+
+    for (uint16_t i = 0; i < total_spaces; i++ )
+    {
+        append_str += "-";
+    }
+    append_str += "\n";
+    message_matrix.push_back(append_str);
+    message_matrix.push_back("> ");
+
+    SetUIMatrix(message_matrix);
+}
+
+void UserInterface::SetUIMatrix(std::vector<std::string> matrix)
+{
+    draw_matrix = matrix;
+    update_draw = true;
+}
+
+void UserInterface::SetUIMatrix(std::string msg)
+{
+    draw_matrix.clear();
+    draw_matrix.push_back(msg);
+    update_draw = true;
+}
+
+void UserInterface::AppendToUIMatrix(std::vector<std::string> matrix)
+{
+    for (int i = 0; i < matrix.size(); i++)
+    {
+        draw_matrix.push_back(matrix[i]);
+    }
+    update_draw = true;
+}
+
+void UserInterface::AppendToUIMatrix(std::string msg)
+{
+    draw_matrix.push_back(msg);
+    update_draw = true;
+}
+
+std::vector<std::string> UserInterface::BuildMessage(std::string user_name, std::string message)
+{
+    // TODO add timestamps
+
+    std::vector<std::string> sub_messages;
+    std::string sub_msg = "";
+    std::string split_msg = "<" + user_name + "> " + message;
+    std::uint16_t num_sub_msgs = 0;
+
+    // this if may not be needed
+    if (split_msg.length() > num_messages_spaces)
+    {
+        std::cout << "here1" << std::endl;
+        // This will not put the final bit of string onto the vector, that will
+        // be handled at the end
+        while (split_msg.length() > num_messages_spaces)
+        {
+            std::cout << "here2" << std::endl;
+            bool delimiter_found = false;
+            // Scan starting from the limit for the next delimiter
+            // HACK minus 2 for cases where the start would be a space
+            // and the word was already overflowing the spacing
+            for (int i = num_messages_spaces - 2; i >= 0; i--)
+            {
+                // TODO add more delimiters
+                if (split_msg[i] == ' ')
+                {
+
+                    std::cout << i << std::endl;
+                    // If we have multiple sub messages append
+                    // some spaces to the front
+                    // if (num_sub_msgs > 1)
+                    //     sub_msg += "  ";
+
+                    sub_msg = split_msg.substr(0, i);
+
+                    // Push onto the vector
+                    sub_messages.push_back(sub_msg);
+
+                    // Shift the window over
+                    split_msg = "  " + split_msg.substr(i, split_msg.length() - i);
+                    delimiter_found = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    sub_messages.push_back(split_msg);
+
+    for (int i = 0; i < sub_messages.size(); i++)
+    {
+        std::cout << sub_messages[i] << std::endl;
+    }
+
+    return sub_messages;
 }
