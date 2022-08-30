@@ -55,7 +55,8 @@ int main(int argc, char* argv[]) {
 
   std::string nameString( argv[1] );
   MsgShortName shortName;
-  int mask=16;
+  int len=58; // Start length after org
+
   try {
     if ( nameString.find('/') != std::string::npos ) {
       uint32_t team=1;
@@ -68,17 +69,18 @@ int main(int argc, char* argv[]) {
 
       channel = std::stoul( nameString.substr(1,  nameString.find('/',1) ), nullptr, 16);
       nameString.erase( 0, nameString.find('/',1) );
-      mask=40;
+
+      len += 30;
 
       if ( nameString.length() > 0 ) {
         device  = std::stoul( nameString.substr(1,  nameString.find('/',1) ), nullptr, 16);
         nameString.erase( 0, nameString.find('/',1) );
-        mask = 20;
+        len += 20;
         
         if ( nameString.length() > 0 ) {
           msgID   = std::stoul( nameString.substr(1,  nameString.length() ), nullptr, 16);
           nameString.erase( 0, nameString.length() );
-          mask = 0; 
+          len += 20;
         }
       }
       
@@ -86,32 +88,15 @@ int main(int argc, char* argv[]) {
       shortName = nameObj.shortName();
     }
 
-    /* --- Add support for hex names if that's going to be used.
-    else {
-      if ( nameString.find(':') != std::string::npos ) {
-        mask = std::stoul( nameString.substr( nameString.find(':')+1, std::string::npos ), nullptr, 10);
-        nameString.erase( nameString.find(':'), std::string::npos );
-      }
-      std::string low;
-      std::string high;
-      if ( nameString.length() <= 16 ) {
-        low = nameString;
-        shortName.part[0] = std::stoul(low,nullptr,16);
-        shortName.part[1] = 0;
-      } else {
-        low =  nameString.substr( nameString.length()-16 , std::string::npos );
-        high = nameString.substr( 0 , nameString.length()-16 );
-        shortName.part[0] = std::stoul(low,nullptr,16);
-        shortName.part[1] = std::stoul(high,nullptr,16);
-      }
-    } */
   } catch ( ... ) {
     std::clog << "invalid input name: " << nameString <<  std::endl;
     exit (1);
   }
  
   std::cerr << "Name=" << Name( shortName ).shortString()
-            << " " <<  Name( shortName ).longString() << std::endl; 
+            << " " <<  Name( shortName ).longString()
+            << " length: " << len
+            << std::endl;
   
     
   std::vector<uint8_t> data;
@@ -168,14 +153,12 @@ int main(int argc, char* argv[]) {
   else {
     // do subscribe 
     std::clog << "SUB to "
-              <<  Name( shortName ).shortString() << ":" << mask
+              <<  Name( shortName ).shortString() << ":" << len
               << " aka "
-              << Name( shortName ).longString()   << ":" << mask
+              << Name( shortName ).longString()   << ":" << len
               << std::endl;
 
-    assert( mask < 64 );
-    
-    err = slowerSub( slower,  shortName, mask  );
+    err = slowerSub( slower,  shortName, len  );
     assert( err == 0 );
 
     while ( true ) {
@@ -220,7 +203,7 @@ int main(int argc, char* argv[]) {
       }
     }
     
-    err = slowerUnSub( slower, shortName, mask );
+    err = slowerUnSub( slower, shortName, len);
     assert( err == 0 );
   }
     

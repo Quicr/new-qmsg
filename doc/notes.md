@@ -6,18 +6,16 @@ This is an unstructured and informal notes document on thoughts/updates.
 
 ## Shortname (SN)
 
-Shortname (SN) is fixed at 128bits in length, utilizing a structure that supports bit masking by length, similar to IPv6 addressing.
+Shortname (SN) is fixed at 128bits in length, utilizing a structure that supports bit masking by name_length, similar to IPv6 addressing.
 
-SN has common parts, such as:
+SN is application specific from the relay perspective. The two requirements for applications are:
 
-```c
-  uint32_t         origin_id: 24;          ///< Origin ID
-  u_char           app_id;                 ///< App ID
-  u_char           path;                   ///< Path as defined by enum NamePath 
-```
-
-The above defines **40 bits** as common in every SN. The remaining **88 bits** are application/user defined.  The
-encoding/decoding of the remaining **88 bits** are application specific.
+1. Support length based wildcards, similar to IPv4/IPv6 prefix lengths. Wildcard isn't a star anywhere.
+   The length defines how many bits are significant in the shortname. The remaining bits are wild. 
+2. De-duplication on message forwarding is performed at the SN level. Each message **MUST** be
+   unique within a time period, otherwise it will be considered duplicate and suppressed.
+   Normally the last 16 or more bits are used for message/sequence Ids. It is suggested to use
+   at least 20 bits for message/sequence numbers.
 
 ## Endpoint Connections
 
@@ -122,8 +120,8 @@ struct session_object {
 ```
 
 ## Subscriptions
-Clients subscribe to SNs using a mask bit length. This is similar to IP network prefix/len notation. A client that
-subscribes to a shorter bit length SN will receive all messages equal to or longer than the bit length specified. A
+Clients subscribe to SNs using a mask bit name_length. This is similar to IP network prefix/len notation. A client that
+subscribes to a shorter bit name_length SN will receive all messages equal to or longer than the bit name_length specified. A
 client may subscribe to more specifics, which will be ignored in favor of the less specific.  For example, subscribe
 to SN/80, SN/90, and SN/91.  The 90 and 91 are redundant to SN/80.  As long as the subscription for SN/80 exists,
 SN/90 and SN/91 are suppressed to avoid duplicate messages being sent to the subscriber. When/if the subscriber
@@ -138,9 +136,9 @@ There are two subscriber prefix trees, both of which use the same prefix tree im
 
 #### 1) Per Session Subscriber Tree
 Every session has a prefix tree of all SNs subscribed. The node value is a boolean that indicates
-subscription point for the given SN. The node point of subscription is based on the mask length. 
+subscription point for the given SN. The node point of subscription is based on the mask name_length. 
 
-When adding a new subscription, the ```add()``` method will return the first found node length in the path that aggregates
+When adding a new subscription, the ```add()``` method will return the first found node name_length in the path that aggregates
 the newly added subscription. For example, when adding SN/90, there might be SN/42 that aggregates SN/90.  The return
 will indicate 42.  This informs the caller that there is an existing subscription already that covers the newly added
 more specific. If there isn't a value returned, then the SN needs to be added to the ```relay_subscription_tree```.

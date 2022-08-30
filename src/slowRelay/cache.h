@@ -17,7 +17,7 @@ public:
 
   bool exists(  const MsgShortName& name ) const;
 
-  std::list<MsgShortName> find(const MsgShortName& name, const int mask ) const;
+  std::list<MsgShortName> find(const MsgShortName& name, const int len ) const;
 
   ~Cache();
   

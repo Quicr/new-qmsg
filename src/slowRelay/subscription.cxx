@@ -9,27 +9,26 @@
 
 
 Subscriptions::Subscriptions() {
-  subscriptions.resize(128);
+  subscriptions.resize(129);
 }
 
-void Subscriptions::add(const MsgShortName& name, const int mask, const SlowerRemote& remote ) {
-  assert( mask <= 70 ); // Mask to org
-
+void Subscriptions::add(const MsgShortName& name, const int len, const SlowerRemote& remote ) {
   MsgShortName group;
-  getMaskedMsgShortName(name, group, mask);
 
-  //std::clog << "subscribe.cxx: add "
-  //          << std::hex << group.part[1] << "-" <<  group.part[0] << std::dec
-  //          << " port=" <<  ntohs( remote.addr.sin_port )
-  //          << std::endl;
-  
-  auto mapPtr =  subscriptions[mask].find( group );
-  if ( mapPtr == subscriptions[mask].end() ) {
+  bzero(group.data, sizeof(group.data));
+  getMaskedMsgShortName(name, group, len);
+
+//  std::clog << "add subscription len=" << len
+//      << " with key " << getMsgShortNameHexString(name.data)
+//      << std::endl;
+
+  auto mapPtr =  subscriptions[len].find(group );
+  if ( mapPtr == subscriptions[len].end() ) {
     std::set<SlowerRemote> list;
     list.insert( remote );
     std::pair<MsgShortName,std::set<SlowerRemote>> pair;
     pair = make_pair( group , list );
-    subscriptions[mask].insert( pair );
+    subscriptions[len].insert(pair );
   }
   else {
     std::set<SlowerRemote>& list = mapPtr->second;
@@ -39,13 +38,12 @@ void Subscriptions::add(const MsgShortName& name, const int mask, const SlowerRe
   }
 }
   
-void Subscriptions::remove(const MsgShortName& name, const int mask, const SlowerRemote& remote ) {
-  assert( mask <= 64 );
+void Subscriptions::remove(const MsgShortName& name, const int len, const SlowerRemote& remote ) {
   MsgShortName group;
-  getMaskedMsgShortName(name, group, mask);
+  getMaskedMsgShortName(name, group, len);
 
-  auto mapPtr = subscriptions[mask].find( group );
-  if ( mapPtr != subscriptions[mask].end() ) {
+  auto mapPtr = subscriptions[len].find(group );
+  if ( mapPtr != subscriptions[len].end() ) {
     std::set<SlowerRemote>& list = mapPtr->second;
     if ( list.find( remote ) == list.end() ) {
       list.erase( remote ); 
@@ -55,15 +53,19 @@ void Subscriptions::remove(const MsgShortName& name, const int mask, const Slowe
   
 std::list<SlowerRemote> Subscriptions::find(  const MsgShortName& name  ) {
   std::list<SlowerRemote> ret;
-  //std::clog << "subscribe.cxx: find " << std::hex << group.part[1] << "-" <<  group.part[0] << std::dec << std::endl;
   MsgShortName group;
 
   // TODO: Fix this to not have to iterate for each mask bit
-  for ( int mask=0; mask <=70 ; mask ++ ) {
-    getMaskedMsgShortName(name, group, mask);
+  for ( int len=0; len <= 128 ; len++ ) {
+//    std::clog << "Looking up masked entry len: " << len;
+//    std::clog << " : ";
 
-    auto mapPtr = subscriptions[mask].find( group );
-    if ( mapPtr != subscriptions[mask].end() ) {
+    getMaskedMsgShortName(name, group, len);
+
+//    std::clog << getMsgShortNameHexString(group.data) << std::endl;
+
+    auto mapPtr = subscriptions[len].find( group );
+    if ( mapPtr != subscriptions[len].end() ) {
       std::set<SlowerRemote>& list = mapPtr->second;
       for( const SlowerRemote& remote : list ) {
         SlowerRemote dest = remote;
@@ -72,6 +74,7 @@ std::list<SlowerRemote> Subscriptions::find(  const MsgShortName& name  ) {
       }
     }
   }
+
   return ret;
 }
 

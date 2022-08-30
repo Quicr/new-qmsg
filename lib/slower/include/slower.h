@@ -37,12 +37,21 @@ enum class NamePath : uint8_t {
 };
 
 /**
- * Defines the slow-relay "MsgShortName" binary header. This is the binary
+ * Defines the "MsgShortName" binary header. This is the binary
+ *     encoded name for published messages. Subscribers subscribe using bits/len,
+ *     where name_length defines the number of significant bits.
+ */
+#define MSG_SHORT_NAME_LEN    16
+typedef struct {
+    u_char       data[MSG_SHORT_NAME_LEN];       ///< Buffer for the spec struct, this must be the size of the packed spec
+} __attribute__ ((__packed__, __aligned__(1))) MsgShortName;
+
+/**
+ * Defines the "MsgShortName" binary header. This is the binary
  *     encoded name from string qmsg://msg/org-<org>/team-<team>/ch-<channel>/dev-<device>/<msgNum>
  *
  *     See https://github.com/Quicr/qmsg/blob/main/doc/protocol.md for more details.
  */
-#define MSG_SHORT_NAME_LEN    16
  typedef union {
      struct { // 128 bits / 16 bytes
 
@@ -50,13 +59,8 @@ enum class NamePath : uint8_t {
          u_char           app_id;                 ///< App ID
          u_char           path;                   ///< Path as defined by enum NamePath
          uint32_t         org: 18;                ///< Org
-         uint32_t         team: 20;               ///< Team
 
-         /* TODO:
-          * Below is not common to all short names, such as key-package, welcome, ...
-          * Need to revisit the base shortname to see if the relay can use that instead of
-          * having to define/understand the remaining bits in the shortname
-          */
+         uint32_t         team: 20;               ///< Team
          uint16_t         channel: 10;            ///< Channel
          uint32_t         device: 20;             ///< Device
          uint32_t         msg_id: 20;             ///< Message ID
@@ -64,7 +68,7 @@ enum class NamePath : uint8_t {
      } __attribute__ ((__packed__, __aligned__(1))) spec;
 
      u_char       data[MSG_SHORT_NAME_LEN];       ///< Buffer for the spec struct, this must be the size of the packed spec
- } __attribute__ ((__packed__, __aligned__(1))) MsgShortName;
+ } __attribute__ ((__packed__, __aligned__(1))) QMsgShortName;
  
 
 // TODO: Add Key Package and Welcome ShortNames
@@ -119,7 +123,7 @@ struct MsgPubHeader {
  * Defines the slow-relay subscribe message header. This follows the slow-relay message header.
  */
 struct MsgSubHeader {
-    int8_t                          mask;              ///< Subscriber mask
+    uint8_t                         name_length;              ///< Subscriber name_length
 } __attribute__ ((__packed__, __aligned__(1)));
 
 
@@ -145,14 +149,15 @@ int slowerGetFD( SlowerConnection& slower);
 int slowerPub(SlowerConnection& slower, const MsgShortName& name, char buf[], int bufLen,
               SlowerRemote* remote=NULL, MsgHeaderMetrics *metrics=NULL);
 int slowerAck(SlowerConnection& slower, const MsgShortName& name, SlowerRemote* remote=NULL );
-int slowerSub(SlowerConnection& slower, const MsgShortName& name, int mask, SlowerRemote* remote=NULL );
-int slowerUnSub(SlowerConnection& slower, const MsgShortName& name, int mask, SlowerRemote* remote=NULL );
+int slowerSub(SlowerConnection& slower, const MsgShortName& name, int len, SlowerRemote* remote=NULL );
+int slowerUnSub(SlowerConnection& slower, const MsgShortName& name, int len, SlowerRemote* remote=NULL );
 
 int slowerRecvPub(SlowerConnection& slower, MsgHeader* msgHeader, char buf[], int bufSize, int* bufLen,
                   MsgHeaderMetrics *metrics=NULL);
 int slowerRecvAck(SlowerConnection& slower, MsgShortName* name  );
 int slowerRecvMulti(SlowerConnection& slower, MsgHeader *msgHeader, SlowerRemote* remote,
-                    int* mask, char buf[], int bufSize, int* bufLen, MsgHeaderMetrics *metrics=NULL );
-void getMaskedMsgShortName(const MsgShortName &src, MsgShortName &dst, const int mask);
+                    int* len, char buf[], int bufSize, int* bufLen, MsgHeaderMetrics *metrics=NULL );
+void getMaskedMsgShortName(const MsgShortName &src, MsgShortName &dst, const int len);
+std::string getMsgShortNameHexString(const u_char *data);
 
 #endif  // SLOWER_H

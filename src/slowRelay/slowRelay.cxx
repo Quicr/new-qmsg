@@ -22,7 +22,7 @@
 
 
 int main(int argc, char* argv[]) {
-  std::clog << "Starting slowerReal (slower version " << slowerVersion() << ")" << std::endl;
+  std::clog << "Starting slowerRelay (slower version " << slowerVersion() << ")" << std::endl;
   SlowerConnection slower;
 
   int port = slowerDefaultPort;
@@ -86,9 +86,9 @@ int main(int argc, char* argv[]) {
     SlowerRemote remote;
     MsgHeader mhdr = {0};
     MsgHeaderMetrics metrics = {0};
-    int mask;
+    int len;
     
-    err=slowerRecvMulti(  slower, &mhdr, &remote, &mask,  buf, sizeof(buf), &bufLen, &metrics );
+    err=slowerRecvMulti(  slower, &mhdr, &remote, &len,  buf, sizeof(buf), &bufLen, &metrics );
     assert( err == 0 );
 
     // =========  PUBLISH ===================
@@ -108,6 +108,9 @@ int main(int argc, char* argv[]) {
       if ( !duplicate ) {
         // add to local cache 
         std::vector<uint8_t> data(buf, buf + bufLen);
+
+        std::clog << "Adding to cache: " << getMsgShortNameHexString(mhdr.name.data) <<  std::endl;
+
         cache.put(mhdr.name, data);
 
         // report metrics for QMsg
@@ -132,6 +135,9 @@ int main(int argc, char* argv[]) {
 
         // send to anyone subscribed
         std::list<SlowerRemote> list = subscribeList.find(mhdr.name);
+
+        //std::clog << "subscribers " << list.size() << std::endl;
+
         for (SlowerRemote dest: list) {
           if (dest != remote) {
             std::clog << "  Sent to subscriber " << inet_ntoa(dest.addr.sin_addr) << ":" << ntohs(dest.addr.sin_port)
@@ -146,12 +152,13 @@ int main(int argc, char* argv[]) {
     // ============ SUBSCRIBE ==================
     if ( mhdr.type == SlowerMsgSub  ) {
       std::clog << "Got SUB" 
-                << " for " << Name(mhdr.name).longString() << "*" << mask
+                << " for " << Name(mhdr.name).longString()  << " " << len
                 << " from " << inet_ntoa( remote.addr.sin_addr) << ":" <<  ntohs( remote.addr.sin_port )
+                << " shortname: " << getMsgShortNameHexString(mhdr.name.data)
                 << std::endl;
-      subscribeList.add( mhdr.name, mask, remote );
-      
-      std::list<MsgShortName> names = cache.find(mhdr.name, mask );
+      subscribeList.add( mhdr.name, len, remote );
+
+      std::list<MsgShortName> names = cache.find(mhdr.name, len );
       names.reverse(); // send the highest (and likely most recent) first 
 
       for ( auto n : names ) {
@@ -171,10 +178,10 @@ int main(int argc, char* argv[]) {
     // ============== Un SUBSCRIBE ===========
     if ( mhdr.type == SlowerMsgUnSub  ) {
        std::clog << "Got UnSUB" 
-                 << " for " <<  Name(mhdr.name).longString() << "*" << mask
+                 << " for " <<  Name(mhdr.name).longString() << "*" << len
                  << " from " << inet_ntoa( remote.addr.sin_addr) << ":" <<  ntohs( remote.addr.sin_port )
                  << std::endl;
-       subscribeList.remove( mhdr.name, mask, remote );
+       subscribeList.remove( mhdr.name, len, remote );
     }  
   }
 

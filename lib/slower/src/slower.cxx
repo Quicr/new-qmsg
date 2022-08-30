@@ -16,6 +16,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <poll.h>
+#include <sstream>
+#include <iomanip>
 
 #ifdef __linux__
 #include <net/ethernet.h>
@@ -64,24 +66,43 @@ bool operator!=(const MsgShortName& a, const MsgShortName& b ){
   return (std::memcmp(&a.data, &b.data, sizeof(MsgShortName)) == 0 );
 }
 
-void getMaskedMsgShortName(const MsgShortName &src, MsgShortName &dst, const int mask) {
+std::string getMsgShortNameHexString(const u_char *data) {
+  char hexStr[37];
+  char *hexStrPtr = hexStr;
+
+  for (int i=0; i < MSG_SHORT_NAME_LEN; i++) {
+    if (i % 4 == 0 && i != 0) {
+      *hexStrPtr++ = '-';
+    }
+
+    sprintf(hexStrPtr, "%02X", data[i]);
+    hexStrPtr += 2;
+  }
+
+  return std::string(hexStr);
+}
+
+void getMaskedMsgShortName(const MsgShortName &src, MsgShortName &dst, const int len) {
 
   // Set the data len to the size of bytes to keep at 8 bit boundaries.  The last byte is a wildcard
   //   that will be added back so that it can be masked.
-  u_char dst_len = mask >= 8 ? MSG_SHORT_NAME_LEN - (mask / 8) : 15;
-  u_char dst_bits = mask % 8;
+  u_char dst_len = len > 0 ? (len / 8) : 0;
+  u_char dst_bits = len % 8;
 
   bzero(&dst, MSG_SHORT_NAME_LEN);
 
+  if (dst_len == 0) {
+    return;
+  }
+
   std::memcpy(dst.data, src.data, dst_len);   // Copy all bytes to keep as-is on 8bit boundaries
 
-  // Handle the last byte, either mask it, zero it, or keep it as-is
+  // Handle the last byte
   if (dst_bits) {
-    dst.data[dst_len] = src.data[dst_len] >> dst_bits << dst_bits;
-  } else {
-    dst.data[dst_len] = mask == 0 ? src.data[dst_len] : 0;
+    dst.data[dst_len] = src.data[dst_len] >> (8 - dst_bits) << (8 - dst_bits);
   }
 }
+
 
 int slowerSetup( SlowerConnection& slower, uint16_t port) {
   slower.fd=0;
@@ -298,22 +319,22 @@ int slowerPub(SlowerConnection& slower, const MsgShortName& name, char buf[], in
 
 
 int slowerRecvMulti(SlowerConnection& slower, MsgHeader *msgHeader, SlowerRemote* remote,
-                    int* mask, char buf[], int bufSize, int* bufLen, MsgHeaderMetrics *metrics ){
+                    int* len, char buf[], int bufSize, int* bufLen, MsgHeaderMetrics *metrics ){
 
   assert (msgHeader);
   assert( remote );
-  assert( mask );
+  assert( len );
   assert( buf );
   assert( bufLen );
   assert( bufSize > 0 );
 
   msgHeader->type = SlowerMsgInvalid;
-  *mask=0;
+  *len=0;
   *bufLen=0;
   bzero( msgHeader->name.data, sizeof( msgHeader->name.data ) );
 
   char msg[slowerMTU];
-  int msgLen=0; // total length of data received 
+  int msgLen=0; // total name_length of data received
   int msgLoc=0; // position of current decode of messages
   
   int err = slowerRecv( slower, msg, sizeof(msg), &msgLen, remote );
@@ -369,7 +390,7 @@ int slowerRecvMulti(SlowerConnection& slower, MsgHeader *msgHeader, SlowerRemote
     assert ( bufSize - msgLoc >= sizeof(msub_hdr));
     memcpy(&msub_hdr, msg+msgLoc, sizeof(msub_hdr)); msgLoc += sizeof(msub_hdr);
 
-    *mask = msub_hdr.mask;
+    *len = msub_hdr.name_length;
     assert( msgLoc == msgLen );
     break;
 
@@ -455,10 +476,10 @@ int slowerAck(SlowerConnection& slower, const MsgShortName& name, SlowerRemote* 
   return err;
 }
 
-int slowerSub(SlowerConnection& slower, const MsgShortName& name, int mask , SlowerRemote* remote ){
+int slowerSub(SlowerConnection& slower, const MsgShortName& name, int len , SlowerRemote* remote ){
   assert( slower.fd > 0 );
-  assert( mask >= 0 );
-  assert( mask < 128 ); 
+  assert(len >= 0 );
+  assert(len <= 128 );
   
   char msg[slowerMTU];
   int msgLen=0;
@@ -472,7 +493,7 @@ int slowerSub(SlowerConnection& slower, const MsgShortName& name, int mask , Slo
   assert( msgLen < sizeof( msg ) );
 
   MsgSubHeader msub_hdr;
-  msub_hdr.mask = mask;
+  msub_hdr.name_length = len;
 
   assert(msgLen + sizeof(msub_hdr) < sizeof (msg));
 
@@ -485,10 +506,10 @@ int slowerSub(SlowerConnection& slower, const MsgShortName& name, int mask , Slo
 }
 
 
-int slowerUnSub(SlowerConnection& slower, const MsgShortName& name, int mask , SlowerRemote* remote  ) {
+int slowerUnSub(SlowerConnection& slower, const MsgShortName& name, int len , SlowerRemote* remote  ) {
   assert( slower.fd > 0 );
-  assert( mask >= 0 );
-  assert( mask < 128 ); 
+  assert(len >= 0 );
+  assert(len <= 128 );
   
   char msg[slowerMTU];
   int msgLen=0;
@@ -502,7 +523,7 @@ int slowerUnSub(SlowerConnection& slower, const MsgShortName& name, int mask , S
   assert( msgLen < sizeof( msg ) );
 
   MsgSubHeader msub_hdr;
-  msub_hdr.mask = mask;
+  msub_hdr.name_length = len;
 
   assert(sizeof(msg) < msgLen + sizeof(msub_hdr));
 

@@ -4,7 +4,7 @@
 
 class Name {
 private:
-  MsgShortName name;
+  QMsgShortName name;
   const uint32_t itad = 0x000088; // number from IANA TRIP ITAD registry TODO
   const uint8_t qmsgAppID = 0x88; // app ID for QMsg stuff in this ITAD
 
@@ -12,10 +12,6 @@ public:
   Name(MsgShortName &n);
   Name(NamePath path, uint32_t org, uint32_t team,
        uint64_t fingerprint); // key package & welcome
-  //Name(NamePath path, uint32_t org, uint32_t team, uint32_t epoch,
-  //     uint32_t rand); // commit-all
-  //Name(NamePath path, uint32_t org, uint32_t team, uint32_t device,
-  //     uint32_t epoch, uint32_t rand); // commit-one
   Name(NamePath path, uint32_t org, uint32_t team, uint16_t channel,
        uint32_t device, uint32_t msgNum = 0); // msg data
 
@@ -31,7 +27,7 @@ public:
   uint32_t epoch();
   uint32_t rand();
 
-  MsgShortName &shortName();
+  MsgShortName shortName();
 
   std::string shortString();
 

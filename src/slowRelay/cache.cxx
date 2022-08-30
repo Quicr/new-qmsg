@@ -15,6 +15,12 @@ void Cache::put(const MsgShortName& name, const std::vector<uint8_t>& data ) {
   pair = make_pair( name, vec );
 
   dataCache.insert( pair );
+
+  // Prune the cache if needed
+  if (dataCache.size() > 1000000) {
+        dataCache.erase(std::next(dataCache.begin(), 1), std::next(dataCache.begin(), 40000));
+  }
+
 }
 
 
@@ -41,20 +47,37 @@ bool Cache::exists(  const MsgShortName& name ) const {
 }
 
 
-std::list<MsgShortName> Cache::find(const MsgShortName& name, const int mask ) const {
+std::list<MsgShortName> Cache::find(const MsgShortName& name, const int len ) const {
   std::list<MsgShortName> ret;
-  assert( mask <= 70 ); // TODO
 
   MsgShortName startName = name;
-  getMaskedMsgShortName(name, startName, mask);
+
+  getMaskedMsgShortName(name, startName, len);
 
   //std::clog << "  Cache::find lower = " << std::hex << startName.part[1] << "-" <<  startName.part[0] << std::dec << std::endl;
   //std::clog << "  Cache::find upper = " << std::hex << endName.part[1] << "-" <<  endName.part[0] << std::dec << std::endl;
   MsgShortName endName =  startName;
-  std::memset(endName.data + MSG_SHORT_NAME_LEN - (mask / 8), 0xff, (mask / 8));
+  //std::memset(endName.data + MSG_SHORT_NAME_LEN - (len / 8), 0xff, (len / 8));
+
+  // Set the non-significant bits to 1
+  u_char sig_bytes = len / 8; // example 121 / 8 = 15 bytes significant, one bit in the last byte is significant
+
+  // Set all 8 bits for bytes that should be set.
+  if (sig_bytes < MSG_SHORT_NAME_LEN - 1) {
+    std::memset(endName.data + sig_bytes, 0xff, MSG_SHORT_NAME_LEN - sig_bytes - 1);
+  }
+
+  // Handle the last byte of the significant bits. For example, /110 has 13 significant bytes + 1 bit of byte 14
+  //   that is significant.  The last byte is byte 14 for a /110
+  if (len % 8 > 0) {
+    u_char mask_byte = 0xff >> (len % 8);
+
+    endName.data[sig_bytes] |= mask_byte;
+  } else {
+    endName.data[sig_bytes] = 0xff;
+  }
 
   auto start = dataCache.lower_bound( startName );
-
   auto end = dataCache.upper_bound( endName );
   
   for ( auto it = start; it != end; it++ ) {

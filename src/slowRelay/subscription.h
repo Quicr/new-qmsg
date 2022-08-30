@@ -13,9 +13,9 @@ public:
 
   Subscriptions();
   
-  void add(const MsgShortName& name, const int mask, const SlowerRemote& remote );
+  void add(const MsgShortName& name, const int len, const SlowerRemote& remote );
   
-  void remove(const MsgShortName& name, const int mask, const SlowerRemote& remote );
+  void remove(const MsgShortName& name, const int len, const SlowerRemote& remote );
   
   std::list<SlowerRemote> find(  const MsgShortName& name  ) ;
     
