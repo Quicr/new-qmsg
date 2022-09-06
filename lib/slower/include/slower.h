@@ -67,6 +67,8 @@ typedef struct {
 
      } __attribute__ ((__packed__, __aligned__(1))) spec;
 
+     MsgShortName        msgShortName;            ///< Common Message shortName
+
      u_char       data[MSG_SHORT_NAME_LEN];       ///< Buffer for the spec struct, this must be the size of the packed spec
  } __attribute__ ((__packed__, __aligned__(1))) QMsgShortName;
  

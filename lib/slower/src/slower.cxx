@@ -442,9 +442,9 @@ int slowerRecvPub(SlowerConnection& slower, MsgHeader* msgHeader, char buf[], in
   assert( bufSize > 0 );
   
   SlowerRemote remote;
-  int mask;
+  int len;
   
-  int err = slowerRecvMulti( slower,msgHeader, &remote, &mask, buf, bufSize, bufLen, metrics );
+  int err = slowerRecvMulti(slower, msgHeader, &remote, &len, buf, bufSize, bufLen, metrics );
   if ( err != 0 ) {
     return err;
   }

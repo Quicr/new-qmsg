@@ -54,10 +54,7 @@ std::list<MsgShortName> Cache::find(const MsgShortName& name, const int len ) co
 
   getMaskedMsgShortName(name, startName, len);
 
-  //std::clog << "  Cache::find lower = " << std::hex << startName.part[1] << "-" <<  startName.part[0] << std::dec << std::endl;
-  //std::clog << "  Cache::find upper = " << std::hex << endName.part[1] << "-" <<  endName.part[0] << std::dec << std::endl;
   MsgShortName endName =  startName;
-  //std::memset(endName.data + MSG_SHORT_NAME_LEN - (len / 8), 0xff, (len / 8));
 
   // Set the non-significant bits to 1
   u_char sig_bytes = len / 8; // example 121 / 8 = 15 bytes significant, one bit in the last byte is significant
@@ -71,8 +68,8 @@ std::list<MsgShortName> Cache::find(const MsgShortName& name, const int len ) co
   //   that is significant.  The last byte is byte 14 for a /110
   if (len % 8 > 0) {
     u_char mask_byte = 0xff >> (len % 8);
-
     endName.data[sig_bytes] |= mask_byte;
+
   } else {
     endName.data[sig_bytes] = 0xff;
   }
@@ -82,8 +79,6 @@ std::list<MsgShortName> Cache::find(const MsgShortName& name, const int len ) co
   
   for ( auto it = start; it != end; it++ ) {
     MsgShortName dataName = it->first;
-
-    //std::cerr << "   Cache::find adding " << std::hex << dataName.part[1] << "-" <<  dataName.part[0] << std::dec << " to results" << std::endl;
 
     assert( it->second );
     assert( it->second->size() > 0 );

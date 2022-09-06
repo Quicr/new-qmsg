@@ -10,7 +10,8 @@
 #include <slower.h>
 
 Name::Name(MsgShortName &n) {
-  std::memcpy(name.data, n.data,sizeof(name.data));
+    name.msgShortName = n;
+    //std::memcpy(name.data, n.data,sizeof(name.data));
 };
 
 Name::Name(NamePath path, uint32_t org, uint32_t team, uint16_t channel,

@@ -159,7 +159,7 @@ int main(int argc, char* argv[]) {
       subscribeList.add( mhdr.name, len, remote );
 
       std::list<MsgShortName> names = cache.find(mhdr.name, len );
-      names.reverse(); // send the highest (and likely most recent) first 
+      // names.reverse(); // send the highest (and likely most recent) first
 
       for ( auto n : names ) {
         std::clog << "  Sent cache " << Name(n).longString() << std::dec << std::endl;
